@@ -4,18 +4,17 @@
 typedef union {
     char* string_literal;
     int integer;
-    //float _float;
+    float f;
 } YYSTYPE;
 
-// compound assignment operators
 
 enum tokens {
     IDENT=257,
-    DEC,
-    OCT,
-    HEX,
+    NUMBER,
+    LITERAL,
 
-    PLUSEQ = 257,
+    // compound assignment operators
+    PLUSEQ,
     MINUSEQ,
     MULTEQ,
     DIVEQ,
