@@ -7,6 +7,11 @@
 YYSTYPE yylval;
 
 int line_num = 1;
+
+// TO DO:
+// - identifiers
+// - string literals
+// - correct output (with line numbers and everything)
 %}
 
 letter  [A-Za-z]
@@ -50,10 +55,10 @@ while       {return WHILE;}
 
 [\n]        {line_num++;}
 
-[_{letter}][_{letter}{digit}]*     {yylval.string_literal = yytext; return IDENT;}
+[_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string_literal = yytext; return IDENT;}
 
 
-[-]?[1-9]{digit}*           {
+[1-9]{digit}*               {
                                 yylval.number._int = atoi(yytext); 
                                 yylval.number.type = INT;
                                 yylval.number.sign = SIGNED;
@@ -67,7 +72,7 @@ while       {return WHILE;}
                                 return NUMBER;
                             }
 
-[-]?[1-9]{digit}*[lL]       {
+[1-9]{digit}*[lL]           {
                                 yylval.number._int = atoi(yytext); 
                                 yylval.number.type = LONG;
                                 yylval.number.sign = SIGNED;
@@ -81,14 +86,14 @@ while       {return WHILE;}
                                             return NUMBER;
                                         }
 
-[-]?[1-9]{digit}*[lL][lL]   {
+[1-9]{digit}*[lL][lL]       {
                                 yylval.number._int = atoi(yytext); 
                                 yylval.number.type = LONGLONG;
                                 yylval.number.sign = SIGNED;
                                 return NUMBER;
                             }
 
-[-]?[1-9]{digit}*([uU][lL][lL]|[lL][lL][uU])  {
+[1-9]{digit}*([uU][lL][lL]|[lL][lL][uU])  {
                                                     yylval.number._int = atoi(yytext); 
                                                     yylval.number.type = LONGLONG;
                                                     yylval.number.sign = SIGNED;
@@ -124,7 +129,7 @@ while       {return WHILE;}
                             }
 
 
-[-]?{digit}+(\.{digit}+)    {
+{digit}+(\.{digit}+)        {
                                 yylval.number._double = strtod(yytext, NULL); 
                                 yylval.number.type = DOUBLE; 
                                 yylval.number.sign = SIGNED; 
@@ -182,6 +187,7 @@ int main() {
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONGLONG: val = %llu\n", yylval.number._int); 
                         break;
                 }
+            case IDENT: printf("IDENTIFIER: %s\n", yylval.string_literal); break;
         }
     }
     printf("EOF\n");

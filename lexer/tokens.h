@@ -4,7 +4,7 @@
 typedef struct {
 
     enum num_type {
-        INT, //set to 1024 to guarentee no collision
+        INT=1024, //set to 1024 to guarentee no collision
         LONG,
         LONGLONG,
         FLOAT,
@@ -13,7 +13,7 @@ typedef struct {
     };
 
     enum num_sign {
-        UNSIGNED,
+        UNSIGNED=1030,
         SIGNED,
     };
 
