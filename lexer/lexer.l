@@ -14,11 +14,17 @@ int line_num = 1;
 // - correct output (with line numbers and everything)
 %}
 
+%x INT_SUFFIX
+%x FLOAT_SUFFIX
+
 letter  [A-Za-z]
 digit   [0-9]
 hex     0[Xx][0-9A-Fa-f]+
 
 %%
+
+
+
 auto        {return AUTO;}
 break       {return BREAK;}
 case        {return CASE;}
@@ -58,94 +64,96 @@ while       {return WHILE;}
 [_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string_literal = yytext; return IDENT;}
 
 
-[1-9]{digit}*               {
-                                yylval.number._int = atoi(yytext); 
-                                yylval.number.type = INT;
-                                yylval.number.sign = SIGNED;
-                                return NUMBER;
-                            }
+[1-9]{digit}* {
+    yylval.number._int = atoi(yytext); 
+    yylval.number.type = INT;
+    fprintf(stderr, "Got here in int!\n");
+    BEGIN(INT_SUFFIX);
+}
 
-[1-9]{digit}*[uU]           {
-                                yylval.number._int = atoi(yytext); 
-                                yylval.number.type = INT;
-                                yylval.number.sign = UNSIGNED;
-                                return NUMBER;
-                            }
+0[Xx][A-Fa-f0-9]+ {
+    yylval.number._int = (int) strtoll(yytext + 2, NULL, 16); 
+    yylval.number.type = INT; 
+    BEGIN(INT_SUFFIX);
+}
 
-[1-9]{digit}*[lL]           {
-                                yylval.number._int = atoi(yytext); 
-                                yylval.number.type = LONG;
-                                yylval.number.sign = SIGNED;
-                                return NUMBER;
-                            }
+0[0-7]+ {
+    yylval.number._int = (int) strtoll(yytext + 1, NULL, 8); 
+    yylval.number.type = INT; 
+    BEGIN(INT_SUFFIX);
+}
 
-[1-9]{digit}*([uU][lL]|[lL][uU])      {
-                                            yylval.number._int = atoi(yytext); 
-                                            yylval.number.type = LONG;
-                                            yylval.number.sign = UNSIGNED;
-                                            return NUMBER;
-                                        }
+0[Bb][0-1]+ {
+    yylval.number._int = (int) strtoll(yytext + 2, NULL, 2); 
+    yylval.number.type = INT; 
+    BEGIN(INT_SUFFIX);
+}
+<INT_SUFFIX>{
+    [uU] {
+        yylval.number.type = INT;
+        yylval.number.sign = UNSIGNED;
+        fprintf(stderr, "Got here in SUFFIX!\n");
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
 
-[1-9]{digit}*[lL][lL]       {
-                                yylval.number._int = atoi(yytext); 
-                                yylval.number.type = LONGLONG;
-                                yylval.number.sign = SIGNED;
-                                return NUMBER;
-                            }
+    [lL] {
+        yylval.number.type = LONG;
+        yylval.number.sign = SIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
 
-[1-9]{digit}*([uU][lL][lL]|[lL][lL][uU])  {
-                                                    yylval.number._int = atoi(yytext); 
-                                                    yylval.number.type = LONGLONG;
-                                                    yylval.number.sign = SIGNED;
-                                                    return NUMBER;
-                                                }
+    [lL][lL] {
+        yylval.number.type = LONGLONG;
+        yylval.number.sign = SIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
 
-{hex}                       {
-                                yylval.number._int = (int) strtoll(yytext + 2, NULL, 16); 
-                                yylval.number.type = INT; 
-                                yylval.number.sign = SIGNED;
-                                return NUMBER;
-                            }
+    [uU][lL]|[lL][uU] {
+        yylval.number.type = LONG;
+        yylval.number.sign = UNSIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
 
-{hex}[uU]                   {
-                                yylval.number._int = (int) strtoll(yytext + 2, NULL, 16); 
-                                yylval.number.type = INT; 
-                                yylval.number.sign = UNSIGNED;
-                                return NUMBER;
-                            }
+    [uU][lL][lL]|[lL][lL][uU] {
+        yylval.number.type = LONGLONG;
+        yylval.number.sign = UNSIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
+}
 
-0[0-7]*                     {
-                                yylval.number._int = (int) strtoll(yytext + 1, NULL, 8); 
-                                yylval.number.type = INT; 
-                                yylval.number.sign = SIGNED; 
-                                return NUMBER;
-                            }
+{digit}+(\.{digit}+) {
+    yylval.number._double = strtod(yytext, NULL); 
+    yylval.number.type = DOUBLE; 
+    BEGIN(FLOAT_SUFFIX);
+}
+<FLOAT_SUFFIX>{
+    [fF] {
+        yylval.number.type = FLOAT;
+        yylval.number.sign = UNSIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
 
-0[0-7]*[uU]                 {
-                                yylval.number._int = (int) strtoll(yytext + 1, NULL, 8); 
-                                yylval.number.type = INT; 
-                                yylval.number.sign = UNSIGNED; 
-                                return NUMBER;
-                            }
-
-
-{digit}+(\.{digit}+)        {
-                                yylval.number._double = strtod(yytext, NULL); 
-                                yylval.number.type = DOUBLE; 
-                                yylval.number.sign = SIGNED; 
-                                return NUMBER;
-                            }
-
-{digit}+(\.{digit}+)[lL]    {
-                                yylval.number._double = strtod(yytext, NULL); 
-                                yylval.number.type = LONGDOUBLE; 
-                                yylval.number.sign = SIGNED; 
-                                return NUMBER;
-                            }
+    [lL] {
+        yylval.number.type = LONGDOUBLE;
+        yylval.number.sign = UNSIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
+}
 
 
+
+
+        
 
 .   {fprintf(stderr, "Error: unknown token %s\n", yytext);}
+
 
 %%
 
@@ -187,6 +195,7 @@ int main() {
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONGLONG: val = %llu\n", yylval.number._int); 
                         break;
                 }
+                break;
             case IDENT: printf("IDENTIFIER: %s\n", yylval.string_literal); break;
         }
     }

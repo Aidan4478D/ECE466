@@ -21,8 +21,8 @@ typedef struct {
     enum num_sign sign;
 
     long long int _int;
-    float _float;
     long double _double;
+    float _float;
 
 } NUMTYPE;
 
