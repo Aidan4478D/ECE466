@@ -8,23 +8,52 @@ YYSTYPE yylval;
 
 int line_num = 1;
 
+char* buf = NULL;
+int buf_size = 0;
+int buf_len = 0;
+
+void init_buf() {
+    buf_size = 128;
+    buf_len = 0;
+    buf = malloc(buf_size);
+    buf[0] = '\0';
+}
+
+void append_buf(char c) {
+    // dynamically adjust size of buf;  
+    if(buf_len + 1 >= buf_size) {
+        buf_size << 1;
+        buf = realloc(buf, buf_size);
+        if(!buf) {
+            fprintf(stderr, "Out of memory!\n");
+            exit(1);
+        }
+    }
+    buf[buf_len++] = c;
+    buf[buf_len] = '\0';
+}
+
+void reset_buf() {
+    if(buf) free(buf);
+    buf = NULL;
+    buf_size = 0;
+    buf_len = 0;
+}
+
 // TO DO:
-// - identifiers
-// - string literals
-// - correct output (with line numbers and everything)
+// - make correct outputs
 %}
 
 %x INT_SUFFIX
 %x FLOAT_SUFFIX
+%x STRING ESC_STR
+%x CHAR ESC_CHAR
 
 letter  [A-Za-z]
 digit   [0-9]
 hex     0[Xx][0-9A-Fa-f]+
 
 %%
-
-
-
 auto        {return AUTO;}
 break       {return BREAK;}
 case        {return CASE;}
@@ -61,104 +90,200 @@ while       {return WHILE;}
 
 [\n]        {line_num++;}
 
-[_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string_literal = yytext; return IDENT;}
-
 
 [1-9]{digit}* {
     yylval.number._int = atoi(yytext); 
-    yylval.number.type = INT;
     fprintf(stderr, "Got here in int!\n");
     BEGIN(INT_SUFFIX);
 }
 
 0[Xx][A-Fa-f0-9]+ {
     yylval.number._int = (int) strtoll(yytext + 2, NULL, 16); 
-    yylval.number.type = INT; 
     BEGIN(INT_SUFFIX);
 }
 
 0[0-7]+ {
     yylval.number._int = (int) strtoll(yytext + 1, NULL, 8); 
-    yylval.number.type = INT; 
     BEGIN(INT_SUFFIX);
 }
 
 0[Bb][0-1]+ {
     yylval.number._int = (int) strtoll(yytext + 2, NULL, 2); 
-    yylval.number.type = INT; 
     BEGIN(INT_SUFFIX);
 }
 <INT_SUFFIX>{
     [uU] {
-        yylval.number.type = INT;
+        yylval.number.type = INT_T;
         yylval.number.sign = UNSIGNED;
-        fprintf(stderr, "Got here in SUFFIX!\n");
         BEGIN(INITIAL);
         return NUMBER;
     }
 
     [lL] {
-        yylval.number.type = LONG;
+        yylval.number.type = LONG_T;
         yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 
     [lL][lL] {
-        yylval.number.type = LONGLONG;
+        yylval.number.type = LONGLONG_T;
         yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 
     [uU][lL]|[lL][uU] {
-        yylval.number.type = LONG;
+        yylval.number.type = LONG_T;
         yylval.number.sign = UNSIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 
     [uU][lL][lL]|[lL][lL][uU] {
-        yylval.number.type = LONGLONG;
+        yylval.number.type = LONGLONG_T;
         yylval.number.sign = UNSIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
+    \n {
+        yylval.number.type = INT_T;
+        yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 }
 
-{digit}+(\.{digit}+) {
-    yylval.number._double = strtod(yytext, NULL); 
-    yylval.number.type = DOUBLE; 
+{digit}+(\.{digit}+)([Ee][+-]?{digit}+)? {
     BEGIN(FLOAT_SUFFIX);
 }
+
+0[xX]{hex}+(\.{hex}+)?([pP][+-]?{digit}+)? {
+    BEGIN(FLOAT_SUFFIX);
+}
+
 <FLOAT_SUFFIX>{
     [fF] {
-        yylval.number.type = FLOAT;
+        yylval.number._float = strtof(yytext, NULL); 
+        yylval.number.type = FLOAT_T;
         yylval.number.sign = UNSIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 
     [lL] {
-        yylval.number.type = LONGDOUBLE;
+        yylval.number._double = strtold(yytext, NULL); 
+        yylval.number.type = LONGDOUBLE_T;
         yylval.number.sign = UNSIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
+    \n {
+        yylval.number._double = strtof(yytext, NULL); 
+        yylval.number.type = DOUBLE_T;
+        yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 }
 
 
+[_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string.string_literal = strdup(yytext); return IDENT;}
+
+L?\"  {init_buf(); yylval.string.type = STRING_T; BEGIN(STRING);}
+L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 
 
-        
+<STRING,CHAR>{
+    \'|\"  {
+        if(yylval.string.type == STRING_T) {
+            if(buf)
+                fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
+            else
+                fprintf(stderr, "buf is NULL!\n");
+            
+            yylval.string.string_literal = strdup(buf);
+
+            fprintf(stderr, "buf is %s.\n", yylval.string.string_literal); 
+            reset_buf();
+            BEGIN(INITIAL);
+            return STRING;
+        }
+        if(yylval.string.type == CHAR_T) {
+            if(buf)
+                fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
+            else
+                fprintf(stderr, "buf is NULL!\n");
+
+            if(buf_len != 1) fprintf(stderr, "multi-character constant at line %d\n", line_num);
+            
+            yylval.string.char_literal = buf_len ? buf[0] : '\0';
+
+            fprintf(stderr, "buf is %c.\n", yylval.string.char_literal); 
+            reset_buf();
+            BEGIN(INITIAL);
+            return STRING;
+        }
+    }
+    \\      { append_buf('\\'); }
+    \\n     { append_buf('\n'); }
+    \\t     { append_buf('\t'); }
+    \\b     { append_buf('\b'); }
+    \\r     { append_buf('\r'); }
+    \\f     { append_buf('\f'); }
+    \\v     { append_buf('\v'); }
+    \\a     { append_buf('\a'); }
+    \\?     { append_buf('\?'); }
+    \\\'    { append_buf('\''); }
+    \\\"    { append_buf('\"'); } 
+
+    \\[0-7]{1,3} {
+        int n = (int) strtoll(yytext + 2, NULL, 8);
+        n = (n > 255 ? n : 255);
+        append_buf((char) n);
+    }
+    \\[Xx][0-9A-Fa-f]+ {
+        int n = (int) strtoll(yytext + 2, NULL, 16);
+        n = (n > 255 ? n : 255);
+        append_buf((char) n);
+    }
+
+    \n { fprintf(stderr, "String not terminated on line: %d\n", line_num); exit(-1); }
+
+    . { append_buf(yytext[0]); }
+}
+
+
 
 .   {fprintf(stderr, "Error: unknown token %s\n", yytext);}
 
 
 %%
 
-//0[xX]{hex}+(\.{hex}+)?([pP][+-]?{digit}+)?      {yylval.number._float = atof(yytext); yylval.number.type = FLOAT; return NUMBER;}
+/*
+<ESC_STR>{
+    n { append_buf('\n'); BEGIN(STRING); }
+    t { append_buf('\t'); BEGIN(STRING); }
+    b { append_buf('\b'); BEGIN(STRING); }
+    a { append_buf('\a'); BEGIN(STRING); }
+    v { append_buf('\v'); BEGIN(STRING); }
+    f { append_buf('\f'); BEGIN(STRING); }
 
+    . {
+        fprintf(stderr, "Invalid escape sequence %c at line %d\n", yytext[0], line_num);
+    }
+}*/
+
+/*
+<CHAR>{
+    \' {
+        yylval.string.char_literal = yytext[1]; 
+        yylval.string.type = CHAR_T;
+        fprintf(stderr, "chr is: %c \n", yylval.string.char_literal); 
+        return STRING;
+    }
+}
+*/
 /*
 \+      {return '+';}
 -       {return MINUS;}
@@ -172,31 +297,39 @@ int main() {
             //case HEX: printf("HEX: val = %d\n", yylval.integer); break;
             case NUMBER: 
                 switch(yylval.number.type) {
-                    case INT: 
+                    case INT_T: 
                         if(yylval.number.sign == SIGNED) printf("SIGNED INT: val = %lld\n", yylval.number._int); 
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED INT: val = %llu\n", yylval.number._int); 
                         break;
-                    case FLOAT: 
+                    case FLOAT_T: 
                         if(yylval.number.sign == SIGNED) printf("SIGNED FLOAT: val = %f\n", yylval.number._float); 
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED FLOAT: val = %f\n", yylval.number._float); 
                         break;
-                    case DOUBLE: 
+                    case DOUBLE_T: 
                         if(yylval.number.sign == SIGNED) printf("SIGNED DOUBLE: val = %Lf\n", yylval.number._double); 
                         break;
-                    case LONGDOUBLE:
+                    case LONGDOUBLE_T:
                         if(yylval.number.sign == SIGNED) printf("SIGNED LONG DOUBLE: val = %Lf\n", yylval.number._double); 
                         break;
-                    case LONG: 
+                    case LONG_T: 
                         if(yylval.number.sign == SIGNED) printf("SIGNED LONG: val = %lld\n", yylval.number._int); 
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONG: val = %llu\n", yylval.number._int); 
                         break;
-                    case LONGLONG: 
+                    case LONGLONG_T: 
                         if(yylval.number.sign == SIGNED) printf("SIGNED LONGLONG: val = %lld\n", yylval.number._int); 
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONGLONG: val = %llu\n", yylval.number._int); 
                         break;
                 }
                 break;
-            case IDENT: printf("IDENTIFIER: %s\n", yylval.string_literal); break;
+
+            case STRING: 
+                switch(yylval.string.type) {
+                    case CHAR_T: printf("CHAR: val = %c\n", yylval.string.char_literal); break;
+                    case STRING_T: printf("STRING: val = %s\n", yylval.string.string_literal); break;
+                }
+                break;
+
+            case IDENT: printf("IDENTIFIER: %s\n", yylval.string.string_literal); break;
         }
     }
     printf("EOF\n");
