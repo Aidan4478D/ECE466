@@ -22,7 +22,7 @@ void init_buf() {
 void append_buf(char c) {
     // dynamically adjust size of buf;  
     if(buf_len + 1 >= buf_size) {
-        buf_size << 1;
+        buf_size = buf_size << 1;
         buf = realloc(buf, buf_size);
         if(!buf) {
             fprintf(stderr, "Out of memory!\n");
@@ -46,14 +46,16 @@ void reset_buf() {
 
 %x INT_SUFFIX
 %x FLOAT_SUFFIX
-%x STRING ESC_STR
-%x CHAR ESC_CHAR
+%x STRING
+%x CHAR
 
 letter  [A-Za-z]
 digit   [0-9]
 hex     0[Xx][0-9A-Fa-f]+
 
 %%
+[ \t\v\f\r]+    /* do nothing for whitespace */
+
 auto        {return AUTO;}
 break       {return BREAK;}
 case        {return CASE;}
@@ -146,7 +148,15 @@ while       {return WHILE;}
         BEGIN(INITIAL);
         return NUMBER;
     }
+    [^uUlL\n] {
+        unput(yytext[0]);
+        yylval.number.type = INT_T;
+        yylval.number.sign = SIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
     \n {
+        line_num++;
         yylval.number.type = INT_T;
         yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
@@ -178,7 +188,15 @@ while       {return WHILE;}
         BEGIN(INITIAL);
         return NUMBER;
     }
+    [^uUlL\n] {
+        unput(yytext[0]);
+        yylval.number.type = DOUBLE_T;
+        yylval.number.sign = SIGNED;
+        BEGIN(INITIAL);
+        return NUMBER;
+    }
     \n {
+        line_num++;
         yylval.number._double = strtof(yytext, NULL); 
         yylval.number.type = DOUBLE_T;
         yylval.number.sign = SIGNED;
@@ -215,7 +233,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
             else
                 fprintf(stderr, "buf is NULL!\n");
 
-            if(buf_len != 1) fprintf(stderr, "multi-character constant at line %d\n", line_num);
+            if(buf_len > 1) fprintf(stderr, "multi-character constant at line %d\n", line_num);
             
             yylval.string.char_literal = buf_len ? buf[0] : '\0';
 
@@ -237,14 +255,18 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
     \\\'    { append_buf('\''); }
     \\\"    { append_buf('\"'); } 
 
+    \\[^ntbrfva?\'\"] {fprintf(stderr, "invalid escape sequence!\n"); }
+
     \\[0-7]{1,3} {
-        int n = (int) strtoll(yytext + 2, NULL, 8);
-        n = (n > 255 ? n : 255);
+        int n = (int) strtoll(yytext + 1, NULL, 8);
+        n = (n > 255 ? 255 : n);
+        fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
         append_buf((char) n);
     }
     \\[Xx][0-9A-Fa-f]+ {
         int n = (int) strtoll(yytext + 2, NULL, 16);
-        n = (n > 255 ? n : 255);
+        n = (n > 255 ? 255 : n);
+        fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
         append_buf((char) n);
     }
 
@@ -302,30 +324,30 @@ int main() {
                         if(yylval.number.sign == UNSIGNED) printf("UNSIGNED INT: val = %llu\n", yylval.number._int); 
                         break;
                     case FLOAT_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED FLOAT: val = %f\n", yylval.number._float); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED FLOAT: val = %f\n", yylval.number._float); 
+                        if(yylval.number.sign == SIGNED) printf("SIGNED FLOAT: %f\n", yylval.number._float); 
+                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED FLOAT: %f\n", yylval.number._float); 
                         break;
                     case DOUBLE_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED DOUBLE: val = %Lf\n", yylval.number._double); 
+                        if(yylval.number.sign == SIGNED) printf("SIGNED DOUBLE: %Lf\n", yylval.number._double); 
                         break;
                     case LONGDOUBLE_T:
-                        if(yylval.number.sign == SIGNED) printf("SIGNED LONG DOUBLE: val = %Lf\n", yylval.number._double); 
+                        if(yylval.number.sign == SIGNED) printf("SIGNED LONG DOUBLE: %Lf\n", yylval.number._double); 
                         break;
                     case LONG_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED LONG: val = %lld\n", yylval.number._int); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONG: val = %llu\n", yylval.number._int); 
+                        if(yylval.number.sign == SIGNED) printf("SIGNED LONG: %lld\n", yylval.number._int); 
+                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONG: %llu\n", yylval.number._int); 
                         break;
                     case LONGLONG_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED LONGLONG: val = %lld\n", yylval.number._int); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONGLONG: val = %llu\n", yylval.number._int); 
+                        if(yylval.number.sign == SIGNED) printf("SIGNED LONGLONG: %lld\n", yylval.number._int); 
+                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONGLONG: %llu\n", yylval.number._int); 
                         break;
                 }
                 break;
 
             case STRING: 
                 switch(yylval.string.type) {
-                    case CHAR_T: printf("CHAR: val = %c\n", yylval.string.char_literal); break;
-                    case STRING_T: printf("STRING: val = %s\n", yylval.string.string_literal); break;
+                    case CHAR_T: printf("CHAR: %c\n", yylval.string.char_literal); break;
+                    case STRING_T: printf("STRING: %s\n", yylval.string.string_literal); break;
                 }
                 break;
 
