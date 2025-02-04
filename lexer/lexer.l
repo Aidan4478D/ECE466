@@ -10,9 +10,6 @@ YYSTYPE yylval;
 char* file_name = NULL; 
 int line_num = 1;
 
-int ln = 0;
-char fn[FILENAME_MAX];
-
 char* buf = NULL;
 int buf_size = 0;
 int buf_len = 0;
@@ -60,16 +57,6 @@ hex     0[Xx][0-9A-Fa-f]+
 
 %%
 [ \t\v\f\r]+    /* do nothing for whitespace */
-
-^#[^\n]* {
-    if(sscanf(yytext, "# %d \"%[^\"]\"", &ln, fn) >= 2) {
-        line_num = ln;
-        if(file_name) free(file_name);
-        file_name = strdup(fn);
-        /* For debugging: */
-        fprintf(stderr, "==> Updated file: %s, line: %d\n", file_name, line_num);
-    }
-}
 
 auto        {return AUTO;}
 break       {return BREAK;}
@@ -228,11 +215,6 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 <STRING,CHAR>{
     \'|\"  {
         if(yylval.string.type == STRING_T) {
-            if(buf)
-                fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
-            else
-                fprintf(stderr, "buf is NULL!\n");
-            
             yylval.string.string_literal = strdup(buf);
 
             fprintf(stderr, "buf is %s.\n", yylval.string.string_literal); 
@@ -241,13 +223,8 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
             return STRING;
         }
         if(yylval.string.type == CHAR_T) {
-            if(buf)
-                fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
-            else
-                fprintf(stderr, "buf is NULL!\n");
 
             if(buf_len > 1) fprintf(stderr, "multi-character constant at line %d\n", line_num);
-            
             yylval.string.char_literal = buf_len ? buf[0] : '\0';
 
             fprintf(stderr, "buf is %c.\n", yylval.string.char_literal); 
@@ -288,13 +265,15 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
     . { append_buf(yytext[0]); }
 }
 
+[_A-Za-z]+[_A-Za-z0-9]*     {yylval.string.string_literal = strdup(yytext); return IDENT;}
+
 \+=     { return PLUSEQ; }
 -=      { return MINUSEQ; }
 \*=     { return MULTEQ; }
-/=      { return DIVEQ; }
+\/=     { return DIVEQ; }
 %=      { return MODEQ; }
-<<=     { return SLEQ; }
->>=     { return SREQ; }
+\<\<=   { return SLEQ; }
+\>\>=   { return SREQ; }
 &=      { return ANDEQ; }
 \^=     { return XOREQ; }
 \|=     { return OREQ; }
@@ -302,20 +281,20 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 ->      { return POINT; }
 \+\+    { return PLUSPLUS; }
 --      { return MINMIN; }
-<<      { return SL; }
->>      { return SR; }
-<=      { return LTEQ; }
->=      { return GTEQ; }
+\<\<    { return SL; }
+\>\>    { return SR; }
+\<=     { return LTEQ; }
+\>=     { return GTEQ; }
 ==      { return EQEQ; }
 !=      { return NOTEQ; }
 &&      { return ANDAND; }
 \|\|    { return OROR; }
 
 \.\.\.  { return ELLIPSIS; }
-<%      { return LTMOD; }
->%      { return GTMOD; }
-<:      { return LTCOL; }
-:>      { return COLGT; }
+\<%     { return LTMOD; }
+\>%     { return GTMOD; }
+\<:     { return LTCOL; }
+:\>     { return COLGT; }
 %:      { return MODCOL; }
 %:%:    { return MCMC; }
 
@@ -330,9 +309,9 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 ~   { return '~'; }
 \|  { return '|'; }
 \.  { return '.'; }
-<   { return '<'; }
->   { return '>'; }
-/   { return '/'; }
+\<  { return '<'; }
+\>  { return '>'; }
+\/  { return '/'; }
 \?  { return '?'; }
 
 \(  { return '('; }
@@ -345,44 +324,29 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 ;   { return ';'; }
 :   { return ':'; }
 
-[_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string.string_literal = strdup(yytext); return IDENT;}
+
+<<EOF>>     { return TOKEOF; }
 
 .   {fprintf(stderr, "Error: unknown token %s\n", yytext);}
 
 %%
 
 /*
-<ESC_STR>{
-    n { append_buf('\n'); BEGIN(STRING); }
-    t { append_buf('\t'); BEGIN(STRING); }
-    b { append_buf('\b'); BEGIN(STRING); }
-    a { append_buf('\a'); BEGIN(STRING); }
-    v { append_buf('\v'); BEGIN(STRING); }
-    f { append_buf('\f'); BEGIN(STRING); }
-
-    . {
-        fprintf(stderr, "Invalid escape sequence %c at line %d\n", yytext[0], line_num);
-    }
-}*/
-
-/*
-<CHAR>{
-    \' {
-        yylval.string.char_literal = yytext[1]; 
-        yylval.string.type = CHAR_T;
-        fprintf(stderr, "chr is: %c \n", yylval.string.char_literal); 
-        return STRING;
-    }
-}
-*/
-/*
-\+      {return '+';}
--       {return MINUS;}
-*/
+if(buf)
+    fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
+else
+    fprintf(stderr, "buf is NULL!\n");
+*/          
 
 int main() {
     int t;
     while(t=yylex()) {
+
+        if(file_name) printf("%s\t", file_name);
+        else printf("<STDIN>\t");
+
+        printf("%d\t", line_num);
+
         switch(t) {
             //case HEX: printf("HEX: val = %d\n", yylval.integer); break;
             case NUMBER: 
@@ -486,31 +450,31 @@ int main() {
             case MODCOL: printf("MODCOL\n"); break;
             case MCMC: printf("MCMC\n"); break;
 
-            case '!': printf("OP: !\n"); break;
-            case '%': printf("OP: %\n"); break;
-            case '^': printf("OP: ^\n"); break;
-            case '&': printf("OP: &\n"); break;
-            case '*': printf("OP: *\n"); break;
-            case '-': printf("OP: -\n"); break;
-            case '+': printf("OP: +\n"); break;
-            case '=': printf("OP: =\n"); break;
-            case '~': printf("OP: ~\n"); break;
-            case '|': printf("OP: |\n"); break;
-            case '.': printf("OP: .\n"); break;
-            case '<': printf("OP: <\n"); break;
-            case '>': printf("OP: >\n"); break;
-            case '/': printf("OP: /\n"); break;
-            case '?': printf("OP: ?\n"); break;
+            case '!': printf("!\n"); break;
+            case '%': printf("%\n"); break;
+            case '^': printf("^\n"); break;
+            case '&': printf("&\n"); break;
+            case '*': printf("*\n"); break;
+            case '-': printf("-\n"); break;
+            case '+': printf("+\n"); break;
+            case '=': printf("=\n"); break;
+            case '~': printf("~\n"); break;
+            case '|': printf("|\n"); break;
+            case '.': printf(".\n"); break;
+            case '<': printf("<\n"); break;
+            case '>': printf(">\n"); break;
+            case '/': printf("/\n"); break;
+            case '?': printf("?\n"); break;
 
-            case '(': printf("OP: (\n"); break;
-            case ')': printf("OP: )\n"); break;
-            case '[': printf("OP: [\n"); break;
-            case ']': printf("OP: ]\n"); break;
-            case '{': printf("OP: {\n"); break;
-            case '}': printf("OP: }\n"); break;
-            case ',': printf("OP: ,\n"); break;
-            case ';': printf("OP: ;\n"); break;
-            case ':': printf("OP: :\n"); break;
+            case '(': printf("(\n"); break;
+            case ')': printf(")\n"); break;
+            case '[': printf("[\n"); break;
+            case ']': printf("]\n"); break;
+            case '{': printf("{\n"); break;
+            case '}': printf("}\n"); break;
+            case ',': printf(",\n"); break;
+            case ';': printf(";\n"); break;
+            case ':': printf(":\n"); break;
         }
     }
     printf("EOF\n");
