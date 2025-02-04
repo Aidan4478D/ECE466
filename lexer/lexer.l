@@ -4,6 +4,7 @@
 #include "tokens.h"
 #include "stdlib.h"
 #include <stdio.h>
+#include <ctype.h>
 
 YYSTYPE yylval;
 
@@ -43,7 +44,9 @@ void reset_buf() {
 }
 
 // TO DO:
-// - make correct outputs
+// - correct filename
+// - get floating point outputs
+// - scientific notation
 %}
 
 %x INT_SUFFIX
@@ -57,6 +60,13 @@ hex     0[Xx][0-9A-Fa-f]+
 
 %%
 [ \t\v\f\r]+    /* do nothing for whitespace */
+
+^#\s*(\d+)\s+\"([^\"]+)\".*\n {
+    line_num = atoi(yytext + 1); // Skip '#' to parse line number
+    char *fn_start = strchr(yytext, '"') + 1;
+    char *fn_end = strchr(fn_start, '"');
+    file_name = strndup(fn_start, fn_end - fn_start);
+}
 
 auto        {return AUTO;}
 break       {return BREAK;}
@@ -94,8 +104,7 @@ while       {return WHILE;}
 
 [\n]        {line_num++;}
 
-
-[1-9]{digit}* {
+[1-9]{digit}*|0 {
     yylval.number._int = atoi(yytext); 
     BEGIN(INT_SUFFIX);
 }
@@ -217,7 +226,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
         if(yylval.string.type == STRING_T) {
             yylval.string.string_literal = strdup(buf);
 
-            fprintf(stderr, "buf is %s.\n", yylval.string.string_literal); 
+            //fprintf(stderr, "buf is %s.\n", yylval.string.string_literal); 
             reset_buf();
             BEGIN(INITIAL);
             return STRING;
@@ -227,7 +236,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
             if(buf_len > 1) fprintf(stderr, "multi-character constant at line %d\n", line_num);
             yylval.string.char_literal = buf_len ? buf[0] : '\0';
 
-            fprintf(stderr, "buf is %c.\n", yylval.string.char_literal); 
+            //fprintf(stderr, "buf is %c.\n", yylval.string.char_literal); 
             reset_buf();
             BEGIN(INITIAL);
             return STRING;
@@ -250,13 +259,13 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
     \\[0-7]{1,3} {
         int n = (int) strtoll(yytext + 1, NULL, 8);
         n = (n > 255 ? 255 : n);
-        fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
+        //fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
         append_buf((char) n);
     }
     \\[Xx][0-9A-Fa-f]+ {
         int n = (int) strtoll(yytext + 2, NULL, 16);
         n = (n > 255 ? 255 : n);
-        fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
+        //fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
         append_buf((char) n);
     }
 
@@ -336,7 +345,27 @@ if(buf)
     fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
 else
     fprintf(stderr, "buf is NULL!\n");
-*/          
+*/
+
+void print_escaped_char(char c) {
+    switch (c) {
+        case '\\': printf("\\\\"); 
+        case '\n': printf("\\n"); break;
+        case '\t': printf("\\t"); break;
+        case '\b': printf("\\b"); break;
+        case '\r': printf("\\r"); break;
+        case '\f': printf("\\f"); break;
+        case '\v': printf("\\v"); break;
+        case '\a': printf("\\a"); break;
+        case '\?': printf("\\?"); break;
+        case '\'': printf("\\\'"); break;
+        case '\"': printf("\\\""); break;
+
+        default:
+            if (isprint((unsigned char)c)) putchar(c);
+            else printf("\\%03o", (unsigned char)c);
+    }
+}
 
 int main() {
     int t;
@@ -378,8 +407,14 @@ int main() {
 
             case STRING: 
                 switch(yylval.string.type) {
-                    case CHAR_T: printf("CHAR: %c\n", yylval.string.char_literal); break;
-                    case STRING_T: printf("STRING: %s\n", yylval.string.string_literal); break;
+                    case CHAR_T: printf("CHAR: "); print_escaped_char(yylval.string.char_literal); printf("\n"); break;
+                    case STRING_T: 
+                        printf("STRING: "); 
+                        for(char *p = yylval.string.string_literal; *p; p++) {
+                            print_escaped_char(*p);
+                        }
+                        printf("\n");
+                        break;
                 }
                 break;
 
