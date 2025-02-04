@@ -48,6 +48,7 @@ typedef union {
 
 
 enum tokens {
+    TOKEOF=0,
     IDENT=257,
     NUMBER,
     STRING,
@@ -58,24 +59,33 @@ enum tokens {
     MULTEQ,
     DIVEQ,
     MODEQ,
-    SHFTLFTEQ,
-    SHFTRTEQ,
+    SLEQ,
+    SREQ,
     ANDEQ,
-    NOTEQ,
+    XOREQ,
     OREQ,
 
     // other compound operators
     POINT,
     PLUSPLUS,
     MINMIN,
-    SHFTLFT,
-    SHFTRT,
-    LESSEQ,
-    GRTEQ,
+    SL,
+    SR,
+    LTEQ,
+    GTEQ,
     EQEQ,
-    XOREQ,
+    NOTEQ,
     ANDAND,
     OROR,
+
+    // other stuff in the Harbison & Steele
+    ELLIPSIS,
+    LTMOD,
+    GTMOD,
+    LTCOL, 
+    COLGT,
+    MODCOL,
+    MCMC,
 
     //keywords
     AUTO,

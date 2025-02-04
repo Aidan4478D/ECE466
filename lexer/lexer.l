@@ -3,10 +3,15 @@
 
 #include "tokens.h"
 #include "stdlib.h"
+#include <stdio.h>
 
 YYSTYPE yylval;
 
+char* file_name = NULL; 
 int line_num = 1;
+
+int ln = 0;
+char fn[FILENAME_MAX];
 
 char* buf = NULL;
 int buf_size = 0;
@@ -22,10 +27,10 @@ void init_buf() {
 void append_buf(char c) {
     // dynamically adjust size of buf;  
     if(buf_len + 1 >= buf_size) {
-        buf_size = buf_size << 1;
+        buf_size <<= 1;
         buf = realloc(buf, buf_size);
         if(!buf) {
-            fprintf(stderr, "Out of memory!\n");
+            fprintf(stderr, "Out of memory: Wanted %d bytes!\n", buf_size);
             exit(1);
         }
     }
@@ -55,6 +60,16 @@ hex     0[Xx][0-9A-Fa-f]+
 
 %%
 [ \t\v\f\r]+    /* do nothing for whitespace */
+
+^#[^\n]* {
+    if(sscanf(yytext, "# %d \"%[^\"]\"", &ln, fn) >= 2) {
+        line_num = ln;
+        if(file_name) free(file_name);
+        file_name = strdup(fn);
+        /* For debugging: */
+        fprintf(stderr, "==> Updated file: %s, line: %d\n", file_name, line_num);
+    }
+}
 
 auto        {return AUTO;}
 break       {return BREAK;}
@@ -95,7 +110,6 @@ while       {return WHILE;}
 
 [1-9]{digit}* {
     yylval.number._int = atoi(yytext); 
-    fprintf(stderr, "Got here in int!\n");
     BEGIN(INT_SUFFIX);
 }
 
@@ -206,7 +220,6 @@ while       {return WHILE;}
 }
 
 
-[_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string.string_literal = strdup(yytext); return IDENT;}
 
 L?\"  {init_buf(); yylval.string.type = STRING_T; BEGIN(STRING);}
 L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
@@ -275,10 +288,66 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
     . { append_buf(yytext[0]); }
 }
 
+\+=     { return PLUSEQ; }
+-=      { return MINUSEQ; }
+\*=     { return MULTEQ; }
+/=      { return DIVEQ; }
+%=      { return MODEQ; }
+<<=     { return SLEQ; }
+>>=     { return SREQ; }
+&=      { return ANDEQ; }
+\^=     { return XOREQ; }
+\|=     { return OREQ; }
 
+->      { return POINT; }
+\+\+    { return PLUSPLUS; }
+--      { return MINMIN; }
+<<      { return SL; }
+>>      { return SR; }
+<=      { return LTEQ; }
+>=      { return GTEQ; }
+==      { return EQEQ; }
+!=      { return NOTEQ; }
+&&      { return ANDAND; }
+\|\|    { return OROR; }
+
+\.\.\.  { return ELLIPSIS; }
+<%      { return LTMOD; }
+>%      { return GTMOD; }
+<:      { return LTCOL; }
+:>      { return COLGT; }
+%:      { return MODCOL; }
+%:%:    { return MCMC; }
+
+!   { return '!'; }
+%   { return '%'; }
+\^  { return '^'; }
+&   { return '&'; }
+\*  { return '*'; }
+-   { return '-'; }
+\+  { return '+'; }
+=   { return '='; }
+~   { return '~'; }
+\|  { return '|'; }
+\.  { return '.'; }
+<   { return '<'; }
+>   { return '>'; }
+/   { return '/'; }
+\?  { return '?'; }
+
+\(  { return '('; }
+\)  { return ')'; }
+\[  { return '['; }
+\]  { return ']'; }
+\{  { return '{'; }
+\}  { return '}'; }
+,   { return ','; }
+;   { return ';'; }
+:   { return ':'; }
+
+[_A-Za-z]+[_A-ZA-z0-9]*     {yylval.string.string_literal = strdup(yytext); return IDENT;}
 
 .   {fprintf(stderr, "Error: unknown token %s\n", yytext);}
-
 
 %%
 
@@ -315,7 +384,6 @@ int main() {
     int t;
     while(t=yylex()) {
         switch(t) {
-            case AUTO: printf("AUTO\n"); break;
             //case HEX: printf("HEX: val = %d\n", yylval.integer); break;
             case NUMBER: 
                 switch(yylval.number.type) {
@@ -352,7 +420,99 @@ int main() {
                 break;
 
             case IDENT: printf("IDENTIFIER: %s\n", yylval.string.string_literal); break;
+
+            case AUTO: printf("AUTO\n"); break;
+            case BREAK: printf("BREAK\n"); break;
+            case CASE: printf("CASE\n"); break;
+            case CHAR: printf("CHAR\n"); break;
+            case CONST: printf("CONST\n"); break;
+            case CONTINUE: printf("CONTINUE\n"); break;
+            case DEFAULT: printf("DEFAULT\n"); break;
+            case DO: printf("DO\n"); break;
+            case DOUBLE: printf("DOUBLE\n"); break;
+            case ELSE: printf("ELSE\n"); break;
+            case ENUM: printf("ENUM\n"); break;
+            case EXTERN: printf("EXTERN\n"); break;
+            case FLOAT: printf("FLOAT\n"); break;
+            case FOR: printf("FOR\n"); break;
+            case GOTO: printf("GOTO\n"); break;
+            case IF: printf("IF\n"); break;
+            case INLINE: printf("INLINE\n"); break;
+            case INT: printf("INT\n"); break;
+            case LONG: printf("LONG\n"); break;
+            case REGISTER: printf("REGISTER\n"); break;
+            case RETURN: printf("RETURN\n"); break;
+            case SHORT: printf("SHORT\n"); break;
+            case SIGNED: printf("SIGNED\n"); break;
+            case SIZEOF: printf("SIZEOF\n"); break;
+            case STATIC: printf("STATIC\n"); break;
+            case STRUCT: printf("STRUCT\n"); break;
+            case SWITCH: printf("SWITCH\n"); break;
+            case TYPEDEF: printf("TYPEDEF\n"); break;
+            case UNION: printf("UNION\n"); break;
+            case UNSIGNED: printf("UNSIGNED\n"); break;
+            case VOID: printf("VOID\n"); break;
+            case VOLATILE: printf("VOLATILE\n"); break;
+            case WHILE: printf("WHILE\n"); break;
+
+            case PLUSEQ: printf("PLUSEQ\n"); break;
+            case MINUSEQ: printf("MINUSEQ\n"); break;
+            case MULTEQ: printf("MULTEQ\n"); break;
+            case DIVEQ: printf("DIVEQ\n"); break;
+            case MODEQ: printf("MODEQ\n"); break;
+            case SLEQ: printf("SLEQ\n"); break;
+            case SREQ: printf("SREQ\n"); break;
+            case ANDEQ: printf("ANDEQ\n"); break;
+            case XOREQ: printf("XOREQ\n"); break;
+            case OREQ: printf("OREQ\n"); break;
+
+            case POINT: printf("POINT\n"); break;
+            case PLUSPLUS: printf("PLUSPLUS\n"); break; 
+            case MINMIN: printf("MINMIN\n"); break;
+            case SL: printf("SL\n"); break;
+            case SR: printf("SR\n"); break;
+            case LTEQ: printf("LTEQ\n"); break;
+            case GTEQ: printf("GTEQ\n"); break;
+            case EQEQ: printf("EQEQ\n"); break;
+            case NOTEQ: printf("NOTEQ\n"); break;
+            case ANDAND: printf("ANDAND\n"); break;
+            case OROR: printf("OROR\n"); break;
+
+            case ELLIPSIS: printf("ELLIPSIS\n"); break;
+            case LTMOD: printf("LTMOD\n"); break;
+            case GTMOD: printf("GTMOD\n"); break;
+            case LTCOL: printf("LTCOL\n"); break;
+            case COLGT: printf("COLGT\n"); break;
+            case MODCOL: printf("MODCOL\n"); break;
+            case MCMC: printf("MCMC\n"); break;
+
+            case '!': printf("OP: !\n"); break;
+            case '%': printf("OP: %\n"); break;
+            case '^': printf("OP: ^\n"); break;
+            case '&': printf("OP: &\n"); break;
+            case '*': printf("OP: *\n"); break;
+            case '-': printf("OP: -\n"); break;
+            case '+': printf("OP: +\n"); break;
+            case '=': printf("OP: =\n"); break;
+            case '~': printf("OP: ~\n"); break;
+            case '|': printf("OP: |\n"); break;
+            case '.': printf("OP: .\n"); break;
+            case '<': printf("OP: <\n"); break;
+            case '>': printf("OP: >\n"); break;
+            case '/': printf("OP: /\n"); break;
+            case '?': printf("OP: ?\n"); break;
+
+            case '(': printf("OP: (\n"); break;
+            case ')': printf("OP: )\n"); break;
+            case '[': printf("OP: [\n"); break;
+            case ']': printf("OP: ]\n"); break;
+            case '{': printf("OP: {\n"); break;
+            case '}': printf("OP: }\n"); break;
+            case ',': printf("OP: ,\n"); break;
+            case ';': printf("OP: ;\n"); break;
+            case ':': printf("OP: :\n"); break;
         }
     }
     printf("EOF\n");
 }
+
