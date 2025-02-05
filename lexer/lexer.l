@@ -59,7 +59,7 @@ HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 
 %%
 [ \t\v\f\r]+    /* do nothing for whitespace */
-[\n]        {line_num++;}
+[\n]        { line_num++; }
 
 ^#   { BEGIN(PREPROC); }
 <PREPROC>{
@@ -363,7 +363,6 @@ int main() {
         printf("%d\t", line_num);
 
         switch(t) {
-            //case HEX: printf("HEX: val = %d\n", yylval.integer); break;
             case NUMBER: 
                 switch(yylval.number.type) {
                     case INT_T: 
