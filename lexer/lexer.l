@@ -2,7 +2,7 @@
 %{
 
 #include "tokens.h"
-#include "stdlib.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -53,19 +53,27 @@ void reset_buf() {
 %x FLOAT_SUFFIX
 %x STRING
 %x CHAR
+%x PREPROC
 
-letter  [A-Za-z]
-digit   [0-9]
-hex     0[Xx][0-9A-Fa-f]+
+LETTER      [A-Za-z]
+DIGITS      [0-9]+
+HEX_DIGIT   [0-9A-Fa-f]
+HEX         0[Xx]{HEX_DIGIT}+
+FRACTIONAL  ({DIGITS}"."{DIGITS}?|\.{DIGITS})
+DEC_FLOAT   (({DIGITS}(\.{DIGITS}*)?)|{FRACTIONAL})([eE][+-]?{DIGITS})?
+HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 
 %%
 [ \t\v\f\r]+    /* do nothing for whitespace */
 
-^#\s*(\d+)\s+\"([^\"]+)\".*\n {
-    line_num = atoi(yytext + 1); // Skip '#' to parse line number
-    char *fn_start = strchr(yytext, '"') + 1;
-    char *fn_end = strchr(fn_start, '"');
-    file_name = strndup(fn_start, fn_end - fn_start);
+
+^#   {BEGIN(PREPROC);}
+<PREPROC>{
+	\"([^"\\]|\\.)*\"	{
+        file_name = strdup(yytext);
+    }
+	\n	{BEGIN(INITIAL);}
+	.   {}
 }
 
 auto        {return AUTO;}
@@ -104,8 +112,8 @@ while       {return WHILE;}
 
 [\n]        {line_num++;}
 
-[1-9]{digit}*|0 {
-    yylval.number._int = atoi(yytext); 
+[1-9][0-9]*|0 {
+    yylval.number._int = atoll(yytext); 
     BEGIN(INT_SUFFIX);
 }
 
@@ -174,17 +182,23 @@ while       {return WHILE;}
     }
 }
 
-{digit}+(\.{digit}+)([Ee][+-]?{digit}+)? {
+{DEC_FLOAT} {
+    yylval.number._double = strtod(yytext, NULL);
+    yylval.number.type = DOUBLE_T;
+    yylval.number.sign = SIGNED;
     BEGIN(FLOAT_SUFFIX);
 }
 
-0[xX]{hex}+(\.{hex}+)?([pP][+-]?{digit}+)? {
+{HEX_FLOAT} {
+    yylval.number._double = strtod(yytext, NULL);
+    yylval.number.type = DOUBLE_T;
+    yylval.number.sign = SIGNED;
     BEGIN(FLOAT_SUFFIX);
 }
 
 <FLOAT_SUFFIX>{
     [fF] {
-        yylval.number._float = strtof(yytext, NULL); 
+        yylval.number._float = (float) yylval.number._double; 
         yylval.number.type = FLOAT_T;
         yylval.number.sign = UNSIGNED;
         BEGIN(INITIAL);
@@ -200,22 +214,15 @@ while       {return WHILE;}
     }
     [^uUlL\n] {
         unput(yytext[0]);
-        yylval.number.type = DOUBLE_T;
-        yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
     \n {
         line_num++;
-        yylval.number._double = strtof(yytext, NULL); 
-        yylval.number.type = DOUBLE_T;
-        yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 }
-
-
 
 L?\"  {init_buf(); yylval.string.type = STRING_T; BEGIN(STRING);}
 L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
@@ -381,8 +388,8 @@ int main() {
             case NUMBER: 
                 switch(yylval.number.type) {
                     case INT_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED INT: val = %lld\n", yylval.number._int); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED INT: val = %llu\n", yylval.number._int); 
+                        if(yylval.number.sign == SIGNED) printf("SIGNED INT: %lld\n", yylval.number._int); 
+                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED INT: %llu\n", yylval.number._int); 
                         break;
                     case FLOAT_T: 
                         if(yylval.number.sign == SIGNED) printf("SIGNED FLOAT: %f\n", yylval.number._float); 
