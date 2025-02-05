@@ -60,7 +60,7 @@ DIGITS      [0-9]+
 HEX_DIGIT   [0-9A-Fa-f]
 HEX         0[Xx]{HEX_DIGIT}+
 FRACTIONAL  ({DIGITS}"."{DIGITS}?|\.{DIGITS})
-DEC_FLOAT   (({DIGITS}(\.{DIGITS}*)?)|{FRACTIONAL})([eE][+-]?{DIGITS})?
+DEC_FLOAT   (({DIGITS}"."{DIGITS}?|\.{DIGITS}|{DIGITS}([eE][+-]?{DIGITS}))+)
 HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 
 %%
@@ -70,7 +70,8 @@ HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 ^#   {BEGIN(PREPROC);}
 <PREPROC>{
 	\"([^"\\]|\\.)*\"	{
-        file_name = strdup(yytext);
+        yytext[strlen(yytext)-1] = '\0';
+        file_name = strdup(yytext+1);
     }
 	\n	{BEGIN(INITIAL);}
 	.   {}
@@ -166,15 +167,8 @@ while       {return WHILE;}
         BEGIN(INITIAL);
         return NUMBER;
     }
-    [^uUlL\n] {
+    [^uUlL] {
         unput(yytext[0]);
-        yylval.number.type = INT_T;
-        yylval.number.sign = SIGNED;
-        BEGIN(INITIAL);
-        return NUMBER;
-    }
-    \n {
-        line_num++;
         yylval.number.type = INT_T;
         yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
@@ -200,25 +194,20 @@ while       {return WHILE;}
     [fF] {
         yylval.number._float = (float) yylval.number._double; 
         yylval.number.type = FLOAT_T;
-        yylval.number.sign = UNSIGNED;
+        yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
 
     [lL] {
-        yylval.number._double = strtold(yytext, NULL); 
+        yylval.number._double = (long double) yylval.number._double; 
         yylval.number.type = LONGDOUBLE_T;
-        yylval.number.sign = UNSIGNED;
+        yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
-    [^uUlL\n] {
+    [^uUlL] {
         unput(yytext[0]);
-        BEGIN(INITIAL);
-        return NUMBER;
-    }
-    \n {
-        line_num++;
         BEGIN(INITIAL);
         return NUMBER;
     }
