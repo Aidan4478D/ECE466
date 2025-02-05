@@ -59,7 +59,7 @@ HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 
 %%
 [ \t\v\f\r]+    /* do nothing for whitespace */
-
+[\n]        {line_num++;}
 
 ^#   { BEGIN(PREPROC); }
 <PREPROC>{
@@ -106,7 +106,6 @@ void        {return VOID;}
 volatile    {return VOLATILE;}
 while       {return WHILE;}
 
-[\n]        {line_num++;}
 
 [1-9][0-9]*|0 {
     yylval.number._int = atoll(yytext); 
@@ -350,7 +349,7 @@ void print_escaped_char(char c) {
 
         default:
             if (isprint((unsigned char)c)) putchar(c);
-            else printf("\\%0.3o", (unsigned char)c);
+            else printf("\\%03o", (unsigned char)c);
     }
 }
 
@@ -368,35 +367,34 @@ int main() {
             case NUMBER: 
                 switch(yylval.number.type) {
                     case INT_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED INT: %lld\n", yylval.number._int); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED INT: %llu\n", yylval.number._int); 
+                        if(yylval.number.sign == SIGNED) printf("INT\t %lld \tSIGNED\n", yylval.number._int); 
+                        if(yylval.number.sign == UNSIGNED) printf("INT\t %llu \tUNSIGNED\n", yylval.number._int); 
                         break;
                     case FLOAT_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED FLOAT: %f\n", yylval.number._float); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED FLOAT: %f\n", yylval.number._float); 
+                        if(yylval.number.sign == SIGNED) printf("FLOAT\t%f \tSIGNED\n", yylval.number._float); 
                         break;
                     case DOUBLE_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED DOUBLE: %Lf\n", yylval.number._double); 
+                        if(yylval.number.sign == SIGNED) printf("DOUBLE\t%Lf \tSIGNED\n", yylval.number._double); 
                         break;
                     case LONGDOUBLE_T:
-                        if(yylval.number.sign == SIGNED) printf("SIGNED LONG DOUBLE: %Lf\n", yylval.number._double); 
+                        if(yylval.number.sign == SIGNED) printf("LONG DOUBLE\t%Lf \tSIGNED\n", yylval.number._double); 
                         break;
                     case LONG_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED LONG: %lld\n", yylval.number._int); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONG: %llu\n", yylval.number._int); 
+                        if(yylval.number.sign == SIGNED) printf("LONG\t%lld \tSIGNED\n", yylval.number._int); 
+                        if(yylval.number.sign == UNSIGNED) printf("LONGt\t%llu \tUNSIGNED\n", yylval.number._int); 
                         break;
                     case LONGLONG_T: 
-                        if(yylval.number.sign == SIGNED) printf("SIGNED LONGLONG: %lld\n", yylval.number._int); 
-                        if(yylval.number.sign == UNSIGNED) printf("UNSIGNED LONGLONG: %llu\n", yylval.number._int); 
+                        if(yylval.number.sign == SIGNED) printf("LONG LONG\t%lld \tSIGNED\n", yylval.number._int); 
+                        if(yylval.number.sign == UNSIGNED) printf("LONG LONG\t%llu \tUNSIGNED\n", yylval.number._int); 
                         break;
                 }
                 break;
 
             case STRING: 
                 switch(yylval.string.type) {
-                    case CHAR_T: printf("CHAR: "); print_escaped_char(yylval.string.char_literal); printf("\n"); break;
+                    case CHAR_T: printf("CHAR \t"); print_escaped_char(yylval.string.char_literal); printf("\n"); break;
                     case STRING_T: 
-                        printf("STRING: "); 
+                        printf("STRING \t"); 
                         for(char *p = yylval.string.string_literal; *p; p++) {
                             print_escaped_char(*p);
                         }
@@ -405,7 +403,7 @@ int main() {
                 }
                 break;
 
-            case IDENT: printf("IDENTIFIER: %s\n", yylval.string.string_literal); break;
+            case IDENT: printf("IDENT \t%s\n", yylval.string.string_literal); break;
 
             case AUTO: printf("AUTO\n"); break;
             case BREAK: printf("BREAK\n"); break;
