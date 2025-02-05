@@ -42,11 +42,6 @@ void reset_buf() {
     buf_size = 0;
     buf_len = 0;
 }
-
-// TO DO:
-// - make \0 work for chars.c
-// - fix line numbers
-// - add error message to hex overflow
 %}
 
 %x INT_SUFFIX
@@ -59,7 +54,6 @@ LETTER      [A-Za-z]
 DIGITS      [0-9]+
 HEX_DIGIT   [0-9A-Fa-f]
 HEX         0[Xx]{HEX_DIGIT}+
-FRACTIONAL  ({DIGITS}"."{DIGITS}?|\.{DIGITS})
 DEC_FLOAT   (({DIGITS}"."{DIGITS}?|\.{DIGITS}|{DIGITS}([eE][+-]?{DIGITS}))+)
 HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 
@@ -67,11 +61,12 @@ HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 [ \t\v\f\r]+    /* do nothing for whitespace */
 
 
-^#   {BEGIN(PREPROC);}
+^#   { BEGIN(PREPROC); }
 <PREPROC>{
 	\"([^"\\]|\\.)*\"	{
         yytext[strlen(yytext)-1] = '\0';
         file_name = strdup(yytext+1);
+        line_num = 1;
     }
 	\n	{BEGIN(INITIAL);}
 	.   {}
@@ -139,28 +134,24 @@ while       {return WHILE;}
         BEGIN(INITIAL);
         return NUMBER;
     }
-
     [lL] {
         yylval.number.type = LONG_T;
         yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
-
     [lL][lL] {
         yylval.number.type = LONGLONG_T;
         yylval.number.sign = SIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
-
     [uU][lL]|[lL][uU] {
         yylval.number.type = LONG_T;
         yylval.number.sign = UNSIGNED;
         BEGIN(INITIAL);
         return NUMBER;
     }
-
     [uU][lL][lL]|[lL][lL][uU] {
         yylval.number.type = LONGLONG_T;
         yylval.number.sign = UNSIGNED;
@@ -198,7 +189,6 @@ while       {return WHILE;}
         BEGIN(INITIAL);
         return NUMBER;
     }
-
     [lL] {
         yylval.number._double = (long double) yylval.number._double; 
         yylval.number.type = LONGDOUBLE_T;
@@ -239,7 +229,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
         }
     }
     \\\\    { append_buf('\\'); }
-    \\0     { append_buf('\\'); append_buf('0'); }
+    \\0     { append_buf('\\'); append_buf('0'); } /* is this cheating */
     \\n     { append_buf('\n'); }
     \\t     { append_buf('\t'); }
     \\b     { append_buf('\b'); }
@@ -255,15 +245,14 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 
     \\[0-7]{1,3} {
         int n = (int) strtoll(yytext + 1, NULL, 8);
+        if(n > 255) fprintf(stderr, "octal escape sequence out of range\n"); 
         n = (n > 255 ? 255 : n);
-        //fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
-        append_buf((char) n);
+        append_buf((char) (n > 255 ? 255 : n));
     }
     \\[Xx][0-9A-Fa-f]+ {
         int n = (int) strtoll(yytext + 2, NULL, 16);
-        n = (n > 255 ? 255 : n);
-        //fprintf(stderr, "adding value %d = %c to buf\n", n, (char) n);
-        append_buf((char) n);
+        if(n > 255) fprintf(stderr, "hex escape sequence out of range\n"); 
+        append_buf((char) (n > 255 ? 255 : n));
     }
 
     \n { fprintf(stderr, "String not terminated on line: %d\n", line_num); exit(-1); }
@@ -346,8 +335,8 @@ else
 
 void print_escaped_char(char c) {
     switch (c) {
-        case '\\': printf("\\\\"); break;
-        case '\0': printf("got here! \\0"); break;
+        case '\0': printf("\\0"); break;
+        case '\\': printf("\\"); break;
         case '\n': printf("\\n"); break;
         case '\t': printf("\\t"); break;
         case '\b': printf("\\b"); break;
@@ -508,8 +497,9 @@ int main() {
             case ',': printf(",\n"); break;
             case ';': printf(";\n"); break;
             case ':': printf(":\n"); break;
+
+            case TOKEOF: printf("EOF\n"); break;
         }
     }
-    printf("EOF\n");
 }
 
