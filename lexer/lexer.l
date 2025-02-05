@@ -44,9 +44,9 @@ void reset_buf() {
 }
 
 // TO DO:
-// - correct filename
-// - get floating point outputs
-// - scientific notation
+// - make \0 work for chars.c
+// - fix line numbers
+// - add error message to hex overflow
 %}
 
 %x INT_SUFFIX
@@ -238,7 +238,8 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
             return STRING;
         }
     }
-    \\      { append_buf('\\'); }
+    \\\\    { append_buf('\\'); }
+    \\0     { append_buf('\\'); append_buf('0'); }
     \\n     { append_buf('\n'); }
     \\t     { append_buf('\t'); }
     \\b     { append_buf('\b'); }
@@ -345,7 +346,8 @@ else
 
 void print_escaped_char(char c) {
     switch (c) {
-        case '\\': printf("\\\\"); 
+        case '\\': printf("\\\\"); break;
+        case '\0': printf("got here! \\0"); break;
         case '\n': printf("\\n"); break;
         case '\t': printf("\\t"); break;
         case '\b': printf("\\b"); break;
@@ -353,13 +355,13 @@ void print_escaped_char(char c) {
         case '\f': printf("\\f"); break;
         case '\v': printf("\\v"); break;
         case '\a': printf("\\a"); break;
-        case '\?': printf("\\?"); break;
+        case '\?': printf("?"); break;
         case '\'': printf("\\\'"); break;
         case '\"': printf("\\\""); break;
 
         default:
             if (isprint((unsigned char)c)) putchar(c);
-            else printf("\\%03o", (unsigned char)c);
+            else printf("\\%0.3o", (unsigned char)c);
     }
 }
 
