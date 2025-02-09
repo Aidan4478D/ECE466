@@ -258,7 +258,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
     . { append_buf(yytext[0]); }
 }
 
-[_A-Za-z]+[_A-Za-z0-9]*     {yylval.ident = strdup(yytext); return IDENT;}
+[_A-Za-z]+[_A-Za-z0-9]*     {yylval.string.string_literal = strdup(yytext); return IDENT;}
 
 \+=     { return PLUSEQ; }
 -=      { return MINUSEQ; }

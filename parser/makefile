@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99
+CFLAGS = -Wall
 
 all: parser
 
@@ -13,16 +13,16 @@ lex.yy.c: lexer.l parser.tab.h
 	flex lexer.l
 
 parser.tab.o: parser.tab.c ast.h
-	$(CC) $(CFLAGS) -c parser.tab.c
+	$(CC) $(CFLAGS) -c parser.tab.c -ll -ly
 
-lex.yy.o: lex.yy.c
+lex.yy.o: lex.yy.c parser.tab.h
 	$(CC) $(CFLAGS) -c lex.yy.c
 
 ast.o: ast.c ast.h
 	$(CC) $(CFLAGS) -c ast.c
 
 clean:
-	rm -f parser parser.tab.c parser.tab.h lex.yy.c *.o
+	rm -f p parser.tab.c parser.tab.h lex.yy.c *.o
 
 .PHONY: all clean
 

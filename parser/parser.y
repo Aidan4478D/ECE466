@@ -3,7 +3,7 @@
 #include "ast.h"
 
 void yyerror(char *s);
-int yylex(void);
+int yylex();
 %}
 
 %code requires {
@@ -13,11 +13,10 @@ int yylex(void);
 %union { 
     NUMTYPE number;
     STRTYPE string;
-    char* ident;
     ast_node_t* ast_node;
 }
 
-%token<ident> IDENT 
+%token<string> IDENT 
 %token TOKEOF STRING PLUSEQ MINUSEQ MULTEQ MODEQ DIVEQ SLEQ SREQ ANDEQ XOREQ OREQ
 %token POINT PLUSPLUS MINMIN SL SR LTEQ GTEQ EQEQ NOTEQ ANDAND OROR
 %token ELLIPSIS AUTO BREAK CASE CHAR CONST CONTINUE DEFAULT DO ELSE
@@ -32,8 +31,8 @@ int yylex(void);
 %%
 
 primary_expression  : IDENT { 
-    fprintf(stderr, "ident: %s\n", $1); 
-    $$ = new_ident($1); 
+    fprintf(stderr, "ident: %s\n", $1.string_literal); 
+    $$ = new_ident($1.string_literal); 
 }
 ;
 %%
