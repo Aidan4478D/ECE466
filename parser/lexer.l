@@ -1,6 +1,11 @@
 %option noyywrap
 %{
 
+/* 
+Things to fix:
+    - The \0
+*/
+
 #include "parser.tab.h"
 #include "ast.h"
 
@@ -214,6 +219,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 
             //fprintf(stderr, "buf is %s.\n", yylval.string.string_literal); 
             reset_buf();
+            fprintf(stderr, "got a string in lexer!\n"); 
             BEGIN(INITIAL);
             return STRING;
         }
@@ -312,7 +318,7 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
 :   { return ':'; }
 
 
-<<EOF>>     { return 0; }
+<<EOF>>     { return YYEOF; }
 
 .   {fprintf(stderr, "Error: unknown token %s\n", yytext);}
 

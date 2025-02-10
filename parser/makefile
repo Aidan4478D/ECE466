@@ -15,7 +15,7 @@ lex.yy.c: lexer.l parser.tab.h
 parser.tab.o: parser.tab.c ast.h
 	$(CC) $(CFLAGS) -c parser.tab.c -ll -ly
 
-lex.yy.o: lex.yy.c parser.tab.h
+lex.yy.o: lex.yy.c parser.tab.h ast.h
 	$(CC) $(CFLAGS) -c lex.yy.c
 
 ast.o: ast.c ast.h

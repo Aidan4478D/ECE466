@@ -44,7 +44,8 @@ typedef struct {
 
 typedef enum node_type {
     IDENT_N, //primary
-    NUM_N,
+    STRING_N, //primary
+    NUMBER_N,
     POSTFIX_N,
     UNARY_N,
     BINOP_N,
@@ -62,6 +63,20 @@ typedef struct ast_node_ident {
     char* name;
 } ast_node_ident_t;
 
+typedef struct ast_node_string {
+    union {
+        char* string_literal;
+        char char_literal;
+    };
+} ast_node_string_t;
+
+typedef struct ast_node_number {
+    union {
+        long long int _int;
+        float _float;
+        long double _double;
+    };
+} ast_node_number_t;
 
 typedef struct ast_node_binop {
     char op; 
@@ -73,13 +88,19 @@ typedef struct ast_node_binop {
 struct ast_node {
     node_type type;
     union {
-        ast_node_binop_t binop; 
         ast_node_ident_t ident; 
+        ast_node_string_t string;
+        ast_node_number_t number;
+        ast_node_binop_t binop; 
     };
 };
 
 ast_node_t* new_ident(char* str); 
+ast_node_t* new_string(STRTYPE str);
+ast_node_t* new_number(NUMTYPE num);
 ast_node_t* new_binop(char op, ast_node_t* left, ast_node_t* right); 
+
+
 
 
 #endif 
