@@ -63,12 +63,14 @@ typedef struct ast_node_ident {
     char* name;
 } ast_node_ident_t;
 
+
 typedef struct ast_node_string {
     union {
         char* string_literal;
         char char_literal;
     };
 } ast_node_string_t;
+
 
 typedef struct ast_node_number {
     union {
@@ -78,11 +80,18 @@ typedef struct ast_node_number {
     };
 } ast_node_number_t;
 
+
 typedef struct ast_node_binop {
     char op; 
     ast_node_t* left;
     ast_node_t* right;
 } ast_node_binop_t;
+
+
+typedef struct ast_node_unary {
+    char* op; 
+    ast_node_t* node;
+} ast_node_unary_t; 
 
 
 struct ast_node {
@@ -92,6 +101,7 @@ struct ast_node {
         ast_node_string_t string;
         ast_node_number_t number;
         ast_node_binop_t binop; 
+        ast_node_unary_t unary;
     };
 };
 
@@ -99,7 +109,7 @@ ast_node_t* new_ident(char* str);
 ast_node_t* new_string(STRTYPE str);
 ast_node_t* new_number(NUMTYPE num);
 ast_node_t* new_binop(char op, ast_node_t* left, ast_node_t* right); 
-
+ast_node_t* new_unary(char* op, ast_node_t* node); 
 
 
 

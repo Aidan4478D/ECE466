@@ -9,6 +9,8 @@ ast_node_t* new_binop(char op, ast_node_t* left, ast_node_t* right) {
     new_node->binop.left = left;
     new_node->binop.right = right;
     new_node->binop.op = op;
+    
+    fprintf(stderr, "binop is: %c\n", op); 
 
     return new_node;
 }
