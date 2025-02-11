@@ -47,12 +47,10 @@ typedef enum node_type {
     STRING_N, //primary
     NUMBER_N,
     POSTFIX_N,
-    UNARY_N,
+    UNOP_N,
     BINOP_N,
-    LOGIC_N,
-    CONDIT_N,
-    ASSIGN_N,
-    SEQUENTIAL_N
+    TERNOP_N,
+    FUNCT_N
 } node_type;
 
 struct ast_node;
@@ -82,16 +80,28 @@ typedef struct ast_node_number {
 
 
 typedef struct ast_node_binop {
-    char op; 
+    int op; 
     ast_node_t* left;
     ast_node_t* right;
 } ast_node_binop_t;
 
 
-typedef struct ast_node_unary {
-    char* op; 
+typedef struct ast_node_unop {
+    int op; 
     ast_node_t* node;
-} ast_node_unary_t; 
+} ast_node_unop_t; 
+
+
+typedef struct ast_node_ternop {
+    ast_node_t* left;
+    ast_node_t* center;
+    ast_node_t* right;
+} ast_node_ternop_t;
+
+typedef struct ast_node_function {
+    ast_node_t* left;
+    ast_node_t* right;
+} ast_node_function_t;
 
 
 struct ast_node {
@@ -101,17 +111,19 @@ struct ast_node {
         ast_node_string_t string;
         ast_node_number_t number;
         ast_node_binop_t binop; 
-        ast_node_unary_t unary;
+        ast_node_unop_t unop;
+        ast_node_ternop_t ternop;
+        ast_node_function_t function;
     };
 };
 
 ast_node_t* new_ident(char* str); 
 ast_node_t* new_string(STRTYPE str);
 ast_node_t* new_number(NUMTYPE num);
-ast_node_t* new_binop(char op, ast_node_t* left, ast_node_t* right); 
-ast_node_t* new_unary(char* op, ast_node_t* node); 
-
-
+ast_node_t* new_binop(int op, ast_node_t* left, ast_node_t* right); 
+ast_node_t* new_unop(int op, ast_node_t* node); 
+ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right); 
+ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
 
 #endif 
 

@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-ast_node_t* new_binop(char op, ast_node_t* left, ast_node_t* right) {
+ast_node_t* new_binop(int op, ast_node_t* left, ast_node_t* right) {
+
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
     new_node->type = BINOP_N;
@@ -10,10 +11,11 @@ ast_node_t* new_binop(char op, ast_node_t* left, ast_node_t* right) {
     new_node->binop.right = right;
     new_node->binop.op = op;
     
-    fprintf(stderr, "binop is: %c\n", op); 
+    fprintf(stderr, "binop is: %d\n", op); 
 
     return new_node;
 }
+
 
 ast_node_t* new_ident(char* str) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
@@ -26,6 +28,7 @@ ast_node_t* new_ident(char* str) {
     return new_node;
 }
 
+
 ast_node_t* new_string(STRTYPE str) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
@@ -37,6 +40,7 @@ ast_node_t* new_string(STRTYPE str) {
 
     return new_node;
 }
+
 
 ast_node_t* new_number(NUMTYPE num) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
@@ -52,3 +56,41 @@ ast_node_t* new_number(NUMTYPE num) {
 }
 
 
+ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right) {
+    ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
+    
+    new_node->type = TERNOP_N;
+    new_node->ternop.left = left;
+    new_node->ternop.center = center;
+    new_node->ternop.right = right;
+
+    fprintf(stderr, "detected a ternary operator\n"); 
+
+    return new_node;
+}
+
+
+ast_node_t* new_unop(int op, ast_node_t* node) {
+    
+    ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
+    
+    new_node->type = UNOP_N;
+    new_node->unop.node = node;
+    new_node->unop.op = op;
+
+    fprintf(stderr, "unop is: %d\n", op); 
+
+    return new_node;
+}
+
+
+ast_node_t* new_function(ast_node_t* left, ast_node_t* right) {
+
+    ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
+
+    new_node->type = FUNCT_N;
+    new_node->function.left = left;
+    new_node->function.right = right;
+
+    return new_node;
+}
