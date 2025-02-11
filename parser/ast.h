@@ -4,7 +4,9 @@
 #define MAX_CHILDREN 4096
 
 // stuff that was in the lexer .h file
+
 typedef struct {
+
     enum num_type {
         INT_T=1024, //set to 1024 to guarentee no collision
         LONG_T,
@@ -13,7 +15,6 @@ typedef struct {
         DOUBLE_T,
         LONGDOUBLE_T
     };
-
     enum num_sign {
         UNSIGNED_T=1030,
         SIGNED_T,
@@ -50,6 +51,7 @@ typedef enum node_type {
     UNOP_N,
     BINOP_N,
     TERNOP_N,
+    ASSIGNOP_N,
     FUNCT_N
 } node_type;
 
@@ -71,12 +73,14 @@ typedef struct ast_node_string {
 
 
 typedef struct ast_node_number {
-    union {
-        long long int _int;
-        float _float;
-        long double _double;
-    };
+    NUMTYPE num_meta; 
 } ast_node_number_t;
+
+
+typedef struct ast_node_unop {
+    int op; 
+    ast_node_t* node;
+} ast_node_unop_t; 
 
 
 typedef struct ast_node_binop {
@@ -86,17 +90,19 @@ typedef struct ast_node_binop {
 } ast_node_binop_t;
 
 
-typedef struct ast_node_unop {
-    int op; 
-    ast_node_t* node;
-} ast_node_unop_t; 
-
-
 typedef struct ast_node_ternop {
     ast_node_t* left;
     ast_node_t* center;
     ast_node_t* right;
 } ast_node_ternop_t;
+
+
+typedef struct ast_node_assignop {
+    int op; 
+    ast_node_t* left;
+    ast_node_t* right;
+} ast_node_assignop_t;
+
 
 typedef struct ast_node_function {
     ast_node_t* left;
@@ -113,6 +119,7 @@ struct ast_node {
         ast_node_binop_t binop; 
         ast_node_unop_t unop;
         ast_node_ternop_t ternop;
+        ast_node_assignop_t assignop;
         ast_node_function_t function;
     };
 };
@@ -123,6 +130,7 @@ ast_node_t* new_number(NUMTYPE num);
 ast_node_t* new_binop(int op, ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_unop(int op, ast_node_t* node); 
 ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right); 
+ast_node_t* new_assignop(int op, ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
 
 #endif 

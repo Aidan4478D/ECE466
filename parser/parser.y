@@ -5,16 +5,18 @@
 void yyerror(char *s);
 int yylex();
 
+ast_node_t* ast_root = NULL;
+void print_ast_tree(ast_node_t *node, int indent);
+
 //TO DO: 
 // - list stuff
 // - set precedences
 // - generally test if it works lol
 %}
 
-%code requires { // would not import without this for some reason (ChatGPT came up with this guy)
+%code requires {
   #include "ast.h"
 }
-
 %union { 
     NUMTYPE number;
     STRTYPE string;
@@ -22,6 +24,8 @@ int yylex();
 }
 
 %token<string> IDENT STRING
+%token<number> NUMBER
+
 %token PLUSEQ MINUSEQ MULTEQ MODEQ DIVEQ SLEQ SREQ ANDEQ XOREQ OREQ
 %token POINT PLUSPLUS MINMIN SL SR LTEQ GTEQ EQEQ NOTEQ ANDAND OROR
 %token ELLIPSIS AUTO BREAK CASE CHAR CONST CONTINUE DEFAULT DO ELSE
@@ -29,7 +33,6 @@ int yylex();
 %token SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID VOLATILE WHILE
 %token INT FLOAT DOUBLE
 
-%token<number> NUMBER
 
 %type<ast_node> primary_expression postfix_expression
 
@@ -69,20 +72,38 @@ int yylex();
 %type<ast_node> expression
 
 
+%left ','
+%left '=' PLUSEQ MINUSEQ MULTEQ DIVEQ MODEQ SLEQ SREQ ANDEQ XOREQ OREQ
+%left '?' ':'
+%left OROR
+%left ANDAND
+%left '|'
+%left '^' 
+%left '&' 
+%left EQEQ NOTEQ
+%left '<' '>' LTEQ GTEQ
+%left SL SR
+%left '+' '-'
+%left '*' '/' '%'
+%right SIZEOF '~' '!'
+%left POINT PLUSPLUS MINMIN '(' ')' '[' ']'
+
+
 %start parser
 
 %%
 
-parser  : expression
-        | parser expression  { fprintf(stderr, "parsing an expression!\n"); }
+parser  : statement
+        | parser statement
         ;
+
+statement : expression ';' { ast_root = $1; print_ast_tree(ast_root, 0); }
 
 primary_expression  : IDENT { $$ = new_ident($1.string_literal); }
                     | NUMBER { $$ = new_number($1); }
                     | STRING { $$ = new_string($1); }
                     | '(' expression ')' { $$ = $2; } /* can be any expression supposedly */
                     ;
-
 
 
 postfix_expression  : primary_expression
@@ -243,17 +264,17 @@ conditional_expression : logical_or_expression  { $$ = $1; }
 
 
 assignment_expression : conditional_expression { $$ = $1; }
-                      | unary_expression '=' assignment_expression          { $$ = new_binop('=', $1, $3); }
-                      | unary_expression PLUSEQ assignment_expression       { $$ = new_binop(PLUSEQ, $1, $3); }
-                      | unary_expression MINUSEQ assignment_expression      { $$ = new_binop(MINUSEQ, $1, $3); }
-                      | unary_expression MULTEQ assignment_expression       { $$ = new_binop(MULTEQ, $1, $3); }
-                      | unary_expression DIVEQ assignment_expression        { $$ = new_binop(DIVEQ, $1, $3); }
-                      | unary_expression MODEQ assignment_expression        { $$ = new_binop(MODEQ, $1, $3); }
-                      | unary_expression SLEQ assignment_expression         { $$ = new_binop(SLEQ, $1, $3); }
-                      | unary_expression SREQ assignment_expression         { $$ = new_binop(SREQ, $1, $3); }
-                      | unary_expression ANDEQ assignment_expression        { $$ = new_binop(ANDEQ, $1, $3); }
-                      | unary_expression XOREQ assignment_expression        { $$ = new_binop(XOREQ, $1, $3); }
-                      | unary_expression OREQ assignment_expression         { $$ = new_binop(OREQ, $1, $3); }
+                      | unary_expression '=' assignment_expression          { $$ = new_assignop('=', $1, $3); }
+                      | unary_expression PLUSEQ assignment_expression       { $$ = new_assignop(PLUSEQ, $1, $3); }
+                      | unary_expression MINUSEQ assignment_expression      { $$ = new_assignop(MINUSEQ, $1, $3); }
+                      | unary_expression MULTEQ assignment_expression       { $$ = new_assignop(MULTEQ, $1, $3); }
+                      | unary_expression DIVEQ assignment_expression        { $$ = new_assignop(DIVEQ, $1, $3); }
+                      | unary_expression MODEQ assignment_expression        { $$ = new_assignop(MODEQ, $1, $3); }
+                      | unary_expression SLEQ assignment_expression         { $$ = new_assignop(SLEQ, $1, $3); }
+                      | unary_expression SREQ assignment_expression         { $$ = new_assignop(SREQ, $1, $3); }
+                      | unary_expression ANDEQ assignment_expression        { $$ = new_assignop(ANDEQ, $1, $3); }
+                      | unary_expression XOREQ assignment_expression        { $$ = new_assignop(XOREQ, $1, $3); }
+                      | unary_expression OREQ assignment_expression         { $$ = new_assignop(OREQ, $1, $3); }
                       ; 
 
 
@@ -265,9 +286,138 @@ expression : comma_expression { $$ = $1; }
            ;
 
 %%
+const char* get_operator_string(int op) {
+    switch(op) {
+        case '=':      return "=";  // for binary nodes we handle '=' specially (see below)
+        case '+':      return "+";
+        case '-':      return "-";
+        case '*':      return "*";
+        case '/':      return "/";
+        case '%':      return "%";
+        case '<':      return "<";
+        case '>':      return ">";
+        case EQEQ:     return "==";
+        case NOTEQ:    return "!=";
+        case LTEQ:     return "<=";
+        case GTEQ:     return ">=";
+        case PLUSEQ:   return "+=";
+        case MINUSEQ:  return "-=";
+        case MULTEQ:   return "*=";
+        case DIVEQ:    return "/=";
+        case MODEQ:    return "%=";
+        case SLEQ:     return "<<=";
+        case SREQ:     return ">>=";
+        case ANDEQ:    return "&=";
+        case XOREQ:    return "^=";
+        case OREQ:     return "|=";
+        case ANDAND:   return "&&";
+        case OROR:     return "||";
+        case '&':      return "&";
+        case '|':      return "|";
+        case '^':      return "^";
+        case '!':      return "!";
+        case '~':      return "~";
+        case SL:       return "<<";
+        case SR:       return ">>";
+        case '?':      return "?";
+        case ':':      return ":";
+        case PLUSPLUS: return "++";
+        case MINMIN:   return "--";
+        default: {
+            /* For any other operator (or if op is a simple char) */
+            static char buf[3];
+            snprintf(buf, sizeof(buf), "%c", op);
+            return buf;
+        }
+    }
+}
+
+void print_ast_tree(ast_node_t *node, int indent) {
+    if (!node)
+        return;
+    
+    for (int i = 0; i < indent; i++) {
+        printf("\t");
+    }
+
+    switch(node->type) {
+        case IDENT_N:
+            printf("IDENT %s\n", node->ident.name);
+            break;
+        case STRING_N:
+            printf("STRING %s\n", node->string.string_literal);
+            break;
+        case NUMBER_N:
+            switch (node->number.num_meta.type) {
+                case INT_T:     
+                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=int)\t%lld\tSIGNED\n", node->number.num_meta._int);
+                    if(node->number.num_meta.sign == UNSIGNED_T) printf("NUM (numtype=int)\t%llu\tUNSIGNED\n", node->number.num_meta._int);
+                    break;
+                case LONG_T:
+                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=long)\t%lld\tSIGNED\n", node->number.num_meta._int);
+                    if(node->number.num_meta.sign == UNSIGNED_T) printf("NUM (numtype=long)\t%llu\tUNSIGNED\n", node->number.num_meta._int);
+                    break;
+                case LONGLONG_T:
+                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=longlong)\t%lld\tSIGNED\n", node->number.num_meta._int);
+                    if(node->number.num_meta.sign == UNSIGNED_T) printf("NUM (numtype=longlong)\t%llu\tUNSIGNED\n", node->number.num_meta._int);
+                    break;
+                case FLOAT_T:
+                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=float)\t%f\tSIGNED\n", node->number.num_meta._float);
+                    break;
+                case DOUBLE_T:
+                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=double)\t%Lf\tSIGNED\n", node->number.num_meta._double);
+                    break;
+                case LONGDOUBLE_T:
+                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=longdouble)\t%Lf\tSIGNED\n", node->number.num_meta._double);
+                    break;
+                default:
+                    printf("UNKNOWN NUM TYPE\n");
+                    break;
+            }
+            break;
+        case UNOP_N: {
+            const char *op_str = get_operator_string(node->unop.op);
+            printf("UNARY OP (%s)\n", op_str);
+            print_ast_tree(node->unop.node, indent + 1);
+            break;
+        }
+        case BINOP_N: {
+            const char *op_str = get_operator_string(node->binop.op);
+            printf("BINARY OP (%s)\n", op_str);
+
+            print_ast_tree(node->binop.left, indent + 1);
+            print_ast_tree(node->binop.right, indent + 1);
+            break;
+        }
+        case TERNOP_N:
+            printf("TERNARY OP\n");
+            print_ast_tree(node->ternop.left, indent + 1);
+            print_ast_tree(node->ternop.center, indent + 1);
+            print_ast_tree(node->ternop.right, indent + 1);
+            break;
+        case ASSIGNOP_N: {
+            const char *op_str = get_operator_string(node->assignop.op);
+            printf("ASSIGNMENT OP (%s)\n", op_str);
+
+            print_ast_tree(node->assignop.left, indent + 1);
+            print_ast_tree(node->assignop.right, indent + 1);
+            break;
+        }
+        case FUNCT_N:
+            printf("FUNCTION CALL\n");
+            print_ast_tree(node->function.left, indent + 1);
+            if (node->function.right) {
+                print_ast_tree(node->function.right, indent + 1);
+            }
+            break;
+        default:
+            printf("UNKNOWN NODE TYPE\n");
+            break;
+    }
+}
 
 int main(void) {
-    yyparse();
+    yyparse(); 
     return 0;
 }
 
