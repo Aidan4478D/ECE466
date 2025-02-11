@@ -33,7 +33,8 @@ ast_node_t* new_number(NUMTYPE num) {
 
     new_node->type = NUMBER_N;
     new_node->number.num_meta = num;
-    /*fprintf(stderr, "detected a number\n"); */
+
+    /*fprintf(stderr, "detected a number, %d\n", new_node->number.num_meta.type); */
 
     return new_node;
 }

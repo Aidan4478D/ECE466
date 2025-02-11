@@ -135,38 +135,38 @@ while       {return WHILE;}
 <INT_SUFFIX>{
     [uU] {
         yylval.number.type = INT_T;
-        yylval.number.sign = UNSIGNED;
+        yylval.number.sign = UNSIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
     [lL] {
         yylval.number.type = LONG_T;
-        yylval.number.sign = SIGNED;
+        yylval.number.sign = SIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
     [lL][lL] {
         yylval.number.type = LONGLONG_T;
-        yylval.number.sign = SIGNED;
+        yylval.number.sign = SIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
     [uU][lL]|[lL][uU] {
         yylval.number.type = LONG_T;
-        yylval.number.sign = UNSIGNED;
+        yylval.number.sign = UNSIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
     [uU][lL][lL]|[lL][lL][uU] {
         yylval.number.type = LONGLONG_T;
-        yylval.number.sign = UNSIGNED;
+        yylval.number.sign = UNSIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
     [^uUlL] {
         unput(yytext[0]);
         yylval.number.type = INT_T;
-        yylval.number.sign = SIGNED;
+        yylval.number.sign = SIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
@@ -175,14 +175,14 @@ while       {return WHILE;}
 {DEC_FLOAT} {
     yylval.number._double = strtod(yytext, NULL);
     yylval.number.type = DOUBLE_T;
-    yylval.number.sign = SIGNED;
+    yylval.number.sign = SIGNED_T;
     BEGIN(FLOAT_SUFFIX);
 }
 
 {HEX_FLOAT} {
     yylval.number._double = strtod(yytext, NULL);
     yylval.number.type = DOUBLE_T;
-    yylval.number.sign = SIGNED;
+    yylval.number.sign = SIGNED_T;
     BEGIN(FLOAT_SUFFIX);
 }
 
@@ -190,14 +190,14 @@ while       {return WHILE;}
     [fF] {
         yylval.number._float = (float) yylval.number._double; 
         yylval.number.type = FLOAT_T;
-        yylval.number.sign = SIGNED;
+        yylval.number.sign = SIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }
     [lL] {
         yylval.number._double = (long double) yylval.number._double; 
         yylval.number.type = LONGDOUBLE_T;
-        yylval.number.sign = SIGNED;
+        yylval.number.sign = SIGNED_T;
         BEGIN(INITIAL);
         return NUMBER;
     }

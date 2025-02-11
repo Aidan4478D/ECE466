@@ -15,6 +15,7 @@ typedef struct {
         DOUBLE_T,
         LONGDOUBLE_T
     };
+    
     enum num_sign {
         UNSIGNED_T=1030,
         SIGNED_T,
