@@ -198,10 +198,25 @@ address_expression : '&' cast_expression { $$ = new_unop('&', $2); }
 indirection_expression : '*' cast_expression { $$ = new_unop('*', $2); }
                     ;
 
-preincrement_expression : PLUSPLUS unary_expression {$$ = new_unop(PLUSPLUS, $2); }
+preincrement_expression : PLUSPLUS unary_expression {
+                                                        NUMTYPE* tmp = (NUMTYPE*) malloc(sizeof(NUMTYPE));
+                                                        tmp->type = INT_T;
+                                                        tmp->sign = UNSIGNED_T;
+                                                        tmp->_int = 1;
+
+                                                        $$ = new_genop(BINOP_N, '+', $2, new_number(*tmp)); 
+                                                    }
                         ;
 
-predecrement_expression : MINMIN unary_expression {$$ = new_unop(MINMIN, $2); }
+
+predecrement_expression : MINMIN unary_expression {
+                                                        NUMTYPE* tmp = (NUMTYPE*) malloc(sizeof(NUMTYPE));
+                                                        tmp->type = INT_T;
+                                                        tmp->sign = UNSIGNED_T;
+                                                        tmp->_int = 1;
+
+                                                        $$ = new_genop(BINOP_N, '-', $2, new_number(*tmp));
+                                                  } 
                         ;
 
 
@@ -223,15 +238,15 @@ shift_expression : additive_expression  { $$ = $1; }
                  ;
 
 relational_expression : shift_expression    { $$ = $1; }
-                      | relational_expression '<' shift_expression      { $$ = new_genop(BINOP_N, '<', $1, $3); }
-                      | relational_expression GTEQ shift_expression     { $$ = new_genop(BINOP_N, GTEQ, $1, $3); }
-                      | relational_expression '>' shift_expression      { $$ = new_genop(BINOP_N, '>', $1, $3); }
-                      | relational_expression LTEQ shift_expression     { $$ = new_genop(BINOP_N, LTEQ, $1, $3); }
+                      | relational_expression '<' shift_expression      { $$ = new_genop(COMPOP_N, '<', $1, $3); }
+                      | relational_expression GTEQ shift_expression     { $$ = new_genop(COMPOP_N, GTEQ, $1, $3); }
+                      | relational_expression '>' shift_expression      { $$ = new_genop(COMPOP_N, '>', $1, $3); }
+                      | relational_expression LTEQ shift_expression     { $$ = new_genop(COMPOP_N, LTEQ, $1, $3); }
                       ; 
 
 equality_expression : relational_expression { $$ = $1; }
-                   | equality_expression EQEQ relational_expression     { $$ = new_genop(BINOP_N, EQEQ, $1, $3); }
-                   | equality_expression NOTEQ relational_expression    { $$ = new_genop(BINOP_N, NOTEQ, $1, $3); }
+                   | equality_expression EQEQ relational_expression     { $$ = new_genop(COMPOP_N, EQEQ, $1, $3); }
+                   | equality_expression NOTEQ relational_expression    { $$ = new_genop(COMPOP_N, NOTEQ, $1, $3); }
                    ; 
 
 bitwise_or_expression : bitwise_xor_expression  { $$ = $1; }
@@ -400,6 +415,14 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case ASSIGNOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
             printf("ASSIGNMENT OP (%s)\n", op_str);
+
+            print_ast_tree(node->genop.left, indent + 1);
+            print_ast_tree(node->genop.right, indent + 1);
+            break;
+        }
+        case COMPOP_N: {
+            const char *op_str = get_operator_string(node->genop.op);
+            printf("COMPARISON OP (%s)\n", op_str);
 
             print_ast_tree(node->genop.left, indent + 1);
             print_ast_tree(node->genop.right, indent + 1);
