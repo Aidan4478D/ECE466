@@ -53,6 +53,7 @@ typedef enum node_type {
     BINOP_N,
     TERNOP_N,
     ASSIGNOP_N,
+    COMPOP_N,
     FUNCT_N
 } node_type;
 
@@ -84,25 +85,21 @@ typedef struct ast_node_unop {
 } ast_node_unop_t; 
 
 
-typedef struct ast_node_binop {
-    int op; 
-    ast_node_t* left;
-    ast_node_t* right;
-} ast_node_binop_t;
-
-
 typedef struct ast_node_ternop {
     ast_node_t* left;
     ast_node_t* center;
     ast_node_t* right;
 } ast_node_ternop_t;
 
-
-typedef struct ast_node_assignop {
+// general operator
+// - binary op
+// - assign op
+// - comparison op
+typedef struct ast_node_genop {
     int op; 
     ast_node_t* left;
     ast_node_t* right;
-} ast_node_assignop_t;
+} ast_node_genop_t;
 
 
 typedef struct ast_node_function {
@@ -117,10 +114,9 @@ struct ast_node {
         ast_node_ident_t ident; 
         ast_node_string_t string;
         ast_node_number_t number;
-        ast_node_binop_t binop; 
         ast_node_unop_t unop;
         ast_node_ternop_t ternop;
-        ast_node_assignop_t assignop;
+        ast_node_genop_t genop;
         ast_node_function_t function;
     };
 };
@@ -128,10 +124,9 @@ struct ast_node {
 ast_node_t* new_ident(char* str); 
 ast_node_t* new_string(STRTYPE str);
 ast_node_t* new_number(NUMTYPE num);
-ast_node_t* new_binop(int op, ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_unop(int op, ast_node_t* node); 
 ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right); 
-ast_node_t* new_assignop(int op, ast_node_t* left, ast_node_t* right); 
+ast_node_t* new_genop(node_type type, int op, ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
 
 #endif 

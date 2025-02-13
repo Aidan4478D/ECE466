@@ -6,8 +6,8 @@ Things to fix:
     - The \0
 */
 
-#include "parser.tab.h"
 #include "ast.h"
+#include "y.tab.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,8 +52,8 @@ void reset_buf() {
 
 %x INT_SUFFIX
 %x FLOAT_SUFFIX
-%x STRING
-%x CHAR
+%x STRING_START
+%x CHAR_START
 %x PREPROC
 
 LETTER      [A-Za-z]
@@ -208,18 +208,18 @@ while       {return WHILE;}
     }
 }
 
-L?\"  {init_buf(); yylval.string.type = STRING_T; BEGIN(STRING);}
-L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR);}
+L?\"  {init_buf(); yylval.string.type = STRING_T; BEGIN(STRING_START);}
+L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR_START);}
 
 
-<STRING,CHAR>{
+<STRING_START,CHAR_START>{
     \'|\"  {
         if(yylval.string.type == STRING_T) {
             yylval.string.string_literal = strdup(buf);
 
             //fprintf(stderr, "buf is %s.\n", yylval.string.string_literal); 
+            //fprintf(stderr, "got a string in lexer!\n"); 
             reset_buf();
-            fprintf(stderr, "got a string in lexer!\n"); 
             BEGIN(INITIAL);
             return STRING;
         }

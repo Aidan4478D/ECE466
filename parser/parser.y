@@ -8,22 +8,22 @@ int yylex();
 ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
 
+//int yydebug = 1;
+
 //TO DO: 
 // - list stuff
 // - set precedences
 // - generally test if it works lol
 %}
 
-%code requires {
-  #include "ast.h"
-}
 %union { 
     NUMTYPE number;
     STRTYPE string;
     ast_node_t* ast_node;
 }
 
-%token<string> IDENT STRING
+%token<string> IDENT 
+%token<string> STRING
 %token<number> NUMBER
 
 %token PLUSEQ MINUSEQ MULTEQ MODEQ DIVEQ SLEQ SREQ ANDEQ XOREQ OREQ
@@ -115,7 +115,7 @@ postfix_expression  : primary_expression
                     ;
 
 subscript_expression : postfix_expression '[' expression ']'    {   
-                                                                    ast_node_t* tmp = new_binop('+', $1, $3); 
+                                                                    ast_node_t* tmp = new_genop(BINOP_N, '+', $1, $3); 
                                                                     $$ = new_unop('*', tmp);
                                                                 }
                                                                 /* same thing as A[B] == *((A) + (B)) */
@@ -124,13 +124,13 @@ subscript_expression : postfix_expression '[' expression ']'    {
 
 component_selection_expression : postfix_expression '.' IDENT   {   
                                                                     ast_node_t* tmp = new_ident($3.string_literal); 
-                                                                    $$ = new_binop('.', $1, tmp);
+                                                                    $$ = new_genop(BINOP_N, '.', $1, tmp);
                                                                 }
 
                                | postfix_expression POINT IDENT {   
                                                                     ast_node_t* i = new_ident($3.string_literal); 
                                                                     ast_node_t* u = new_unop('*', $1);
-                                                                    $$ = new_binop('.', u, i); 
+                                                                    $$ = new_genop(BINOP_N, '.', u, i); 
                                                                 }
                                ;
 
@@ -207,53 +207,53 @@ predecrement_expression : MINMIN unary_expression {$$ = new_unop(MINMIN, $2); }
 
 
 multiplicative_expression : cast_expression { $$ = $1; }
-                          | multiplicative_expression '*' cast_expression   { $$ = new_binop('*', $1, $3); }
-                          | multiplicative_expression '/' cast_expression   { $$ = new_binop('/', $1, $3); }
-                          | multiplicative_expression '%' cast_expression   { $$ = new_binop('%', $1, $3); }
+                          | multiplicative_expression '*' cast_expression   { $$ = new_genop(BINOP_N, '*', $1, $3); }
+                          | multiplicative_expression '/' cast_expression   { $$ = new_genop(BINOP_N, '/', $1, $3); }
+                          | multiplicative_expression '%' cast_expression   { $$ = new_genop(BINOP_N, '%', $1, $3); }
                           ;
 
 additive_expression : multiplicative_expression { $$ = $1; }
-                    | additive_expression '+' multiplicative_expression     { $$ = new_binop('+', $1, $3); }
-                    | additive_expression '-' multiplicative_expression     { $$ = new_binop('-', $1, $3); }
+                    | additive_expression '+' multiplicative_expression     { $$ = new_genop(BINOP_N, '+', $1, $3); }
+                    | additive_expression '-' multiplicative_expression     { $$ = new_genop(BINOP_N, '-', $1, $3); }
                     ;
 
 shift_expression : additive_expression  { $$ = $1; }
-                 | shift_expression SL additive_expression  { $$ = new_binop(SL, $1, $3); }
-                 | shift_expression SR additive_expression  { $$ = new_binop(SR, $1, $3); }
+                 | shift_expression SL additive_expression  { $$ = new_genop(BINOP_N, SL, $1, $3); }
+                 | shift_expression SR additive_expression  { $$ = new_genop(BINOP_N, SR, $1, $3); }
                  ;
 
 relational_expression : shift_expression    { $$ = $1; }
-                      | relational_expression '<' shift_expression      { $$ = new_binop('<', $1, $3); }
-                      | relational_expression GTEQ shift_expression     { $$ = new_binop(GTEQ, $1, $3); }
-                      | relational_expression '>' shift_expression      { $$ = new_binop('>', $1, $3); }
-                      | relational_expression LTEQ shift_expression     { $$ = new_binop(LTEQ, $1, $3); }
+                      | relational_expression '<' shift_expression      { $$ = new_genop(BINOP_N, '<', $1, $3); }
+                      | relational_expression GTEQ shift_expression     { $$ = new_genop(BINOP_N, GTEQ, $1, $3); }
+                      | relational_expression '>' shift_expression      { $$ = new_genop(BINOP_N, '>', $1, $3); }
+                      | relational_expression LTEQ shift_expression     { $$ = new_genop(BINOP_N, LTEQ, $1, $3); }
                       ; 
 
 equality_expression : relational_expression { $$ = $1; }
-                   | equality_expression EQEQ relational_expression     { $$ = new_binop(EQEQ, $1, $3); }
-                   | equality_expression NOTEQ relational_expression    { $$ = new_binop(NOTEQ, $1, $3); }
+                   | equality_expression EQEQ relational_expression     { $$ = new_genop(BINOP_N, EQEQ, $1, $3); }
+                   | equality_expression NOTEQ relational_expression    { $$ = new_genop(BINOP_N, NOTEQ, $1, $3); }
                    ; 
 
 bitwise_or_expression : bitwise_xor_expression  { $$ = $1; }
-                      | bitwise_or_expression '|' bitwise_xor_expression    { $$ = new_binop('|', $1, $3); }
+                      | bitwise_or_expression '|' bitwise_xor_expression    { $$ = new_genop(BINOP_N, '|', $1, $3); }
                       ; 
 
 bitwise_xor_expression : bitwise_and_expression { $$ = $1; }
-                       | bitwise_xor_expression '^' bitwise_and_expression  { $$ = new_binop('^', $1, $3); }
+                       | bitwise_xor_expression '^' bitwise_and_expression  { $$ = new_genop(BINOP_N, '^', $1, $3); }
                        ; 
 
 bitwise_and_expression : equality_expression { $$ = $1; }
-                       | bitwise_and_expression '&' equality_expression { $$ = new_binop('&', $1, $3); }
+                       | bitwise_and_expression '&' equality_expression { $$ = new_genop(BINOP_N, '&', $1, $3); }
                        ;
 
 
 
 logical_or_expression : logical_and_expression { $$ = $1; }
-                      | logical_or_expression OROR logical_and_expression { $$ = new_binop(OROR, $1, $3); }
+                      | logical_or_expression OROR logical_and_expression { $$ = new_genop(BINOP_N, OROR, $1, $3); }
                       ;
 
 logical_and_expression : bitwise_or_expression  { $$ = $1; }
-                       | logical_and_expression ANDAND bitwise_or_expression { $$ = new_binop(ANDAND, $1, $3); }
+                       | logical_and_expression ANDAND bitwise_or_expression { $$ = new_genop(BINOP_N, ANDAND, $1, $3); }
                        ; 
 
 
@@ -262,24 +262,23 @@ conditional_expression : logical_or_expression  { $$ = $1; }
                        ;
 
 
-
 assignment_expression : conditional_expression { $$ = $1; }
-                      | unary_expression '=' assignment_expression          { $$ = new_assignop('=', $1, $3); }
-                      | unary_expression PLUSEQ assignment_expression       { $$ = new_assignop(PLUSEQ, $1, $3); }
-                      | unary_expression MINUSEQ assignment_expression      { $$ = new_assignop(MINUSEQ, $1, $3); }
-                      | unary_expression MULTEQ assignment_expression       { $$ = new_assignop(MULTEQ, $1, $3); }
-                      | unary_expression DIVEQ assignment_expression        { $$ = new_assignop(DIVEQ, $1, $3); }
-                      | unary_expression MODEQ assignment_expression        { $$ = new_assignop(MODEQ, $1, $3); }
-                      | unary_expression SLEQ assignment_expression         { $$ = new_assignop(SLEQ, $1, $3); }
-                      | unary_expression SREQ assignment_expression         { $$ = new_assignop(SREQ, $1, $3); }
-                      | unary_expression ANDEQ assignment_expression        { $$ = new_assignop(ANDEQ, $1, $3); }
-                      | unary_expression XOREQ assignment_expression        { $$ = new_assignop(XOREQ, $1, $3); }
-                      | unary_expression OREQ assignment_expression         { $$ = new_assignop(OREQ, $1, $3); }
+                      | unary_expression '=' assignment_expression          { $$ = new_genop(ASSIGNOP_N, '=', $1, $3); }
+                      | unary_expression PLUSEQ assignment_expression       { $$ = new_genop(ASSIGNOP_N, PLUSEQ, $1, $3); }
+                      | unary_expression MINUSEQ assignment_expression      { $$ = new_genop(ASSIGNOP_N, MINUSEQ, $1, $3); }
+                      | unary_expression MULTEQ assignment_expression       { $$ = new_genop(ASSIGNOP_N, MULTEQ, $1, $3); }
+                      | unary_expression DIVEQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, DIVEQ, $1, $3); }
+                      | unary_expression MODEQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, MODEQ, $1, $3); }
+                      | unary_expression SLEQ assignment_expression         { $$ = new_genop(ASSIGNOP_N, SLEQ, $1, $3); }
+                      | unary_expression SREQ assignment_expression         { $$ = new_genop(ASSIGNOP_N, SREQ, $1, $3); }
+                      | unary_expression ANDEQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, ANDEQ, $1, $3); }
+                      | unary_expression XOREQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, XOREQ, $1, $3); }
+                      | unary_expression OREQ assignment_expression         { $$ = new_genop(ASSIGNOP_N, OREQ, $1, $3); }
                       ; 
 
 
 comma_expression : assignment_expression { $$ = $1; }
-                 | comma_expression ',' assignment_expression { $$ = new_binop(',', $1, $3); }
+                 | comma_expression ',' assignment_expression { $$ = new_genop(BINOP_N, ',', $1, $3); }
                  ;
 
 expression : comma_expression { $$ = $1; }
@@ -332,6 +331,7 @@ const char* get_operator_string(int op) {
     }
 }
 
+
 void print_ast_tree(ast_node_t *node, int indent) {
     if (!node)
         return;
@@ -382,25 +382,27 @@ void print_ast_tree(ast_node_t *node, int indent) {
             break;
         }
         case BINOP_N: {
-            const char *op_str = get_operator_string(node->binop.op);
+            const char *op_str = get_operator_string(node->genop.op);
             printf("BINARY OP (%s)\n", op_str);
 
-            print_ast_tree(node->binop.left, indent + 1);
-            print_ast_tree(node->binop.right, indent + 1);
+            print_ast_tree(node->genop.left, indent + 1);
+            print_ast_tree(node->genop.right, indent + 1);
             break;
         }
         case TERNOP_N:
-            printf("TERNARY OP\n");
+            printf("TERNARY OP, IF:\n");
             print_ast_tree(node->ternop.left, indent + 1);
+            printf("THEN:\n");
             print_ast_tree(node->ternop.center, indent + 1);
+            printf("ELSE:\n");
             print_ast_tree(node->ternop.right, indent + 1);
             break;
         case ASSIGNOP_N: {
-            const char *op_str = get_operator_string(node->assignop.op);
+            const char *op_str = get_operator_string(node->genop.op);
             printf("ASSIGNMENT OP (%s)\n", op_str);
 
-            print_ast_tree(node->assignop.left, indent + 1);
-            print_ast_tree(node->assignop.right, indent + 1);
+            print_ast_tree(node->genop.left, indent + 1);
+            print_ast_tree(node->genop.right, indent + 1);
             break;
         }
         case FUNCT_N:
@@ -416,10 +418,12 @@ void print_ast_tree(ast_node_t *node, int indent) {
     }
 }
 
+
 int main(void) {
     yyparse(); 
     return 0;
 }
+
 
 void yyerror(char *s) {
     fprintf(stderr, "syntax error: %s\n", s);

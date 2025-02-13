@@ -53,21 +53,6 @@ ast_node_t* new_unop(int op, ast_node_t* node) {
 }
 
 
-ast_node_t* new_binop(int op, ast_node_t* left, ast_node_t* right) {
-
-    ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
-
-    new_node->type = BINOP_N;
-    new_node->binop.left = left;
-    new_node->binop.right = right;
-    new_node->binop.op = op;
-    
-    /*fprintf(stderr, "binop is: %d\n", op); */
-
-    return new_node;
-}
-
-
 ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
     
@@ -92,13 +77,13 @@ ast_node_t* new_function(ast_node_t* left, ast_node_t* right) {
     return new_node;
 }
 
-ast_node_t* new_assignop(int op, ast_node_t* left, ast_node_t* right) {
+ast_node_t* new_genop(node_type type, int op, ast_node_t* left, ast_node_t* right) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
-    new_node->type = ASSIGNOP_N;
-    new_node->assignop.left = left;
-    new_node->assignop.right = right;
-    new_node->assignop.op = op;
+    new_node->type = type;
+    new_node->genop.left = left;
+    new_node->genop.right = right;
+    new_node->genop.op = op;
     
     /*fprintf(stderr, "detected an assignop\n"); */
     return new_node;
