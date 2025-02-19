@@ -19,9 +19,7 @@ ast_node_t* new_string(STRTYPE str) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
     new_node->type = STRING_N;
-    if(str.type == STRING_T) new_node->string.string_literal = str.string_literal;
-    if(str.type == CHAR_T) new_node->string.char_literal = str.char_literal;
-
+    new_node->string.str_meta = str;
     /*fprintf(stderr, "str lit is: %s\n", new_node->string.string_literal); */
 
     return new_node;
@@ -77,7 +75,7 @@ ast_node_t* new_function(ast_node_t* left, ast_node_t* right) {
     return new_node;
 }
 
-ast_node_t* new_genop(node_type type, int op, ast_node_t* left, ast_node_t* right) {
+ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
     new_node->type = type;
@@ -87,4 +85,42 @@ ast_node_t* new_genop(node_type type, int op, ast_node_t* left, ast_node_t* righ
     
     /*fprintf(stderr, "detected an assignop\n"); */
     return new_node;
+}
+
+ast_node_t* new_arg(ast_node_t* entry) {
+    ast_node_t* node = malloc(sizeof(ast_node_t));
+    if (!node) {
+        perror("malloc");
+        exit(1);
+    }
+    node->type = ARG_N;
+
+    node->list.head = entry;
+    node->list.next = NULL;
+    return node;
+}
+
+ast_node_t* new_list(ast_node_t* head) {
+    ast_node_t* node = malloc(sizeof(ast_node_t));
+    if (!node) {
+        perror("malloc");
+        exit(1);
+    }
+    node->type = LIST_N;
+    node->list.head = head;
+    node->list.next = NULL;
+    return node;
+}
+
+ast_node_t* append_arg(ast_node_t* list, ast_node_t* entry) {
+    if (!list) {
+        return new_list(entry);
+    }
+    ast_node_t* current = list;
+
+    while (current->list.next != NULL) {
+        current = current->list.next;
+    }
+    current->list.next = new_arg(entry);
+    return list;
 }

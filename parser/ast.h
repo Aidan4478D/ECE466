@@ -38,9 +38,9 @@ typedef struct {
     };
 
     enum str_type type;
-
     char* string_literal;
     char char_literal;
+
 } STRTYPE;
 
 
@@ -54,9 +54,14 @@ typedef enum node_type {
     TERNOP_N,
     ASSIGNOP_N,
     COMPOP_N,
-    FUNCT_N
-} node_type;
+    FUNCT_N,
+    LIST_N,
+    ARG_N,
+    LOGOP_N
 
+} NODETYPE;
+
+// new stuff now
 struct ast_node;
 typedef struct ast_node ast_node_t;
 
@@ -67,10 +72,7 @@ typedef struct ast_node_ident {
 
 
 typedef struct ast_node_string {
-    union {
-        char* string_literal;
-        char char_literal;
-    };
+    STRTYPE str_meta;
 } ast_node_string_t;
 
 
@@ -108,8 +110,20 @@ typedef struct ast_node_function {
 } ast_node_function_t;
 
 
+// elements for the list
+typedef struct ast_node_element {
+    ast_node_t* arg;
+} ast_node_element_t;
+
+// List of Arguments
+typedef struct ast_node_list {
+    ast_node_t* head;
+    ast_node_t* next;
+} ast_node_list_t;
+
+
 struct ast_node {
-    node_type type;
+    NODETYPE type;
     union {
         ast_node_ident_t ident; 
         ast_node_string_t string;
@@ -118,6 +132,7 @@ struct ast_node {
         ast_node_ternop_t ternop;
         ast_node_genop_t genop;
         ast_node_function_t function;
+        ast_node_list_t list;
     };
 };
 
@@ -126,8 +141,12 @@ ast_node_t* new_string(STRTYPE str);
 ast_node_t* new_number(NUMTYPE num);
 ast_node_t* new_unop(int op, ast_node_t* node); 
 ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right); 
-ast_node_t* new_genop(node_type type, int op, ast_node_t* left, ast_node_t* right); 
+ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
+ast_node_t* new_arg(ast_node_t* entry);
+ast_node_t* new_list(ast_node_t* head);
+ast_node_t* append_arg(ast_node_t* head, ast_node_t* entry);
+
 
 #endif 
 

@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include "helpers.h"
 #include "ast.h"
 
 void yyerror(char *s);
@@ -9,11 +10,6 @@ ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
 
 //int yydebug = 1;
-
-//TO DO: 
-// - list stuff
-// - set precedences
-// - generally test if it works lol
 %}
 
 %union { 
@@ -118,7 +114,7 @@ subscript_expression : postfix_expression '[' expression ']'    {
                                                                     ast_node_t* tmp = new_genop(BINOP_N, '+', $1, $3); 
                                                                     $$ = new_unop('*', tmp);
                                                                 }
-                                                                /* same thing as A[B] == *((A) + (B)) */
+                                                                /* same thing as A[B] == *(A + B) */
                      ;
 
 
@@ -138,8 +134,8 @@ function_call : postfix_expression '(' expression_list ')' { $$ = new_function($
               | postfix_expression '(' ')'  { $$ = new_function($1, NULL); }
               ;
 
-expression_list : assignment_expression { $$ = $1; }
-                | expression_list ',' assignment_expression { $$ = $1; /* I will eventually do something here maybe make a list*/ }
+expression_list : assignment_expression  { $$ = new_list($1); }
+                | expression_list ',' assignment_expression  { $$ = append_arg($1, $3); }
                 ;
 
 post_increment_expression : postfix_expression PLUSPLUS {$$ = new_unop(PLUSPLUS, $1); }
@@ -172,11 +168,11 @@ sizeof_expression : SIZEOF '(' type_name ')'    { $$ = new_unop(SIZEOF, $3); }
                   ; 
 
 
-type_name : INT     { $$ = INT; }
-          | CHAR    { $$ = CHAR; }
-          | FLOAT   { $$ = FLOAT; }
-          | DOUBLE  { $$ = DOUBLE; }
-          | LONG    { $$ = LONG; }
+type_name : INT     { $$ = INT;  /* I know these are weird because of the types but idk what else to do */   }
+          | CHAR    { $$ = CHAR;    }
+          | FLOAT   { $$ = FLOAT;   }
+          | DOUBLE  { $$ = DOUBLE;  }
+          | LONG    { $$ = LONG;    }
           ;
 
 
@@ -264,11 +260,11 @@ bitwise_and_expression : equality_expression { $$ = $1; }
 
 
 logical_or_expression : logical_and_expression { $$ = $1; }
-                      | logical_or_expression OROR logical_and_expression { $$ = new_genop(BINOP_N, OROR, $1, $3); }
+                      | logical_or_expression OROR logical_and_expression { $$ = new_genop(LOGOP_N, OROR, $1, $3); }
                       ;
 
 logical_and_expression : bitwise_or_expression  { $$ = $1; }
-                       | logical_and_expression ANDAND bitwise_or_expression { $$ = new_genop(BINOP_N, ANDAND, $1, $3); }
+                       | logical_and_expression ANDAND bitwise_or_expression { $$ = new_genop(LOGOP_N, ANDAND, $1, $3); }
                        ; 
 
 
@@ -300,147 +296,6 @@ expression : comma_expression { $$ = $1; }
            ;
 
 %%
-const char* get_operator_string(int op) {
-    switch(op) {
-        case '=':      return "=";  // for binary nodes we handle '=' specially (see below)
-        case '+':      return "+";
-        case '-':      return "-";
-        case '*':      return "*";
-        case '/':      return "/";
-        case '%':      return "%";
-        case '<':      return "<";
-        case '>':      return ">";
-        case EQEQ:     return "==";
-        case NOTEQ:    return "!=";
-        case LTEQ:     return "<=";
-        case GTEQ:     return ">=";
-        case PLUSEQ:   return "+=";
-        case MINUSEQ:  return "-=";
-        case MULTEQ:   return "*=";
-        case DIVEQ:    return "/=";
-        case MODEQ:    return "%=";
-        case SLEQ:     return "<<=";
-        case SREQ:     return ">>=";
-        case ANDEQ:    return "&=";
-        case XOREQ:    return "^=";
-        case OREQ:     return "|=";
-        case ANDAND:   return "&&";
-        case OROR:     return "||";
-        case '&':      return "&";
-        case '|':      return "|";
-        case '^':      return "^";
-        case '!':      return "!";
-        case '~':      return "~";
-        case SL:       return "<<";
-        case SR:       return ">>";
-        case '?':      return "?";
-        case ':':      return ":";
-        case PLUSPLUS: return "++";
-        case MINMIN:   return "--";
-        default: {
-            /* For any other operator (or if op is a simple char) */
-            static char buf[3];
-            snprintf(buf, sizeof(buf), "%c", op);
-            return buf;
-        }
-    }
-}
-
-
-void print_ast_tree(ast_node_t *node, int indent) {
-    if (!node)
-        return;
-    
-    for (int i = 0; i < indent; i++) {
-        printf("\t");
-    }
-
-    switch(node->type) {
-        case IDENT_N:
-            printf("IDENT %s\n", node->ident.name);
-            break;
-        case STRING_N:
-            printf("STRING %s\n", node->string.string_literal);
-            break;
-        case NUMBER_N:
-            switch (node->number.num_meta.type) {
-                case INT_T:     
-                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=int)\t%lld\tSIGNED\n", node->number.num_meta._int);
-                    if(node->number.num_meta.sign == UNSIGNED_T) printf("NUM (numtype=int)\t%llu\tUNSIGNED\n", node->number.num_meta._int);
-                    break;
-                case LONG_T:
-                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=long)\t%lld\tSIGNED\n", node->number.num_meta._int);
-                    if(node->number.num_meta.sign == UNSIGNED_T) printf("NUM (numtype=long)\t%llu\tUNSIGNED\n", node->number.num_meta._int);
-                    break;
-                case LONGLONG_T:
-                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=longlong)\t%lld\tSIGNED\n", node->number.num_meta._int);
-                    if(node->number.num_meta.sign == UNSIGNED_T) printf("NUM (numtype=longlong)\t%llu\tUNSIGNED\n", node->number.num_meta._int);
-                    break;
-                case FLOAT_T:
-                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=float)\t%f\tSIGNED\n", node->number.num_meta._float);
-                    break;
-                case DOUBLE_T:
-                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=double)\t%Lf\tSIGNED\n", node->number.num_meta._double);
-                    break;
-                case LONGDOUBLE_T:
-                    if(node->number.num_meta.sign == SIGNED_T) printf("NUM (numtype=longdouble)\t%Lf\tSIGNED\n", node->number.num_meta._double);
-                    break;
-                default:
-                    printf("UNKNOWN NUM TYPE\n");
-                    break;
-            }
-            break;
-        case UNOP_N: {
-            const char *op_str = get_operator_string(node->unop.op);
-            printf("UNARY OP (%s)\n", op_str);
-            print_ast_tree(node->unop.node, indent + 1);
-            break;
-        }
-        case BINOP_N: {
-            const char *op_str = get_operator_string(node->genop.op);
-            printf("BINARY OP (%s)\n", op_str);
-
-            print_ast_tree(node->genop.left, indent + 1);
-            print_ast_tree(node->genop.right, indent + 1);
-            break;
-        }
-        case TERNOP_N:
-            printf("TERNARY OP, IF:\n");
-            print_ast_tree(node->ternop.left, indent + 1);
-            printf("THEN:\n");
-            print_ast_tree(node->ternop.center, indent + 1);
-            printf("ELSE:\n");
-            print_ast_tree(node->ternop.right, indent + 1);
-            break;
-        case ASSIGNOP_N: {
-            const char *op_str = get_operator_string(node->genop.op);
-            printf("ASSIGNMENT OP (%s)\n", op_str);
-
-            print_ast_tree(node->genop.left, indent + 1);
-            print_ast_tree(node->genop.right, indent + 1);
-            break;
-        }
-        case COMPOP_N: {
-            const char *op_str = get_operator_string(node->genop.op);
-            printf("COMPARISON OP (%s)\n", op_str);
-
-            print_ast_tree(node->genop.left, indent + 1);
-            print_ast_tree(node->genop.right, indent + 1);
-            break;
-        }
-        case FUNCT_N:
-            printf("FUNCTION CALL\n");
-            print_ast_tree(node->function.left, indent + 1);
-            if (node->function.right) {
-                print_ast_tree(node->function.right, indent + 1);
-            }
-            break;
-        default:
-            printf("UNKNOWN NODE TYPE\n");
-            break;
-    }
-}
-
 
 int main(void) {
     yyparse(); 

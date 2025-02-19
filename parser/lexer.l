@@ -324,10 +324,3 @@ L?\'  {init_buf(); yylval.string.type = CHAR_T; BEGIN(CHAR_START);}
 
 %%
 
-/*
-if(buf)
-    fprintf(stderr, "buf is %s, len is %d, size is %d\n", buf, buf_len, buf_size);
-else
-    fprintf(stderr, "buf is NULL!\n");
-*/
-
