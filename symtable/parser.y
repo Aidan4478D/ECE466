@@ -9,6 +9,10 @@ int yylex();
 ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
 
+// create a new stack and initialze it
+stack_t *scope;
+stak_init(scope); 
+
 //int yydebug = 1;
 
 /* Although this is great, it does not include: 
@@ -53,7 +57,6 @@ void print_ast_tree(ast_node_t *node, int indent);
 %type<ast_node> specifier_list struct_declarator_list struct_declarator
 %type<ast_node> declarator direct_declarator simple_declarator pointer_declarator
 %type<ast_node> pointer array_declarator constant_expression function_declarator
-%type<ast_node> parameter_type_list parameter_list parameter_declaration
 %type<ast_node> identifier_list
 
 
@@ -219,22 +222,11 @@ constant_expression : conditional_expression    {$$ = $1;}
 
 function_declarator : direct_declarator '(' ')'                     {}
                     | direct_declarator '(' identifier_list ')'     {}
-                    | direct_declarator '(' parameter_type_list ')' {}
                     ;
 
-parameter_type_list : parameter_list                {}
-                    | parameter_list ',' ELLIPSIS   {}
-                    ;
-
-parameter_list  : parameter_declaration                     {}
-                | parameter_list ',' parameter_declaration  {}
-                ;
-
-parameter_declaration   : decl_specifiers                        {}
-                        ;
 
 identifier_list : IDENT {}
-                | parameter_list ',' IDENT {}
+                | identifier_list ',' IDENT {}
                 ;
 
 
