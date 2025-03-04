@@ -3,10 +3,11 @@
 #include <string.h>
 #include <stdio.h>
 
-static int rehash(hashTable *ht);
+static int rehash(ht_t *ht);
 
 // return a prime number at least as large as size.
-static unsigned int getPrime(int size) {
+int get_prime(int size) {
+    static int primes[NUM_PRIMES] = {98317, 196613, 393241, 786433, 1572869, 3145739};
     if (size < primes[0]) return primes[0];
 
     for (int i = 0; i < NUM_PRIMES - 1; i++) {
@@ -21,7 +22,7 @@ static unsigned int getPrime(int size) {
  *  "Data Structures and Algorithm Analysis in C++", 4th Edition by Mark Allen Weis 
  *  aka this is ripped from the DSA II textbook
  */
-static unsigned int hash_func(hashTable *ht, const char *key) {
+int hash_func(ht_t *ht, const char *key) {
     unsigned int hashVal = 0;
     for (int i = 0; key[i] != '\0'; i++) {
         hashVal = 37 * hashVal + (unsigned char) key[i];
@@ -30,7 +31,7 @@ static unsigned int hash_func(hashTable *ht, const char *key) {
 }
 
 // searches for the key and returns its index if found, -1 if not
-static int findPos(hashTable *ht, const char *key) {
+int find_pos(ht_t *ht, const char *key) {
     int hash_val = hash_func(ht, key);
     int iterations = 0;
     while (ht->data[hash_val].isOccupied) {
@@ -47,13 +48,13 @@ static int findPos(hashTable *ht, const char *key) {
 }
 
 // create hash table
-hashTable *hashTable_create(int size) {
-    hashTable *ht = malloc(sizeof(hashTable));
+ht_t *ht_create(int size) {
+    ht_t *ht = malloc(sizeof(ht_t));
     if (!ht)
         return NULL;
     ht->filled = 0;
-    ht->capacity = getPrime(size);
-    ht->data = calloc(ht->capacity, sizeof(hashItem));
+    ht->capacity = get_prime(size);
+    ht->data = calloc(ht->capacity, sizeof(hash_item));
     if (!ht->data) {
         free(ht);
         return NULL;
@@ -62,7 +63,7 @@ hashTable *hashTable_create(int size) {
 }
 
 // destroy the hash table and free all associated memory
-void hashTable_destroy(hashTable *ht) {
+void ht_destroy(ht_t *ht) {
     if (!ht) return;
     for (int i = 0; i < ht->capacity; i++) {
         if (ht->data[i].isOccupied && !ht->data[i].isDeleted) {
@@ -74,9 +75,9 @@ void hashTable_destroy(hashTable *ht) {
 }
 
 // insert a key into the hash table.
-int hashTable_insert(hashTable* ht, const char* key, void* pv) {
+int ht_insert(ht_t* ht, const char* key, void* pv) {
     // return 1 if key already exists.
-    if (hashTable_contains(ht, key)) return 1;
+    if (ht_contains(ht, key)) return 1;
     
     // rehash if table is at least half full.
     if (ht->filled >= ht->capacity / 2) {
@@ -104,13 +105,13 @@ int hashTable_insert(hashTable* ht, const char* key, void* pv) {
 }
 
 // check if the key exists in the table
-bool hashTable_contains(hashTable *ht, const char *key) {
-    return (findPos(ht, key) != -1);
+bool ht_contains(ht_t *ht, const char *key) {
+    return (find_pos(ht, key) != -1);
 }
 
 // get the pointer associated with the key
-void *hashTable_getPointer(hashTable *ht, const char *key, bool *b) {
-    int pos = findPos(ht, key);
+void *ht_getPointer(ht_t *ht, const char *key, bool *b) {
+    int pos = find_pos(ht, key);
     if (pos == -1) {
         if (b) *b = false;
         return NULL;
@@ -120,8 +121,8 @@ void *hashTable_getPointer(hashTable *ht, const char *key, bool *b) {
 }
 
 // set the pointer associated with the key
-int hashTable_setPointer(hashTable *ht, const char *key, void *pv) {
-    int pos = findPos(ht, key);
+int ht_setPointer(ht_t *ht, const char *key, void *pv) {
+    int pos = find_pos(ht, key);
     if (pos != -1) {
         ht->data[pos].pv = pv;
         return 0;
@@ -130,8 +131,8 @@ int hashTable_setPointer(hashTable *ht, const char *key, void *pv) {
 }
 
 // remove the key from the table (lazy deletion)
-bool hashTable_remove(hashTable *ht, const char *key) {
-    int pos = findPos(ht, key);
+bool ht_remove(ht_t *ht, const char *key) {
+    int pos = find_pos(ht, key);
     if (pos != -1) {
         free(ht->data[pos].key);
         ht->data[pos].key = NULL;
@@ -142,12 +143,12 @@ bool hashTable_remove(hashTable *ht, const char *key) {
 }
 
 // Rehash: create a new data array with increased capacity and reinsert all active keys.
-static int rehash(hashTable *ht) {
+int rehash(ht_t *ht) {
     int old_capacity = ht->capacity;
-    hashItem *old_data = ht->data;
+    hash_item *old_data = ht->data;
     
-    int new_capacity = getPrime(ht->capacity * 2);
-    hashItem *new_data = calloc(new_capacity, sizeof(hashItem));
+    int new_capacity = get_prime(ht->capacity * 2);
+    hash_item *new_data = calloc(new_capacity, sizeof(hash_item));
     if (!new_data)
         return 0;
     
@@ -159,7 +160,7 @@ static int rehash(hashTable *ht) {
     // reinsert each active item from the old table.
     for (int i = 0; i < old_capacity; i++) {
         if (old_data[i].isOccupied && !old_data[i].isDeleted) {
-            int ret = hashTable_insert(ht, old_data[i].key, old_data[i].pv);
+            int ret = ht_insert(ht, old_data[i].key, old_data[i].pv);
             free(old_data[i].key);
             if (ret != 0) {
                 free(old_data);
