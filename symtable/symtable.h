@@ -13,10 +13,10 @@ typedef enum scope_types {
 
 
 typedef enum name_spaces {
-    TAG,
-    LABEL,
-    MEMBER,
-    GENERAL // everything else
+    TAG_NS,
+    LABEL_NS,
+    MEMBER_NS,
+    GENERAL_NS // everything else
 } NAMESPACE;
 
 
@@ -25,7 +25,8 @@ typedef enum storage_class {
     REG_SC,
     AUTO_SC,
     EXTERN_SC,
-    STATIC_SC
+    STATIC_SC,
+    UNKNOWN_SC
 } STGCLASS;
 
 
@@ -46,10 +47,10 @@ typedef struct symbol {
     int lineno;
 
     NAMESPACE name_space; //namespace is a keyword :(
-    SYMTYPE symbol_type;
+    SYMTYPE type;
     STGCLASS stg_class;
 
-    //ast_node_t* node;
+    ast_node_t* node;
 } SYMBOL;
 
 
@@ -59,8 +60,8 @@ typedef struct sym_table {
 } SYMTABLE;
 
 SYMTABLE* st_create(SCOPETYPE scope); 
-void st_insert(SYMTABLE* st, SYMBOL* sym);
+int st_install(SYMTABLE* st, SYMBOL* sym);
 
-
+SYMBOL* st_new_symbol(STRTYPE name, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class);
 
 #endif

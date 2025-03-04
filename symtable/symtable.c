@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "symtable.h"
 #include "hash.h"
 
@@ -21,14 +23,14 @@ void st_destroy(SYMTABLE* st) {
 
 
 // install symbol in the scope's symbol table
-void st_install(SYMTABLE* st, SYMBOL* sym) {
+int st_install(SYMTABLE* st, SYMBOL* sym) {
     
     // implement namespace stuff later
     switch(ht_insert(st->ht, sym->key, sym)) {
-        case 0: fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); break;
-        case 1: fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", sym->key); break;
-        case 2: fprintf(stderr, "Error inserting into hash table: rehashing failed\n"); break;
-        default: fprintf(stderr, "Unknown return from hash table insert\n"); break;
+        case 0: fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); return 0;
+        case 1: fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", sym->key); return -1;
+        case 2: fprintf(stderr, "Error inserting into hash table: rehashing failed\n"); return -1;
+        default: fprintf(stderr, "Unknown return from hash table insert\n"); return -1;
     }
 }
 
@@ -41,4 +43,20 @@ SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns) {
     // before concluding symbol doesn't exist
     
     return;
+}
+
+SYMBOL* st_new_symbol(STRTYPE key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class) {
+
+    SYMBOL* sym = (SYMBOL*) malloc(sizeof(SYMBOL));
+
+    if(key.type == STRING_T) sym->key = key.string_literal;
+    else sym->key = (char*) key.char_literal;
+
+    sym->name_space = ns;
+    sym->type = type;
+    sym->stg_class = stg_class;
+
+    sym->node = node;
+
+    return sym;
 }

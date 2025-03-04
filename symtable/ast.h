@@ -3,8 +3,6 @@
 
 #define MAX_CHILDREN 4096
 
-#include "symtable.h"
-
 // stuff that was in the lexer .h file
 
 enum num_type {
@@ -165,6 +163,7 @@ ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right
 ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_element(ast_node_t* entry);
 ast_node_t* new_list(ast_node_t* head);
+ast_node_t* new_pointer(ast_node_t* next);
 ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 
 

@@ -1,8 +1,8 @@
 %{
 #include <stdio.h>
 #include "helpers.h"
-#include "ast.h"
 #include "stack.h"
+#include "symtable.h"
 
 void yyerror(char *s);
 int yylex();
@@ -12,7 +12,6 @@ void print_ast_tree(ast_node_t *node, int indent);
 
 // create a new stack and initialze it
 stack_t *scope;
-stak_init(scope); 
 
 //int yydebug = 1;
 
@@ -25,22 +24,28 @@ stak_init(scope);
 */
 %}
 
+%code requires {
+    #include "symtable.h"
+}
+
 %union { 
     NUMTYPE number;
     STRTYPE string;
     ast_node_t* ast_node;
+    SYMBOL* sym;
+    int TOKEN;
 }
 
 %token<string> IDENT 
 %token<string> STRING
 %token<number> NUMBER
 
-%token PLUSEQ MINUSEQ MULTEQ MODEQ DIVEQ SLEQ SREQ ANDEQ XOREQ OREQ
-%token POINT PLUSPLUS MINMIN SL SR LTEQ GTEQ EQEQ NOTEQ ANDAND OROR
-%token ELLIPSIS AUTO BREAK CASE CHAR CONST CONTINUE DEFAULT DO ELSE
-%token ENUM EXTERN FOR GOTO IF INLINE LONG REGISTER RETURN SHORT
-%token SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID VOLATILE WHILE
-%token INT FLOAT DOUBLE
+%token<TOKEN> PLUSEQ MINUSEQ MULTEQ MODEQ DIVEQ SLEQ SREQ ANDEQ XOREQ OREQ
+%token<TOKEN> POINT PLUSPLUS MINMIN SL SR LTEQ GTEQ EQEQ NOTEQ ANDAND OROR
+%token<TOKEN> ELLIPSIS AUTO BREAK CASE CHAR CONST CONTINUE DEFAULT DO ELSE
+%token<TOKEN> ENUM EXTERN FOR GOTO IF INLINE LONG REGISTER RETURN SHORT
+%token<TOKEN> SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID VOLATILE WHILE
+%token<TOKEN> INT FLOAT DOUBLE
 
 
 %type<ast_node> primary_expression postfix_expression
@@ -56,7 +61,10 @@ stak_init(scope);
 %type<ast_node> stg_class_specifier type_specifier 
 %type<ast_node> struct_union_specifier struct_or_union struct_declaration_list struct_declaration
 %type<ast_node> specifier_list struct_declarator_list struct_declarator
-%type<ast_node> declarator direct_declarator simple_declarator pointer_declarator
+%type<ast_node> declarator 
+%type<ast_node> direct_declarator 
+%type<string> simple_declarator
+%type<ast_node> pointer_declarator
 %type<ast_node> pointer array_declarator constant_expression function_declarator
 %type<ast_node> identifier_list
 
@@ -139,8 +147,8 @@ decl_or_stmt    : declaration   {}
                 | statement     {}
                 ;
 
-decl_specifiers : stg_class_specifier                  {}
-                | stg_class_specifier decl_specifiers  {}
+decl_specifiers : stg_class_specifier                   {}
+                | stg_class_specifier decl_specifiers   {}
                 | type_specifier                        {}
                 | type_specifier decl_specifiers        {}
                 ;
@@ -160,56 +168,76 @@ type_specifier  : FLOAT     {}
                 | VOID      {}
                 | SIGNED    {}
                 | UNSIGNED  {}
-                | struct_union_specifier   {}
+                | struct_union_specifier
                 ; 
 
-struct_union_specifier : struct_or_union IDENT '{' struct_declaration_list '}'  {}
-                       | struct_or_union '{' struct_declaration_list '}'        {}
-                       | struct_or_union IDENT                                  {}
 
-struct_or_union : STRUCT    {}
-                | UNION     {}
+
+struct_union_specifier : struct_or_union IDENT '{' struct_declaration_list '}'
+                       | struct_or_union '{' struct_declaration_list '}'
+                       | struct_or_union IDENT
+
+
+struct_or_union : STRUCT
+                | UNION
                 ;
 
-struct_declaration_list : struct_declaration {}
-                        | struct_declaration_list struct_declaration {}
+
+struct_declaration_list : struct_declaration
+                        | struct_declaration_list struct_declaration
                         ;
 
-struct_declaration  : specifier_list struct_declarator_list ';' {}
+struct_declaration  : specifier_list struct_declarator_list ';'
                     ;
 
-specifier_list  : type_specifier {}
-                | type_specifier specifier_list {}
+
+specifier_list  : type_specifier                { $$ = new_list($1); }
+                | type_specifier specifier_list { $$ = append_item($1, $2); }
                 ;
 
-struct_declarator_list  : struct_declarator                             {}
-                        | struct_declarator_list ',' struct_declarator  {}
 
-struct_declarator   : declarator    {}
-                    | declarator ':' constant_expression {}
+struct_declarator_list  : struct_declarator                             { $$ = new_list($1); }
+                        | struct_declarator_list ',' struct_declarator  { $$ = append_item($1, $3); }
+
+struct_declarator   : declarator {$$ = $1; }
                     ;
 
 
-declarator  : pointer_declarator    {}
-            | direct_declarator     {}
+declarator  : pointer_declarator    { $$ = $1; }
+            | direct_declarator     { $$ = $1; }
             ;
 
 
-direct_declarator   : simple_declarator     {}
+direct_declarator   : simple_declarator     { 
+                                                
+                                                // storage class depends on the scope
+                                                SYMTABLE* scope_top = stack_peek(scope);
+
+                                                STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
+                                                
+                                                ast_node_t* node = new_ident($1.string_literal);
+                                                SYMBOL* sym = st_new_symbol($1, node, GENERAL_NS, VAR_SYM, stg_class); 
+
+                                                st_install(scope_top, sym);
+                                                print_sym_table(scope_top);
+                                                
+                                                $$ = node;
+                                            }
+
                     | '(' declarator ')'    {}
                     | function_declarator   {}
                     | array_declarator      {}
                     ;
 
 
-simple_declarator   : IDENT {}
+simple_declarator   : IDENT
                     ; 
 
-pointer_declarator  : pointer direct_declarator   {}
+pointer_declarator  : pointer direct_declarator   { $$ = new_pointer($2); }
                     ;
 
-pointer : '*'                               {}
-        | '*' pointer                       {}
+pointer : '*'           { $$ = new_pointer(NULL); }
+        | '*' pointer   { $$ = new_pointer($2);   }
         ;
 
 array_declarator    : direct_declarator '[' ']' {}
@@ -226,8 +254,8 @@ function_declarator : direct_declarator '(' ')'                     {}
                     ;
 
 
-identifier_list : IDENT {}
-                | identifier_list ',' IDENT {}
+identifier_list : IDENT
+                | identifier_list ',' IDENT     
                 ;
 
 
@@ -308,11 +336,11 @@ sizeof_expression : SIZEOF '(' type_name ')'    { $$ = new_unop(SIZEOF, $3); }
                   ; 
 
 
-type_name : INT     { $$ = INT;  /* gonna make this a node later */   }
-          | CHAR    { $$ = CHAR;    }
-          | FLOAT   { $$ = FLOAT;   }
-          | DOUBLE  { $$ = DOUBLE;  }
-          | LONG    { $$ = LONG;    }
+type_name : INT
+          | CHAR
+          | FLOAT
+          | DOUBLE
+          | LONG
           ;
 
 
@@ -438,6 +466,7 @@ expression : comma_expression { $$ = $1; }
 %%
 
 int main(void) {
+    stack_init(scope); 
     yyparse(); 
     return 0;
 }

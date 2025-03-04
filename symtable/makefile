@@ -9,7 +9,7 @@ parser: y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o
 y.tab.c y.tab.h: parser.y
 	yacc -d parser.y
 
-y.tab.o: y.tab.c y.tab.h ast.h
+y.tab.o: y.tab.c y.tab.h ast.h symtable.h
 	$(CC) $(CFLAGS) -c y.tab.c -ll -ly
 
 lex.yy.c: lexer.l y.tab.h
@@ -24,7 +24,7 @@ ast.o: ast.c ast.h
 helpers.o: helpers.c helpers.h
 	$(CC) $(CFLAGS) -c helpers.c
 
-symtable.o: symtable.c symtable.h
+symtable.o: ast.o symtable.c symtable.h
 	$(CC) $(CFLAGS) -c symtable.c
 
 hash.o: hash.c hash.h

@@ -1,7 +1,27 @@
 #include <stdio.h>
-#include "ast.h"
+#include "hash.h"
 #include "y.tab.h"
 #include "helpers.h"
+
+void print_sym_table(SYMTABLE *st) {
+    if (!st || !st->ht) {
+        printf("Symbol table is empty.\n");
+        return;
+    }
+    
+    ht_t *ht = st->ht;
+    printf("Symbol Table (Scope: %d, Capacity: %d, Filled: %d):\n", st->scope, ht->capacity, ht->filled);
+    
+    for (int i = 0; i < ht->capacity; i++) {
+        hash_item *item = &ht->data[i];
+        if (item->isOccupied && !item->isDeleted) {
+            SYMBOL *sym = (SYMBOL *) item->pv;
+            // For clarity, you might later convert enum values to strings.
+            printf("Slot %d: key = %s, namespace = %d, type = %d, storage = %d\n",
+                   i, sym->key, sym->lineno, sym->name_space, sym->type, sym->stg_class);
+        }
+    }
+}
 
 char* get_operator_string(int op) {
     switch(op) {

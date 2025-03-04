@@ -88,34 +88,33 @@ ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right
 }
 
 ast_node_t* new_element(ast_node_t* entry) {
-    ast_node_t* node = malloc(sizeof(ast_node_t));
-    if (!node) {
-        perror("malloc");
-        exit(1);
-    }
-    node->type = ELEMENT_N;
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
 
+    node->type = ELEMENT_N;
     node->list.head = entry;
     node->list.next = NULL;
     return node;
 }
 
-ast_node_pointer(ast_node_t* next) {
+ast_node_t* new_pointer(ast_node_t* next) {
 
     // optional next pointer
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+
+    node->type = POINTER_N;
+    node->pointer.next = next;
+    
+    return node;
 }
 
-ast_node_declspecs(ast_node_list_t* list) {
+ast_node_t* new_declspecs(ast_node_list_t* list) {
 
     // try to implement using existing list
 }
 
 ast_node_t* new_list(ast_node_t* head) {
-    ast_node_t* node = malloc(sizeof(ast_node_t));
-    if (!node) {
-        perror("malloc");
-        exit(1);
-    }
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+
     node->type = LIST_N;
     node->list.head = head;
     node->list.next = NULL;
