@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "helpers.h"
 #include "ast.h"
+#include "stack.h"
 
 void yyerror(char *s);
 int yylex();

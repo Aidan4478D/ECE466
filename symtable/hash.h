@@ -9,14 +9,14 @@
 
 #define NUM_PRIMES 6
 
-typedef struct hashItem {
+typedef struct hash_item {
     char *key;
     int isOccupied;  // 0 if the slot is empty, 1 if occupied
     int isDeleted;   // 1 if the item was removed (lazy deletion), 0 otherwise
     void *pv;        // pointer associated with the key
 } hash_item;
 
-typedef struct hashTable {
+typedef struct hash_table {
     int capacity;
     int filled;
     hash_item *data;

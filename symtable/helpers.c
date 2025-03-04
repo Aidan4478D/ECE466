@@ -131,12 +131,12 @@ void print_ast_tree(ast_node_t *node, int indent) {
             print_ast_tree(node->genop.right, indent + 1);
             break;
         }
-        case ARG_N:
-            printf("ARG:\n");
+        case ELEMENT_N:
+            printf("ELEMENT:\n");
             print_ast_tree(node->list.head, indent + 1);
             break;
         case LIST_N:
-            printf("ARGUMENT LIST:\n"); {
+            printf("LIST:\n"); {
                 ast_node_t* current = node;
                 int counter = 1;
 
@@ -144,7 +144,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
                     for (int i = 0; i < indent; i++)
                         printf("\t");
 
-                    printf("ARGUMENT #%d:\n", counter++); 
+                    printf("LIST ELEMENT #%d:\n", counter++); 
                     print_ast_tree(current->list.head, indent + 1);
                     current = current->list.next;
                 }

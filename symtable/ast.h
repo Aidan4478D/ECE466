@@ -3,6 +3,8 @@
 
 #define MAX_CHILDREN 4096
 
+#include "symtable.h"
+
 // stuff that was in the lexer .h file
 
 enum num_type {
@@ -24,7 +26,6 @@ enum str_type {
     CHAR_T,
 };
 
-// struct to store info relating to numbers (constants)
 typedef struct {
     enum num_type type;
     enum num_sign sign;
@@ -55,12 +56,17 @@ typedef enum node_type {
     COMPOP_N,
     FUNCT_N,
     LIST_N,
-    ARG_N,
-    LOGOP_N
-
+    ELEMENT_N,
+    LOGOP_N,
+    
+    //new stuff
+    POINTER_N,
+    SCALAR_N,
+    ARRAY_N,
+    DECLSPEC_N
 } NODETYPE;
 
-// new stuff now
+// assignment 2 stuff
 struct ast_node;
 typedef struct ast_node ast_node_t;
 
@@ -115,11 +121,23 @@ typedef struct ast_node_element {
     ast_node_t* arg;
 } ast_node_element_t;
 
+
 // List of Arguments
 typedef struct ast_node_list {
     ast_node_t* head;
     ast_node_t* next;
 } ast_node_list_t;
+
+
+typedef struct ast_node_pointer {
+    ast_node_t* next;
+} ast_node_pointer_t;
+
+
+typedef struct ast_node_declspecs {
+    ast_node_list_t list;
+    //STGCLASS storage_class;
+} ast_node_declspecs_t;
 
 
 struct ast_node {
@@ -133,6 +151,8 @@ struct ast_node {
         ast_node_genop_t genop;
         ast_node_function_t function;
         ast_node_list_t list;
+        ast_node_pointer_t pointer;
+        ast_node_declspecs_t decl_specs;
     };
 };
 
@@ -143,7 +163,7 @@ ast_node_t* new_unop(int op, ast_node_t* node);
 ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right); 
 ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right); 
 ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
-ast_node_t* new_arg(ast_node_t* entry);
+ast_node_t* new_element(ast_node_t* entry);
 ast_node_t* new_list(ast_node_t* head);
 ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 

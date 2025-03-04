@@ -87,17 +87,27 @@ ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right
     return new_node;
 }
 
-ast_node_t* new_arg(ast_node_t* entry) {
+ast_node_t* new_element(ast_node_t* entry) {
     ast_node_t* node = malloc(sizeof(ast_node_t));
     if (!node) {
         perror("malloc");
         exit(1);
     }
-    node->type = ARG_N;
+    node->type = ELEMENT_N;
 
     node->list.head = entry;
     node->list.next = NULL;
     return node;
+}
+
+ast_node_pointer(ast_node_t* next) {
+
+    // optional next pointer
+}
+
+ast_node_declspecs(ast_node_list_t* list) {
+
+    // try to implement using existing list
 }
 
 ast_node_t* new_list(ast_node_t* head) {
@@ -121,6 +131,6 @@ ast_node_t* append_item(ast_node_t* list, ast_node_t* entry) {
     while (current->list.next != NULL) {
         current = current->list.next;
     }
-    current->list.next = new_arg(entry);
+    current->list.next = new_element(entry);
     return list;
 }

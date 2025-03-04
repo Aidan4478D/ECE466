@@ -11,12 +11,23 @@ typedef enum scope_types {
     BLOCK_SCOPE
 } SCOPETYPE;
 
+
 typedef enum name_spaces {
     TAG,
     LABEL,
     MEMBER,
     GENERAL // everything else
 } NAMESPACE;
+
+
+// this also includes typdefs but that's not required
+typedef enum storage_class {
+    REG_SC,
+    AUTO_SC,
+    EXTERN_SC,
+    STATIC_SC
+} STGCLASS;
+
 
 typedef enum sym_types {
     VAR_SYM,
@@ -30,30 +41,25 @@ typedef enum sym_types {
 } SYMTYPE;
 
 
-// this also includes typdefs but that's not required
-typedef enum storage_class {
-    REG_SC,
-    AUTO_SC,
-    EXTERN_SC,
-    STATIC_SC
-} STGCLASS;
-
 typedef struct symbol {
     char* key; // key for hash table
     int lineno;
 
     NAMESPACE name_space; //namespace is a keyword :(
     SYMTYPE symbol_type;
+    STGCLASS stg_class;
 
-    ast_node_t* node;
-}
+    //ast_node_t* node;
+} SYMBOL;
 
 
 typedef struct sym_table {
     SCOPETYPE scope;
-    STGCLASS stgclass; 
     ht_t* ht; 
 } SYMTABLE;
+
+SYMTABLE* st_create(SCOPETYPE scope); 
+void st_insert(SYMTABLE* st, SYMBOL* sym);
 
 
 
