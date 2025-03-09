@@ -98,7 +98,6 @@ ast_node_t* new_element(ast_node_t* entry) {
 
 ast_node_t* new_pointer(ast_node_t* next) {
 
-    // optional next pointer
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
 
     node->type = POINTER_N;
@@ -107,9 +106,15 @@ ast_node_t* new_pointer(ast_node_t* next) {
     return node;
 }
 
-ast_node_t* new_declspecs(ast_node_list_t* list) {
+ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stg_class) {
+    
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
 
-    // try to implement using existing list
+    node->type = DECLSPEC_N;
+    if(decl_type) node->decl_spec.decl_type = decl_type;
+    if(stg_class) node->decl_spec.stg_class = stg_class;
+
+    return node; 
 }
 
 ast_node_t* new_list(ast_node_t* head) {
@@ -118,6 +123,7 @@ ast_node_t* new_list(ast_node_t* head) {
     node->type = LIST_N;
     node->list.head = head;
     node->list.next = NULL;
+
     return node;
 }
 
@@ -132,4 +138,25 @@ ast_node_t* append_item(ast_node_t* list, ast_node_t* entry) {
     }
     current->list.next = new_element(entry);
     return list;
+}
+
+ast_node_t* combine_type(ast_node_t *base, ast_node_t *decl) {
+    if (!decl) return base;
+    
+    ast_node_t *node = decl;
+    while (node) {
+        if (node->type == POINTER_N && node->pointer.next == NULL) {
+            node->pointer.next = base;
+            break;
+        } else if (node->type == ARRAY_N && node->list.head == NULL) {
+            node->list.head = base;
+            break;
+        } else if (node->type == FUNCT_N && node->function.right == NULL) {
+            node->function.right = base;
+            break;
+        }
+        // For our simplified grammar, break if nothing fits.
+        break;
+    }
+    return decl;
 }

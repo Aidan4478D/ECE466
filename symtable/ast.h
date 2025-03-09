@@ -3,6 +3,8 @@
 
 #define MAX_CHILDREN 4096
 
+//#include "symtable.h"
+
 // stuff that was in the lexer .h file
 
 enum num_type {
@@ -24,6 +26,19 @@ enum str_type {
     CHAR_T,
 };
 
+
+typedef enum decl_spec {
+    FLOAT_DT,
+    DOUBLE_DT,
+    INT_DT,
+    LONG_DT,
+    SHORT_DT,
+    CHAR_DT,
+    VOID_DT,
+    SIGNED_DT,
+    UNSIGNED_DT
+} DECLTYPE; 
+
 typedef struct {
     enum num_type type;
     enum num_sign sign;
@@ -40,6 +55,16 @@ typedef struct {
     char* string_literal;
     char char_literal;
 } STRTYPE;
+
+
+// this also includes typdefs but that's not required
+typedef enum storage_class {
+    REG_SC,
+    AUTO_SC,
+    EXTERN_SC,
+    STATIC_SC,
+    UNKNOWN_SC
+} STGCLASS;
 
 
 typedef enum node_type {
@@ -132,10 +157,10 @@ typedef struct ast_node_pointer {
 } ast_node_pointer_t;
 
 
-typedef struct ast_node_declspecs {
-    ast_node_list_t list;
-    //STGCLASS storage_class;
-} ast_node_declspecs_t;
+typedef struct ast_node_declspec {
+    DECLTYPE decl_type;
+    STGCLASS stg_class;
+} ast_node_declspec_t;
 
 
 struct ast_node {
@@ -150,7 +175,7 @@ struct ast_node {
         ast_node_function_t function;
         ast_node_list_t list;
         ast_node_pointer_t pointer;
-        ast_node_declspecs_t decl_specs;
+        ast_node_declspec_t decl_spec;
     };
 };
 
@@ -166,6 +191,8 @@ ast_node_t* new_list(ast_node_t* head);
 ast_node_t* new_pointer(ast_node_t* next);
 ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 
+ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
+ast_node_t* combine_type(ast_node_t* base, ast_node_t* decl); 
 
 #endif 
 

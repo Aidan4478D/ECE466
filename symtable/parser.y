@@ -11,7 +11,7 @@ ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
 
 // create a new stack and initialze it
-stack_t *scope;
+stack_t* scope_stack;
 
 //int yydebug = 1;
 
@@ -21,12 +21,14 @@ stack_t *scope;
     - Qualifiers like const, volatile, and restrict
     - Initialized declarations
     - Arrays are declarators are assumed to be arr[] or arr[NUMBER] (no variable length arrays)
+
 */
 %}
 
 %code requires {
     #include "symtable.h"
 }
+
 
 %union { 
     NUMTYPE number;
@@ -125,49 +127,58 @@ parser  : declaration_or_fndef
         | parser declaration_or_fndef
         ;
 
-declaration_or_fndef    : declaration           {}
+declaration_or_fndef    : declaration           { ast_root = $1; print_ast_tree(ast_root, 0); }
                         | function_definition   {}
                         ;
 
-declaration : decl_specifiers
+declaration : decl_specifiers ';' { $$ = $1; }
             ;
 
-function_definition     : decl_specifiers declarator compound_statement {}
+function_definition     : decl_specifiers declarator compound_statement {
+                                                                            fprintf(stderr, "Entering function scope\n"); 
+                                                                            stack_push(scope_stack, st_create(FUNCT_SCOPE));
+                                                                        }
                         ;
 
 
-compound_statement  : '{' decl_or_stmt_list '}' {}
+compound_statement  : '{'   {
+                                fprintf(stderr, "Entering block scope\n"); 
+                                stack_push(scope_stack, st_create(BLOCK_SCOPE));
+                            } 
+                    decl_or_stmt_list '}'   {
+                                                fprintf(stderr, "Exiting scope %d", stack_pop(scope_stack)->scope); 
+                                            }
                     ;
 
-decl_or_stmt_list   : decl_or_stmt                      {}
-                    | decl_or_stmt_list decl_or_stmt    {}
+decl_or_stmt_list   : decl_or_stmt                      { $$ = $1; }
+                    | decl_or_stmt_list decl_or_stmt    { }
                     ;
 
 decl_or_stmt    : declaration   {}
                 | statement     {}
                 ;
 
-decl_specifiers : stg_class_specifier                   {}
-                | stg_class_specifier decl_specifiers   {}
-                | type_specifier                        {}
-                | type_specifier decl_specifiers        {}
+decl_specifiers : stg_class_specifier                   { $$ = $1; }
+                | stg_class_specifier decl_specifiers   
+                | type_specifier                        { $$ = $1; }
+                | type_specifier decl_specifiers
                 ;
 
-stg_class_specifier : EXTERN    {}
-                    | STATIC    {}
-                    | AUTO      {}
-                    | REGISTER  {}
+stg_class_specifier : EXTERN    { $$ = new_decl_spec(0, EXTERN_SC); }
+                    | STATIC    { $$ = new_decl_spec(0, STATIC_SC); }
+                    | AUTO      { $$ = new_decl_spec(0, AUTO_SC); }
+                    | REGISTER  { $$ = new_decl_spec(0, REG_SC); }
                     ;
 
-type_specifier  : FLOAT     {}
-                | DOUBLE    {}
-                | INT       {}
-                | LONG      {}
-                | SHORT     {}
-                | CHAR      {}
-                | VOID      {}
-                | SIGNED    {}
-                | UNSIGNED  {}
+type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
+                | DOUBLE    { $$ = new_decl_spec(DOUBLE_DT, 0);  }
+                | INT       { $$ = new_decl_spec(INT_DT, 0);     }
+                | LONG      { $$ = new_decl_spec(LONG_DT, 0);    }
+                | SHORT     { $$ = new_decl_spec(SHORT_DT, 0);   }
+                | CHAR      { $$ = new_decl_spec(CHAR_DT, 0);    }
+                | VOID      { $$ = new_decl_spec(VOID_DT, 0);    }
+                | SIGNED    { $$ = new_decl_spec(SIGNED_DT, 0);  }
+                | UNSIGNED  { $$ = new_decl_spec(UNSIGNED_DT, 0); }
                 | struct_union_specifier
                 ; 
 
@@ -211,7 +222,7 @@ declarator  : pointer_declarator    { $$ = $1; }
 direct_declarator   : simple_declarator     { 
                                                 
                                                 // storage class depends on the scope
-                                                SYMTABLE* scope_top = stack_peek(scope);
+                                                SYMTABLE* scope_top = stack_peek(scope_stack);
 
                                                 STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
                                                 
@@ -466,7 +477,8 @@ expression : comma_expression { $$ = $1; }
 %%
 
 int main(void) {
-    stack_init(scope); 
+    stack_init(scope_stack);
+    stack_push(scope_stack, st_create(FILE_SCOPE)); 
     yyparse(); 
     return 0;
 }

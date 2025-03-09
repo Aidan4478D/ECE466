@@ -20,16 +20,6 @@ typedef enum name_spaces {
 } NAMESPACE;
 
 
-// this also includes typdefs but that's not required
-typedef enum storage_class {
-    REG_SC,
-    AUTO_SC,
-    EXTERN_SC,
-    STATIC_SC,
-    UNKNOWN_SC
-} STGCLASS;
-
-
 typedef enum sym_types {
     VAR_SYM,
     FUNCT_SYM,
