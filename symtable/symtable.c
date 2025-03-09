@@ -26,6 +26,8 @@ void st_destroy(SYMTABLE* st) {
 int st_install(SYMTABLE* st, SYMBOL* sym) {
     
     // implement namespace stuff later
+    /*fprintf(stderr, "ket is: %s\n", sym->key); */
+
     switch(ht_insert(st->ht, sym->key, sym)) {
         case 0: fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); return 0;
         case 1: fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", sym->key); return -1;
@@ -49,8 +51,9 @@ SYMBOL* st_new_symbol(STRTYPE key, ast_node_t* node, NAMESPACE ns, SYMTYPE type,
 
     SYMBOL* sym = (SYMBOL*) malloc(sizeof(SYMBOL));
 
-    if(key.type == STRING_T) sym->key = key.string_literal;
-    else sym->key = (char*) key.char_literal;
+    /*fprintf(stderr, "str type is: %d with key %s\n", key.type, key.string_literal); */
+
+    sym->key = key.string_literal;
 
     sym->name_space = ns;
     sym->type = type;

@@ -160,3 +160,22 @@ ast_node_t* combine_type(ast_node_t *base, ast_node_t *decl) {
     }
     return decl;
 }
+
+// array builds off of list
+ast_node_t* new_array(ast_node_t* base, ast_node_t* size) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = ARRAY_N;
+    node->list.head = base;
+    node->list.next = size;  // if size is NULL, then it's an unsized array
+    return node;
+}
+
+ast_node_t* new_function_decl(ast_node_t* base, ast_node_t* params) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+
+    node->type = FUNCT_N;
+    node->function.left = base;
+    node->function.right = params; // unused since params aren't handled but maybe for future
+
+    return node;
+}

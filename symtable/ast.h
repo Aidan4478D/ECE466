@@ -134,8 +134,8 @@ typedef struct ast_node_genop {
 
 
 typedef struct ast_node_function {
-    ast_node_t* left;
-    ast_node_t* right;
+    ast_node_t* left;  //function types: return type
+    ast_node_t* right; //function types: params
 } ast_node_function_t;
 
 
@@ -192,7 +192,9 @@ ast_node_t* new_pointer(ast_node_t* next);
 ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 
 ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
-ast_node_t* combine_type(ast_node_t* base, ast_node_t* decl); 
+ast_node_t* combine_type(ast_node_t* base, ast_node_t* decl);
+ast_node_t* new_array(ast_node_t* base, ast_node_t* size);
+ast_node_t* new_function_decl(ast_node_t* base, ast_node_t* params);
 
 #endif 
 

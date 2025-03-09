@@ -9,6 +9,7 @@ int yylex();
 
 ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
+int in_struct_union = 0;
 
 // create a new stack and initialze it
 stack_t* scope_stack;
@@ -69,6 +70,8 @@ stack_t* scope_stack;
 %type<ast_node> pointer_declarator
 %type<ast_node> pointer array_declarator constant_expression function_declarator
 %type<ast_node> identifier_list
+
+%type<ast_node> init_declarator_list init_declarator
 
 
 %type<ast_node> cast_expression unary_expression
@@ -131,11 +134,29 @@ declaration_or_fndef    : declaration           { ast_root = $1; print_ast_tree(
                         | function_definition   {}
                         ;
 
-declaration : decl_specifiers ';' { $$ = $1; }
+declaration : decl_specifiers ';' { $$ = $1; SYMTABLE* current = stack_peek(scope_stack); }
+            | decl_specifiers init_declarator_list ';'
             ;
 
-function_definition     : decl_specifiers declarator compound_statement {
+init_declarator_list : init_declarator
+                     | init_declarator_list ',' init_declarator
+
+init_declarator : declarator
+                ; 
+
+function_definition     : decl_specifiers declarator compound_statement {   
                                                                             fprintf(stderr, "Entering function scope\n"); 
+                                                                            ast_node_t* final_type = combine_type($1, $2);
+                                                                            SYMTABLE* global = stack_peek(scope_stack);
+                                                    
+                                                                            // assume identifier comes from direct_declarator
+                                                                            char* funct_name = "";
+                                                                            if($2 && $2->type == IDENT_N) funct_name = $2->ident.name;
+
+                                                                            SYMBOL* funct_sym = st_new_symbol((STRTYPE){STRING_T, funct_name, 0}, final_type, GENERAL_NS, FUNCT_SYM, EXTERN_SC); 
+                                                                            st_install(global, funct_sym);
+                                                                            print_sym_table(global);
+
                                                                             stack_push(scope_stack, st_create(FUNCT_SCOPE));
                                                                         }
                         ;
@@ -146,16 +167,17 @@ compound_statement  : '{'   {
                                 stack_push(scope_stack, st_create(BLOCK_SCOPE));
                             } 
                     decl_or_stmt_list '}'   {
-                                                fprintf(stderr, "Exiting scope %d", stack_pop(scope_stack)->scope); 
+                                                SYMTABLE* st = stack_pop(scope_stack);
+                                                fprintf(stderr, "Exiting scope\n"); 
                                             }
                     ;
 
-decl_or_stmt_list   : decl_or_stmt                      { $$ = $1; }
-                    | decl_or_stmt_list decl_or_stmt    { }
+decl_or_stmt_list   : decl_or_stmt
+                    | decl_or_stmt_list decl_or_stmt
                     ;
 
-decl_or_stmt    : declaration   {}
-                | statement     {}
+decl_or_stmt    : declaration {fprintf(stderr, "reducing a declaration\n"); }
+                | statement {fprintf(stderr, "reducing a statement\n"); }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = $1; }
@@ -179,7 +201,7 @@ type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
                 | VOID      { $$ = new_decl_spec(VOID_DT, 0);    }
                 | SIGNED    { $$ = new_decl_spec(SIGNED_DT, 0);  }
                 | UNSIGNED  { $$ = new_decl_spec(UNSIGNED_DT, 0); }
-                | struct_union_specifier
+                | struct_union_specifier { $$ = $1; }
                 ; 
 
 
@@ -230,14 +252,16 @@ direct_declarator   : simple_declarator     {
                                                 SYMBOL* sym = st_new_symbol($1, node, GENERAL_NS, VAR_SYM, stg_class); 
 
                                                 st_install(scope_top, sym);
-                                                print_sym_table(scope_top);
+                                                //print_sym_table(scope_top);
+
+                                                fprintf(stderr, "string is: %s\n", $1.string_literal); 
                                                 
                                                 $$ = node;
                                             }
 
-                    | '(' declarator ')'    {}
-                    | function_declarator   {}
-                    | array_declarator      {}
+                    | '(' declarator ')'    { $$ = $2; }
+                    | function_declarator
+                    | array_declarator
                     ;
 
 
@@ -251,8 +275,8 @@ pointer : '*'           { $$ = new_pointer(NULL); }
         | '*' pointer   { $$ = new_pointer($2);   }
         ;
 
-array_declarator    : direct_declarator '[' ']' {}
-                    | direct_declarator '[' constant_expression ']'    {}
+array_declarator    : direct_declarator '[' ']'                         { $$ = new_array($1, NULL); }
+                    | direct_declarator '[' constant_expression ']'     { $$ = new_array($1, $3); }
                     ;
 
 constant_expression : conditional_expression    {$$ = $1;}
@@ -260,8 +284,8 @@ constant_expression : conditional_expression    {$$ = $1;}
 
 
 
-function_declarator : direct_declarator '(' ')'                     {}
-                    | direct_declarator '(' identifier_list ')'     {}
+function_declarator : direct_declarator '(' ')'                     { $$ = new_function_decl($1, NULL); }
+                    | direct_declarator '(' identifier_list ')'     { $$ = new_function_decl($1, NULL); }
                     ;
 
 
@@ -477,6 +501,7 @@ expression : comma_expression { $$ = $1; }
 %%
 
 int main(void) {
+    scope_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(scope_stack);
     stack_push(scope_stack, st_create(FILE_SCOPE)); 
     yyparse(); 
