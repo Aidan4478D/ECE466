@@ -23,8 +23,6 @@ stack_t* scope_stack;
     - Initialized declarations
     - Arrays are declarators are assumed to be arr[] or arr[NUMBER] (no variable length arrays)
 
-To fix:
-- Ident being the key
 */
 %}
 
@@ -67,9 +65,10 @@ To fix:
 %type<ast_node> struct_union_specifier struct_or_union struct_declaration_list struct_declaration
 %type<ast_node> specifier_list struct_declarator_list struct_declarator
 %type<symbol> direct_declarator declarator
-%type<string> simple_declarator
 %type<symbol> pointer_declarator
-%type<ast_node> pointer array_declarator constant_expression function_declarator
+%type<symbol> function_declarator array_declarator
+%type<string> simple_declarator
+%type<ast_node> pointer constant_expression
 %type<ast_node> identifier_list
 
 %type<symbol> init_declarator_list init_declarator
@@ -141,7 +140,7 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                             SYMTABLE *cur_scope = stack_peek(scope_stack); 
 
                                                             while (sym != NULL) {
-                                                                //fprintf(stderr, "Decl Specifiers:\n");
+                                                                fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
                                                                 for (ast_node_t *spec = $1; spec != NULL; spec = spec->list.next) {
                                                                     //fprintf(stderr, "  DeclSpec: decl_type=%d, stg_class=%d\n", 
                                                                     //spec->decl_spec.decl_type, spec->decl_spec.stg_class);
@@ -149,6 +148,7 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                     if(spec->decl_spec.stg_class) sym->stg_class = spec->decl_spec.stg_class; 
                                                                     if(spec->decl_spec.decl_type) sym->node = combine_nodes(spec, sym->node);
                                                                 }
+                                                                fprintf(stderr, "Storage Class: %s\n", get_storage_class(sym->stg_class)); 
 
                                                                 print_ast_tree(sym->node, 0);
 
@@ -194,14 +194,24 @@ function_definition     : decl_specifiers declarator compound_statement {
 
 
 compound_statement  : '{'   {
-                                fprintf(stderr, "Entering block scope\n");
+                                fprintf(stderr, "Entering block or function scope\n");
                                 SYMTABLE* current = stack_peek(scope_stack);
-                                stack_push(scope_stack, st_create(BLOCK_SCOPE, current));
+                                stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
                             } 
-                    decl_or_stmt_list '}'   {
-                                                SYMTABLE* st = stack_pop(scope_stack);
-                                                fprintf(stderr, "Exiting scope\n"); 
-                                            }
+                      '}'   {
+                                SYMTABLE* st = stack_pop(scope_stack);
+                                fprintf(stderr, "Exiting block/funct scope\n"); 
+                            }
+                    | '{'   {
+                                fprintf(stderr, "Entering block or function scope\n");
+                                SYMTABLE* current = stack_peek(scope_stack);
+                                stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
+                            } 
+                      '}'   {
+                                SYMTABLE* st = stack_pop(scope_stack);
+                                fprintf(stderr, "Exiting block/funct scope\n"); 
+                            }
+
                     ;
 
 decl_or_stmt_list   : decl_or_stmt
@@ -233,7 +243,7 @@ type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
                 | VOID      { $$ = new_decl_spec(VOID_DT, 0);    }
                 | SIGNED    { $$ = new_decl_spec(SIGNED_DT, 0);  }
                 | UNSIGNED  { $$ = new_decl_spec(UNSIGNED_DT, 0); }
-                | struct_union_specifier { $$ = $1; }
+                | struct_union_specifier
                 ; 
 
 
@@ -290,8 +300,25 @@ pointer : '*'           { $$ = new_pointer(NULL); }
         | '*' pointer   { $$ = new_pointer($2);   }
         ;
 
-array_declarator    : direct_declarator '[' ']'                         { $$ = new_array($1, NULL); }
-                    | direct_declarator '[' constant_expression ']'     { $$ = new_array($1, $3); }
+array_declarator    : direct_declarator '[' ']'                         { 
+                                                                            ast_node_t* temp = new_array($1->node, NULL);
+                                                                            
+                                                                            SYMBOL* sym = $1;
+                                                                            if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                            else sym->node = temp;
+
+                                                                            $$ = sym;
+                                                                        }
+                    | direct_declarator '[' constant_expression ']'     { 
+                                                                            ast_node_t* temp = new_array($1->node, $3); 
+
+                                                                            SYMBOL* sym = $1; 
+
+                                                                            if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                            else sym->node = temp;
+
+                                                                            $$ = sym;
+                                                                        }
                     ;
 
 constant_expression : conditional_expression    {$$ = $1;}
@@ -299,13 +326,35 @@ constant_expression : conditional_expression    {$$ = $1;}
 
 
 
-function_declarator : direct_declarator '(' ')'                     { fprintf(stderr, "function declarator detected\n"); $$ = new_function_decl($1, NULL); }
-                    | direct_declarator '(' identifier_list ')'     { $$ = new_function_decl($1, NULL); }
+function_declarator : direct_declarator '(' ')'                     {   
+                                                                        //fprintf(stderr, "function declarator detected\n"); 
+                                                                        ast_node_t* temp = new_function($1->node, NULL); 
+
+                                                                        SYMBOL* sym = $1;
+
+                                                                        if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
+
+                                                                        if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                        else sym->node = temp;
+
+                                                                        $$ = sym;
+                                                                    }
+                    | direct_declarator '(' identifier_list ')'     { 
+                                                                        ast_node_t* temp = new_function($1->node, $3); 
+                                                                        SYMBOL* sym = $1;
+
+                                                                        if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
+
+                                                                        if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                        else sym->node = temp;
+
+                                                                        $$ = sym;
+                                                                    }
                     ;
 
 
 identifier_list : IDENT
-                | identifier_list ',' IDENT     
+                | identifier_list ',' IDENT
                 ;
 
 

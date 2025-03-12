@@ -79,6 +79,39 @@ char* get_decl_spec(int op) {
     }
 }
 
+char* get_storage_class(int op) {
+    switch(op) {
+        case REG_SC:        return "REGISTER";
+        case AUTO_SC:       return "AUTO";
+        case EXTERN_SC:     return "EXTERN";
+        case STATIC_SC:     return "STATIC";
+        case UNKNOWN_SC:    return "UNKNOWN";
+        default: {
+            static char buf[3];
+            snprintf(buf, sizeof(buf), "%c", op);
+            return buf;
+        }
+    }
+}
+
+char* get_symbol_type(int op) {
+    switch(op) {
+        case VAR_SYM:       return "VARIABLE";
+        case FUNCT_SYM:     return "FUNCTION";
+        case STRUCT_SYM:    return "STRUCT";
+        case STAG_SYM:      return "STRUCT TAG";
+        case UNION_SYM:     return "UNION";
+        case UTAG_SYM:      return "UNION TAG";
+        case MEMBER_SYM:    return "MEMBER";
+        case LABEL_SYM:     return "LABEL";
+        default: {
+            static char buf[3];
+            snprintf(buf, sizeof(buf), "%c", op);
+            return buf;
+        }
+    }
+}
+
 void print_ast_tree(ast_node_t *node, int indent) {
     if (!node)
         return;

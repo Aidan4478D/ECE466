@@ -86,7 +86,6 @@ typedef enum node_type {
     POINTER_N,
     ARRAY_N,
     DECLSPEC_N,
-    FUNCT_DECL_N
 } NODETYPE;
 
 // assignment 2 stuff
@@ -199,7 +198,6 @@ ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl);
 ast_node_t* new_array(ast_node_t* base, int size);
-ast_node_t* new_function_decl(ast_node_t* base, ast_node_t* params);
 
 #endif 
 
