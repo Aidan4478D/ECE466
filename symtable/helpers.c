@@ -23,8 +23,8 @@ void print_sym_table(SYMTABLE *st) {
         if (item->isOccupied && !item->isDeleted) {
             SYMBOL *sym = (SYMBOL *) item->pv;
             // For clarity, you might later convert enum values to strings.
-            printf("Slot %d: key = %s, namespace = %d, type = %d, storage = %d\n",
-                   i, sym->key, sym->lineno, sym->name_space, sym->type, sym->stg_class);
+            printf("Slot %d: key = %s, namespace = %d, type = %d, storage = %d\n", i, sym->key, sym->name_space, sym->type, sym->stg_class);
+            print_ast_tree(sym->node, 0);
         }
     }
 }
@@ -176,6 +176,17 @@ void print_ast_tree(ast_node_t *node, int indent) {
                 }
             }
             break;
+        case POINTER_N:
+            printf("POINTER to:\n");
+            print_ast_tree(node->pointer.next, indent + 1);
+            break;
+        case ARRAY_N: 
+            printf("ARRAY:\n");
+            print_ast_tree(node->array.list->head, indent+1); 
+        case DECLSPEC_N:
+            printf("DECLARATION SPECIFIER:\n");
+            printf("DECL TYPE: %d\n", node->decl_spec.decl_type);
+            printf("STG CLASS: %d\n", node->decl_spec.stg_class);
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);
             break;

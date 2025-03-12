@@ -21,7 +21,7 @@ typedef enum name_spaces {
 
 
 typedef enum sym_types {
-    VAR_SYM,
+    VAR_SYM=0,
     FUNCT_SYM,
     STRUCT_SYM,
     STAG_SYM,
@@ -47,11 +47,12 @@ typedef struct symbol {
 typedef struct sym_table {
     SCOPETYPE scope;
     ht_t* ht; 
+    struct sym_table* outer;
 } SYMTABLE;
 
-SYMTABLE* st_create(SCOPETYPE scope); 
+SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer); 
 int st_install(SYMTABLE* st, SYMBOL* sym);
-
-SYMBOL* st_new_symbol(STRTYPE name, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class);
+SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns);
+SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class);
 
 #endif

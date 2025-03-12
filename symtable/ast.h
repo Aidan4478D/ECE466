@@ -84,7 +84,6 @@ typedef enum node_type {
     
     //new stuff
     POINTER_N,
-    SCALAR_N,
     ARRAY_N,
     DECLSPEC_N
 } NODETYPE;
@@ -162,6 +161,10 @@ typedef struct ast_node_declspec {
     STGCLASS stg_class;
 } ast_node_declspec_t;
 
+typedef struct ast_node_array {
+    int size;
+    ast_node_list_t* list;
+} ast_node_array_t; 
 
 struct ast_node {
     NODETYPE type;
@@ -176,6 +179,7 @@ struct ast_node {
         ast_node_list_t list;
         ast_node_pointer_t pointer;
         ast_node_declspec_t decl_spec;
+        ast_node_array_t array;
     };
 };
 
@@ -192,8 +196,8 @@ ast_node_t* new_pointer(ast_node_t* next);
 ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 
 ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
-ast_node_t* combine_type(ast_node_t* base, ast_node_t* decl);
-ast_node_t* new_array(ast_node_t* base, ast_node_t* size);
+ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl);
+ast_node_t* new_array(ast_node_t* base, int size);
 ast_node_t* new_function_decl(ast_node_t* base, ast_node_t* params);
 
 #endif 

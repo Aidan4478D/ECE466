@@ -110,7 +110,7 @@ bool ht_contains(ht_t *ht, const char *key) {
 }
 
 // get the pointer associated with the key
-void *ht_getPointer(ht_t *ht, const char *key, bool *b) {
+void *ht_get_pointer(ht_t *ht, const char *key, bool *b) {
     int pos = find_pos(ht, key);
     if (pos == -1) {
         if (b) *b = false;
@@ -121,7 +121,7 @@ void *ht_getPointer(ht_t *ht, const char *key, bool *b) {
 }
 
 // set the pointer associated with the key
-int ht_setPointer(ht_t *ht, const char *key, void *pv) {
+int ht_set_pointer(ht_t *ht, const char *key, void *pv) {
     int pos = find_pos(ht, key);
     if (pos != -1) {
         ht->data[pos].pv = pv;

@@ -23,6 +23,8 @@ stack_t* scope_stack;
     - Initialized declarations
     - Arrays are declarators are assumed to be arr[] or arr[NUMBER] (no variable length arrays)
 
+To fix:
+- Ident being the key
 */
 %}
 
@@ -130,7 +132,7 @@ parser  : declaration_or_fndef
         | parser declaration_or_fndef
         ;
 
-declaration_or_fndef    : declaration           { ast_root = $1; print_ast_tree(ast_root, 0); }
+declaration_or_fndef    : declaration           { ast_root = $1; print_ast_tree(ast_root, 0); print_sym_table(stack_peek(scope_stack)); }
                         | function_definition   {}
                         ;
 
@@ -146,25 +148,26 @@ init_declarator : declarator
 
 function_definition     : decl_specifiers declarator compound_statement {   
                                                                             fprintf(stderr, "Entering function scope\n"); 
-                                                                            ast_node_t* final_type = combine_type($1, $2);
+                                                                            ast_node_t* final_type = combine_nodes($1, $2);
                                                                             SYMTABLE* global = stack_peek(scope_stack);
                                                     
                                                                             // assume identifier comes from direct_declarator
                                                                             char* funct_name = "";
                                                                             if($2 && $2->type == IDENT_N) funct_name = $2->ident.name;
 
-                                                                            SYMBOL* funct_sym = st_new_symbol((STRTYPE){STRING_T, funct_name, 0}, final_type, GENERAL_NS, FUNCT_SYM, EXTERN_SC); 
+                                                                            SYMBOL* funct_sym = st_new_symbol(funct_name, final_type, GENERAL_NS, FUNCT_SYM, EXTERN_SC); 
                                                                             st_install(global, funct_sym);
                                                                             print_sym_table(global);
 
-                                                                            stack_push(scope_stack, st_create(FUNCT_SCOPE));
+                                                                            stack_push(scope_stack, st_create(FUNCT_SCOPE, global));
                                                                         }
                         ;
 
 
 compound_statement  : '{'   {
-                                fprintf(stderr, "Entering block scope\n"); 
-                                stack_push(scope_stack, st_create(BLOCK_SCOPE));
+                                fprintf(stderr, "Entering block scope\n");
+                                SYMTABLE* current = stack_peek(scope_stack);
+                                stack_push(scope_stack, st_create(BLOCK_SCOPE, current));
                             } 
                     decl_or_stmt_list '}'   {
                                                 SYMTABLE* st = stack_pop(scope_stack);
@@ -236,7 +239,7 @@ struct_declarator   : declarator {$$ = $1; }
                     ;
 
 
-declarator  : pointer_declarator    { $$ = $1; }
+declarator  : pointer_declarator  { $$ = $1; }
             | direct_declarator     { $$ = $1; }
             ;
 
@@ -245,18 +248,23 @@ direct_declarator   : simple_declarator     {
                                                 
                                                 // storage class depends on the scope
                                                 SYMTABLE* scope_top = stack_peek(scope_stack);
+                                                SYMBOL* sym = st_lookup(scope_top, scope_top->scope, $1.string_literal, GENERAL_NS); 
+                                                if(!sym) {
+                                                    STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
+                                                    
+                                                    ast_node_t* node = new_ident($1.string_literal);
 
-                                                STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
-                                                
-                                                ast_node_t* node = new_ident($1.string_literal);
-                                                SYMBOL* sym = st_new_symbol($1, node, GENERAL_NS, VAR_SYM, stg_class); 
+                                                    sym = st_new_symbol($1.string_literal, node, GENERAL_NS, VAR_SYM, stg_class); 
+                                                    st_install(scope_top, sym);
+                                                    //print_sym_table(scope_top);
 
-                                                st_install(scope_top, sym);
-                                                //print_sym_table(scope_top);
+                                                    fprintf(stderr, "string is: %s\n", $1.string_literal); 
+                                                }
+                                                    
+                                                $$ = sym->node;
+                                                fprintf(stderr, "got here before seg fault"); 
 
-                                                fprintf(stderr, "string is: %s\n", $1.string_literal); 
-                                                
-                                                $$ = node;
+                                                //$$ = new_ident($1.string_literal);
                                             }
 
                     | '(' declarator ')'    { $$ = $2; }
@@ -268,7 +276,26 @@ direct_declarator   : simple_declarator     {
 simple_declarator   : IDENT
                     ; 
 
-pointer_declarator  : pointer direct_declarator   { $$ = new_pointer($2); }
+pointer_declarator  : pointer direct_declarator   {
+                                                        SYMTABLE* scope_top = stack_peek(scope_stack);
+
+                                                        // general namespace for variables
+                                                        SYMBOL* sym = st_lookup(scope_top, scope_top->scope, $2->ident.name, GENERAL_NS); 
+                                                        
+                                                        ast_node_t* temp = combine_nodes($2, $1); 
+
+
+                                                        if(!sym) {
+
+                                                            STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
+                                                            
+                                                            SYMBOL* sym = st_new_symbol($2->ident.name, temp, GENERAL_NS, VAR_SYM, stg_class); 
+                                                            st_install(scope_top, sym);
+                                                        }
+                                                        else sym->node = temp;
+
+                                                        $$ = temp;
+                                                  }
                     ;
 
 pointer : '*'           { $$ = new_pointer(NULL); }
@@ -503,7 +530,7 @@ expression : comma_expression { $$ = $1; }
 int main(void) {
     scope_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(scope_stack);
-    stack_push(scope_stack, st_create(FILE_SCOPE)); 
+    stack_push(scope_stack, st_create(FILE_SCOPE, NULL)); 
     yyparse(); 
     return 0;
 }
