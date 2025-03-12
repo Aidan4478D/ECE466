@@ -37,7 +37,7 @@ To fix:
     NUMTYPE number;
     STRTYPE string;
     ast_node_t* ast_node;
-    SYMBOL* sym;
+    SYMBOL* symbol;
     int TOKEN;
 }
 
@@ -66,14 +66,13 @@ To fix:
 %type<ast_node> stg_class_specifier type_specifier 
 %type<ast_node> struct_union_specifier struct_or_union struct_declaration_list struct_declaration
 %type<ast_node> specifier_list struct_declarator_list struct_declarator
-%type<ast_node> declarator 
-%type<ast_node> direct_declarator 
+%type<symbol> direct_declarator declarator
 %type<string> simple_declarator
-%type<ast_node> pointer_declarator
+%type<symbol> pointer_declarator
 %type<ast_node> pointer array_declarator constant_expression function_declarator
 %type<ast_node> identifier_list
 
-%type<ast_node> init_declarator_list init_declarator
+%type<symbol> init_declarator_list init_declarator
 
 
 %type<ast_node> cast_expression unary_expression
@@ -132,34 +131,64 @@ parser  : declaration_or_fndef
         | parser declaration_or_fndef
         ;
 
-declaration_or_fndef    : declaration           { ast_root = $1; print_ast_tree(ast_root, 0); print_sym_table(stack_peek(scope_stack)); }
+declaration_or_fndef    : declaration           { ast_root = $1; /*print_ast_tree(ast_root, 0); print_sym_table(stack_peek(scope_stack));*/ }
                         | function_definition   {}
                         ;
 
-declaration : decl_specifiers ';' { $$ = $1; SYMTABLE* current = stack_peek(scope_stack); }
-            | decl_specifiers init_declarator_list ';'
+declaration : decl_specifiers ';'   { $$ = $1; }
+            | decl_specifiers init_declarator_list ';'  { 
+                                                            SYMBOL *sym = $2;
+                                                            SYMTABLE *cur_scope = stack_peek(scope_stack); 
+
+                                                            while (sym != NULL) {
+                                                                //fprintf(stderr, "Decl Specifiers:\n");
+                                                                for (ast_node_t *spec = $1; spec != NULL; spec = spec->list.next) {
+                                                                    //fprintf(stderr, "  DeclSpec: decl_type=%d, stg_class=%d\n", 
+                                                                    //spec->decl_spec.decl_type, spec->decl_spec.stg_class);
+                                                                    
+                                                                    if(spec->decl_spec.stg_class) sym->stg_class = spec->decl_spec.stg_class; 
+                                                                    if(spec->decl_spec.decl_type) sym->node = combine_nodes(spec, sym->node);
+                                                                }
+
+                                                                print_ast_tree(sym->node, 0);
+
+                                                                //st_install(cur_scope, sym);
+                                                                //print_sym_table(cur_scope);
+                                                                  
+                                                                //fprintf(stderr, "Declarators:\n");
+                                                                //fprintf(stderr, "Symbol: %s\n", sym->key);
+                                                                sym = sym->next;
+                                                            }
+                                                        }
             ;
 
 init_declarator_list : init_declarator
-                     | init_declarator_list ',' init_declarator
+                     | init_declarator_list ',' init_declarator {
+                                                                    SYMBOL* p = $1;
+                                                                    while (p->next != NULL)
+                                                                        p = p->next;
+                                                                    p->next = $3; 
+                                                                    $$ = $1;
+                                                                }
 
 init_declarator : declarator
                 ; 
 
 function_definition     : decl_specifiers declarator compound_statement {   
                                                                             fprintf(stderr, "Entering function scope\n"); 
-                                                                            ast_node_t* final_type = combine_nodes($1, $2);
-                                                                            SYMTABLE* global = stack_peek(scope_stack);
+                                                                            //ast_node_t* final_type = combine_nodes($1, $2);
+                                                                            //SYMTABLE* global = stack_peek(scope_stack);
                                                     
                                                                             // assume identifier comes from direct_declarator
-                                                                            char* funct_name = "";
-                                                                            if($2 && $2->type == IDENT_N) funct_name = $2->ident.name;
+                                                                            //char* funct_name = "";
+                                                                            //if($2 && $2->type == IDENT_N) funct_name = $2->ident.name;
 
-                                                                            SYMBOL* funct_sym = st_new_symbol(funct_name, final_type, GENERAL_NS, FUNCT_SYM, EXTERN_SC); 
-                                                                            st_install(global, funct_sym);
-                                                                            print_sym_table(global);
+                                                                            //SYMBOL* funct_sym = st_new_symbol(funct_name, final_type, GENERAL_NS, FUNCT_SYM, EXTERN_SC); 
+                                                                            //st_install(global, funct_sym);
+                                                                            //print_sym_table(global);
 
-                                                                            stack_push(scope_stack, st_create(FUNCT_SCOPE, global));
+                                                                            //stack_push(scope_stack, st_create(FUNCT_SCOPE, global));
+                                                                            
                                                                         }
                         ;
 
@@ -184,9 +213,9 @@ decl_or_stmt    : declaration {fprintf(stderr, "reducing a declaration\n"); }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = $1; }
-                | stg_class_specifier decl_specifiers   
+                | stg_class_specifier decl_specifiers   { $$ = append_item($2, $1); }
                 | type_specifier                        { $$ = $1; }
-                | type_specifier decl_specifiers
+                | type_specifier decl_specifiers        { $$ = append_item($2, $1); }
                 ;
 
 stg_class_specifier : EXTERN    { $$ = new_decl_spec(0, EXTERN_SC); }
@@ -227,12 +256,12 @@ struct_declaration  : specifier_list struct_declarator_list ';'
                     ;
 
 
-specifier_list  : type_specifier                { $$ = new_list($1); }
+specifier_list  : type_specifier                { $$ = $1; }
                 | type_specifier specifier_list { $$ = append_item($1, $2); }
                 ;
 
 
-struct_declarator_list  : struct_declarator                             { $$ = new_list($1); }
+struct_declarator_list  : struct_declarator                             { $$ = $1; }
                         | struct_declarator_list ',' struct_declarator  { $$ = append_item($1, $3); }
 
 struct_declarator   : declarator {$$ = $1; }
@@ -240,33 +269,11 @@ struct_declarator   : declarator {$$ = $1; }
 
 
 declarator  : pointer_declarator  { $$ = $1; }
-            | direct_declarator     { $$ = $1; }
+            | direct_declarator   { $$ = $1; }
             ;
 
 
-direct_declarator   : simple_declarator     { 
-                                                
-                                                // storage class depends on the scope
-                                                SYMTABLE* scope_top = stack_peek(scope_stack);
-                                                SYMBOL* sym = st_lookup(scope_top, scope_top->scope, $1.string_literal, GENERAL_NS); 
-                                                if(!sym) {
-                                                    STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
-                                                    
-                                                    ast_node_t* node = new_ident($1.string_literal);
-
-                                                    sym = st_new_symbol($1.string_literal, node, GENERAL_NS, VAR_SYM, stg_class); 
-                                                    st_install(scope_top, sym);
-                                                    //print_sym_table(scope_top);
-
-                                                    fprintf(stderr, "string is: %s\n", $1.string_literal); 
-                                                }
-                                                    
-                                                $$ = sym->node;
-                                                fprintf(stderr, "got here before seg fault"); 
-
-                                                //$$ = new_ident($1.string_literal);
-                                            }
-
+direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, UNKNOWN_SC); }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator
                     | array_declarator
@@ -276,26 +283,7 @@ direct_declarator   : simple_declarator     {
 simple_declarator   : IDENT
                     ; 
 
-pointer_declarator  : pointer direct_declarator   {
-                                                        SYMTABLE* scope_top = stack_peek(scope_stack);
-
-                                                        // general namespace for variables
-                                                        SYMBOL* sym = st_lookup(scope_top, scope_top->scope, $2->ident.name, GENERAL_NS); 
-                                                        
-                                                        ast_node_t* temp = combine_nodes($2, $1); 
-
-
-                                                        if(!sym) {
-
-                                                            STGCLASS stg_class = scope_top->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC;
-                                                            
-                                                            SYMBOL* sym = st_new_symbol($2->ident.name, temp, GENERAL_NS, VAR_SYM, stg_class); 
-                                                            st_install(scope_top, sym);
-                                                        }
-                                                        else sym->node = temp;
-
-                                                        $$ = temp;
-                                                  }
+pointer_declarator  : pointer direct_declarator   { $$ = $2; $2->node = $1; fprintf(stderr, "adding ptr\n");  }
                     ;
 
 pointer : '*'           { $$ = new_pointer(NULL); }
@@ -311,7 +299,7 @@ constant_expression : conditional_expression    {$$ = $1;}
 
 
 
-function_declarator : direct_declarator '(' ')'                     { $$ = new_function_decl($1, NULL); }
+function_declarator : direct_declarator '(' ')'                     { fprintf(stderr, "function declarator detected\n"); $$ = new_function_decl($1, NULL); }
                     | direct_declarator '(' identifier_list ')'     { $$ = new_function_decl($1, NULL); }
                     ;
 

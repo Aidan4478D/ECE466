@@ -60,6 +60,24 @@ char* get_operator_string(int op) {
     }
 }
 
+char* get_decl_spec(int op) {
+    switch(op) {
+        case FLOAT_DT:      return "FLOAT";
+        case DOUBLE_DT:     return "DOUBLE";
+        case INT_DT:        return "INT";
+        case LONG_DT:       return "LONG";
+        case SHORT_DT:      return "SHORT";
+        case CHAR_DT:       return "CHAR";
+        case VOID_DT:       return "VOID";
+        case SIGNED_DT:     return "SIGNED";
+        case UNSIGNED_DT:   return "UNSIGNED";
+        default: {
+            static char buf[3];
+            snprintf(buf, sizeof(buf), "%c", op);
+            return buf;
+        }
+    }
+}
 
 void print_ast_tree(ast_node_t *node, int indent) {
     if (!node)
@@ -182,11 +200,11 @@ void print_ast_tree(ast_node_t *node, int indent) {
             break;
         case ARRAY_N: 
             printf("ARRAY:\n");
-            print_ast_tree(node->array.list->head, indent+1); 
+            print_ast_tree(node->array.list->head, indent+1);
+            break;
         case DECLSPEC_N:
-            printf("DECLARATION SPECIFIER:\n");
-            printf("DECL TYPE: %d\n", node->decl_spec.decl_type);
-            printf("STG CLASS: %d\n", node->decl_spec.stg_class);
+            printf("DECLARATION SPECIFIER: %s\n", get_decl_spec(node->decl_spec.decl_type));
+            break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);
             break;

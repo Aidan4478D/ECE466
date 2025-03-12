@@ -41,6 +41,7 @@ typedef struct symbol {
     STGCLASS stg_class;
 
     ast_node_t* node;
+    struct symbol* next; //allow for chained symbols
 } SYMBOL;
 
 

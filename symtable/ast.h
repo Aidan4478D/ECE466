@@ -85,7 +85,8 @@ typedef enum node_type {
     //new stuff
     POINTER_N,
     ARRAY_N,
-    DECLSPEC_N
+    DECLSPEC_N,
+    FUNCT_DECL_N
 } NODETYPE;
 
 // assignment 2 stuff

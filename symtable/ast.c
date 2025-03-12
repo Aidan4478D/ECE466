@@ -157,31 +157,27 @@ ast_node_t* new_array(ast_node_t* head, int size) {
 ast_node_t* new_function_decl(ast_node_t* base, ast_node_t* params) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
 
-    node->type = FUNCT_N;
+    node->type = FUNCT_DECL_N;
     node->function.left = base;
     node->function.right = params; // unused since params aren't handled but maybe for future
 
     return node;
 }
 
-
 ast_node_t* combine_nodes(ast_node_t *base, ast_node_t *decl) {
     if (!decl) return base;
-    
     ast_node_t *node = decl;
-    while (node) {
-        if (node->type == POINTER_N && node->pointer.next == NULL) {
-            node->pointer.next = base;
-            break;
-        } else if (node->type == ARRAY_N && node->list.head == NULL) {
-            node->list.head = base;
-            break;
-        } else if (node->type == FUNCT_N && node->function.right == NULL) {
-            node->function.right = base;
-            break;
-        }
-        // For our simplified grammar, break if nothing fits.
-        break;
+    
+    // if decl is a pointer chain traverse to its end.
+    while (node->type == POINTER_N && node->pointer.next != NULL)
+        node = node->pointer.next;
+    
+    if (node->type == POINTER_N && node->pointer.next == NULL) node->pointer.next = base;
+    else if (node->type == ARRAY_N && node->array.list->head == NULL) node->array.list->head = base;
+    else if (node->type == FUNCT_N && node->function.right == NULL) node->function.right = base;
+    else {
+           //for now if decl isn’t one of the composite types leave it unchanged. 
     }
     return decl;
 }
+
