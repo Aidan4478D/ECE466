@@ -1,4 +1,6 @@
 #include "ast.h"
+#include "helpers.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -142,32 +144,60 @@ ast_node_t* append_item(ast_node_t* list, ast_node_t* entry) {
 
 
 // array builds off of list
-ast_node_t* new_array(ast_node_t* head, int size) {
+ast_node_t* new_array(ast_node_t* element_type, int size) {
 
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
     node->type = ARRAY_N;
 
     // implement array through list
     // need to have some sort of type indication
-    node->array.list = new_list(head);
+    node->array.element_type = element_type;
     node->array.size = size;  // if size is NULL, then it's an unsized array
     return node;
 }
 
-ast_node_t* combine_nodes(ast_node_t *base, ast_node_t *decl) {
-    if (!decl) return base;
-    ast_node_t *node = decl;
-    
-    // if decl is a pointer chain traverse to its end.
-    while (node->type == POINTER_N && node->pointer.next != NULL)
-        node = node->pointer.next;
-    
-    if (node->type == POINTER_N && node->pointer.next == NULL) node->pointer.next = base;
-    else if (node->type == ARRAY_N && node->array.list->head == NULL) node->array.list->head = base;
-    else if (node->type == FUNCT_N && node->function.right == NULL) node->function.right = base;
-    else {
-           //for now if decl isn’t one of the composite types leave it unchanged. 
-    }
-    return decl;
-}
+ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
+    if (!decl)
+        return base;
+    if (!base)
+        return decl;
 
+    switch (decl->type) {
+        case ARRAY_N:
+            if (decl->array.element_type == NULL)
+                decl->array.element_type = base;
+            else
+                decl->array.element_type = combine_nodes(base, decl->array.element_type);
+            return decl;
+
+        case POINTER_N: {
+            ast_node_t* head = decl;
+            ast_node_t* curr = decl;
+            while (curr->pointer.next != NULL)
+                curr = curr->pointer.next;
+            curr->pointer.next = base;
+            return head;
+        }
+
+        case FUNCT_N:
+            if (decl->function.left == NULL)
+                decl->function.left = base;
+            else
+                decl->function.left = combine_nodes(base, decl->function.left);
+            return decl;
+
+        case DECLSPEC_N:
+            // declaration specifiers should be the base type
+            // if base is another DECLSPEC_N or something else, we can combine them
+            if (base->type == DECLSPEC_N) {
+                // combine multiple declaration specifiers
+                return append_item(base, decl);
+            } else {
+                // Attach the declspec as the base of the type
+                return combine_nodes(decl, base);
+            }
+
+        default:
+            return decl;
+    }
+}

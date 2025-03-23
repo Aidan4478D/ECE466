@@ -163,8 +163,12 @@ typedef struct ast_node_declspec {
 
 typedef struct ast_node_array {
     int size;
-    ast_node_list_t* list;
-} ast_node_array_t; 
+    ast_node_t* element_type;
+    //ast_node_list_t* list;
+
+    // next decl spec
+} ast_node_array_t;
+
 
 struct ast_node {
     NODETYPE type;
@@ -197,7 +201,7 @@ ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 
 ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl);
-ast_node_t* new_array(ast_node_t* base, int size);
+ast_node_t* new_array(ast_node_t* element_type, int size);
 
 #endif 
 

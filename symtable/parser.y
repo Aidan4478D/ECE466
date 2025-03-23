@@ -138,29 +138,29 @@ declaration : decl_specifiers ';'   { $$ = $1; }
             | decl_specifiers init_declarator_list ';'  { 
                                                             SYMBOL *sym = $2;
                                                             SYMTABLE *cur_scope = stack_peek(scope_stack); 
+                                                            ast_node_t *spec = $1; //dec specs
 
                                                             while (sym != NULL) {
-                                                                fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
-                                                                for (ast_node_t *spec = $1; spec != NULL; spec = spec->list.next) {
-                                                                    //fprintf(stderr, "  DeclSpec: decl_type=%d, stg_class=%d\n", 
-                                                                    //spec->decl_spec.decl_type, spec->decl_spec.stg_class);
-                                                                    
-                                                                    if(spec->decl_spec.stg_class) sym->stg_class = spec->decl_spec.stg_class; 
-                                                                    if(spec->decl_spec.decl_type) sym->node = combine_nodes(spec, sym->node);
+                                                                if (spec) sym->node = combine_nodes(spec, sym->node);
+
+                                                                // set storage class if provided in decl_specifiers
+                                                                ast_node_t *current_spec = spec;
+                                                                while (current_spec) {
+                                                                    if (current_spec->type == DECLSPEC_N && current_spec->decl_spec.stg_class) {
+                                                                        sym->stg_class = current_spec->decl_spec.stg_class;
+                                                                    }
+                                                                    current_spec = current_spec->list.next;
                                                                 }
+
+                                                                fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
                                                                 fprintf(stderr, "Storage Class: %s\n", get_storage_class(sym->stg_class)); 
-
                                                                 print_ast_tree(sym->node, 0);
-
-                                                                //st_install(cur_scope, sym);
-                                                                //print_sym_table(cur_scope);
-                                                                  
-                                                                //fprintf(stderr, "Declarators:\n");
-                                                                //fprintf(stderr, "Symbol: %s\n", sym->key);
+                                                                
                                                                 sym = sym->next;
                                                             }
+                                                            $$ = NULL;
                                                         }
-            ;
+                                                        ;
 
 init_declarator_list : init_declarator
                      | init_declarator_list ',' init_declarator {
@@ -207,7 +207,7 @@ compound_statement  : '{'   {
                                 SYMTABLE* current = stack_peek(scope_stack);
                                 stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
                             } 
-                      '}'   {
+                      decl_or_stmt_list '}'   {
                                 SYMTABLE* st = stack_pop(scope_stack);
                                 fprintf(stderr, "Exiting block/funct scope\n"); 
                             }
@@ -293,7 +293,7 @@ direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_liter
 simple_declarator   : IDENT
                     ; 
 
-pointer_declarator  : pointer direct_declarator   { $$ = $2; $2->node = $1; fprintf(stderr, "adding ptr\n");  }
+pointer_declarator  : pointer direct_declarator   { $$ = $2; $2->node = combine_nodes($1, $2->node); fprintf(stderr, "adding ptr\n");  }
                     ;
 
 pointer : '*'           { $$ = new_pointer(NULL); }
@@ -302,10 +302,15 @@ pointer : '*'           { $$ = new_pointer(NULL); }
 
 array_declarator    : direct_declarator '[' ']'                         { 
                                                                             ast_node_t* temp = new_array($1->node, NULL);
-                                                                            
                                                                             SYMBOL* sym = $1;
-                                                                            if(sym->node) sym->node = combine_nodes(sym->node, temp);
+
+                                                                            if(sym->node) {
+                                                                                sym->node = combine_nodes(sym->node, temp);
+                                                                                printf(stderr, "combining nodes for array\n");
+                                                                            }
                                                                             else sym->node = temp;
+
+                                                                            //print_ast_tree(sym->node, 0); 
 
                                                                             $$ = sym;
                                                                         }
@@ -334,7 +339,7 @@ function_declarator : direct_declarator '(' ')'                     {
 
                                                                         if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
 
-                                                                        if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                        if(sym->node) sym->node = combine_nodes(temp, sym->node);
                                                                         else sym->node = temp;
 
                                                                         $$ = sym;

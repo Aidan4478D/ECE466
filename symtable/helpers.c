@@ -112,6 +112,33 @@ char* get_symbol_type(int op) {
     }
 }
 
+
+char* get_node_type(int op) {
+    switch(op) {
+        case IDENT_N:       return "IDENT";
+        case STRING_N:      return "STRING";
+        case NUMBER_N:      return "NUMBER";
+        case POSTFIX_N:     return "POSTFIX OP";
+        case UNOP_N:        return "UNARY OP";
+        case BINOP_N:       return "BINARY OP";
+        case TERNOP_N:      return "TERNARY OP";
+        case ASSIGNOP_N:    return "ASSIGNMENT OP";
+        case COMPOP_N:      return "COMPARISON OP";
+        case FUNCT_N:       return "FUNCTION";
+        case LIST_N:        return "LIST";
+        case ELEMENT_N:     return "ELEMENT";
+        case LOGOP_N:       return "LOGICAL OP";
+        case POINTER_N:     return "POINTER";
+        case ARRAY_N:       return "ARRAY";
+        case DECLSPEC_N:    return "DECLARATION SPECIFIER";
+        default: {
+            static char buf[3];
+            snprintf(buf, sizeof(buf), "%c", op);
+            return buf;
+        }
+    }
+}
+
 void print_ast_tree(ast_node_t *node, int indent) {
     if (!node)
         return;
@@ -165,7 +192,6 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case BINOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
             printf("BINARY OP (%s)\n", op_str);
-
             print_ast_tree(node->genop.left, indent + 1);
             print_ast_tree(node->genop.right, indent + 1);
             break;
@@ -181,7 +207,6 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case ASSIGNOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
             printf("ASSIGNMENT OP (%s)\n", op_str);
-
             print_ast_tree(node->genop.left, indent + 1);
             print_ast_tree(node->genop.right, indent + 1);
             break;
@@ -189,7 +214,6 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case COMPOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
             printf("COMPARISON OP (%s)\n", op_str);
-
             print_ast_tree(node->genop.left, indent + 1);
             print_ast_tree(node->genop.right, indent + 1);
             break;
@@ -203,7 +227,6 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case LOGOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
             printf("LOGICAL OP (%s)\n", op_str);
-
             print_ast_tree(node->genop.left, indent + 1);
             print_ast_tree(node->genop.right, indent + 1);
             break;
@@ -216,11 +239,9 @@ void print_ast_tree(ast_node_t *node, int indent) {
             printf("LIST:\n"); {
                 ast_node_t* current = node;
                 int counter = 1;
-
                 while (current) {
                     for (int i = 0; i < indent; i++)
                         printf("\t");
-
                     printf("LIST ELEMENT #%d:\n", counter++); 
                     print_ast_tree(current->list.head, indent + 1);
                     current = current->list.next;
@@ -232,15 +253,19 @@ void print_ast_tree(ast_node_t *node, int indent) {
             print_ast_tree(node->pointer.next, indent + 1);
             break;
         case ARRAY_N: 
-            printf("ARRAY:\n");
-            print_ast_tree(node->array.list->head, indent+1);
+            printf("ARRAY of:\n");
+            print_ast_tree(node->array.element_type, indent + 1);
             break;
         case DECLSPEC_N:
-            printf("DECLARATION SPECIFIER: %s\n", get_decl_spec(node->decl_spec.decl_type));
+            if (node->decl_spec.stg_class) {
+                printf("STORAGE CLASS: %s\n", get_storage_class(node->decl_spec.stg_class));
+            }
+            if (node->decl_spec.decl_type) {
+                printf("TYPE: %s\n", get_decl_spec(node->decl_spec.decl_type));
+            }
             break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);
             break;
     }
 }
-
