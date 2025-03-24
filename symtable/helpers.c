@@ -4,6 +4,7 @@
 #include "helpers.h"
 #include "stack.h"
 
+
 void print_current_scope(stack_t* scope_stack) {
     SYMTABLE *st = stack_peek(scope_stack);
     printf("Current scope: %d\n", st->scope);
@@ -16,7 +17,7 @@ void print_sym_table(SYMTABLE *st) {
     }
     
     ht_t *ht = st->ht;
-    printf("Symbol Table (Scope: %d, Capacity: %d, Filled: %d):\n", st->scope, ht->capacity, ht->filled);
+    printf("Symbol Table (Scope: %s, Capacity: %d, Filled: %d):\n", get_scope_name(st->scope), ht->capacity, ht->filled);
     
     for (int i = 0; i < ht->capacity; i++) {
         hash_item *item = &ht->data[i];
@@ -57,6 +58,15 @@ char* get_operator_string(int op) {
             snprintf(buf, sizeof(buf), "%c", op);
             return buf;
         }
+    }
+}
+
+char* get_scope_name(int scope) {
+    switch (scope) {
+        case FILE_SCOPE: return "FILE_SCOPE";
+        case FUNCT_SCOPE: return "FUNCT_SCOPE";
+        case BLOCK_SCOPE: return "BLOCK_SCOPE";
+        default: return "UNKNOWN_SCOPE";
     }
 }
 
@@ -253,7 +263,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
             print_ast_tree(node->pointer.next, indent + 1);
             break;
         case ARRAY_N: 
-            printf("ARRAY of:\n");
+            printf("ARRAY of size: %d\n", (node->array.size ? node->array.size : 0));
             print_ast_tree(node->array.element_type, indent + 1);
             break;
         case DECLSPEC_N:

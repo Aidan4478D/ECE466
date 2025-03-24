@@ -1,5 +1,7 @@
 %{
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "helpers.h"
 #include "stack.h"
 #include "symtable.h"
@@ -62,14 +64,17 @@ stack_t* scope_stack;
 %type<ast_node> compound_statement decl_or_stmt_list
 %type<ast_node> decl_or_stmt decl_specifiers
 %type<ast_node> stg_class_specifier type_specifier 
-%type<ast_node> struct_union_specifier struct_or_union struct_declaration_list struct_declaration
+%type<ast_node> struct_union_specifier struct_declaration_list struct_declaration
+%type<TOKEN> struct_or_union
 %type<ast_node> specifier_list struct_declarator_list struct_declarator
 %type<symbol> direct_declarator declarator
 %type<symbol> pointer_declarator
 %type<symbol> function_declarator array_declarator
 %type<string> simple_declarator
-%type<ast_node> pointer constant_expression
+%type<ast_node> pointer
 %type<ast_node> identifier_list
+
+%type<ast_node> abstract_declarator direct_abstract_declarator
 
 %type<symbol> init_declarator_list init_declarator
 
@@ -155,6 +160,9 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                 fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
                                                                 fprintf(stderr, "Storage Class: %s\n", get_storage_class(sym->stg_class)); 
                                                                 print_ast_tree(sym->node, 0);
+
+                                                                st_install(cur_scope, sym);
+                                                                print_sym_table(cur_scope);
                                                                 
                                                                 sym = sym->next;
                                                             }
@@ -293,42 +301,46 @@ direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_liter
 simple_declarator   : IDENT
                     ; 
 
-pointer_declarator  : pointer direct_declarator   { $$ = $2; $2->node = combine_nodes($1, $2->node); fprintf(stderr, "adding ptr\n");  }
+pointer_declarator  : pointer direct_declarator {     
+                                                    $$ = $2; 
+                                                    $2->node = combine_nodes($1, $2->node); 
+                                                    //fprintf(stderr, "adding ptr\n");  
+                                                }
                     ;
 
 pointer : '*'           { $$ = new_pointer(NULL); }
         | '*' pointer   { $$ = new_pointer($2);   }
         ;
 
-array_declarator    : direct_declarator '[' ']'                         { 
-                                                                            ast_node_t* temp = new_array($1->node, NULL);
-                                                                            SYMBOL* sym = $1;
+array_declarator    : direct_declarator '[' ']'             { 
+                                                                ast_node_t* temp = new_array($1->node, 0);
+                                                                SYMBOL* sym = $1;
 
-                                                                            if(sym->node) {
-                                                                                sym->node = combine_nodes(sym->node, temp);
-                                                                                printf(stderr, "combining nodes for array\n");
-                                                                            }
-                                                                            else sym->node = temp;
+                                                                if(sym->node) {
+                                                                    sym->node = combine_nodes(sym->node, temp);
+                                                                    fprintf(stderr, "combining nodes for array\n");
+                                                                }
+                                                                else sym->node = temp;
 
-                                                                            //print_ast_tree(sym->node, 0); 
+                                                                //print_ast_tree(sym->node, 0); 
 
-                                                                            $$ = sym;
-                                                                        }
-                    | direct_declarator '[' constant_expression ']'     { 
-                                                                            ast_node_t* temp = new_array($1->node, $3); 
+                                                                $$ = sym;
+                                                            }
+                    | direct_declarator '[' NUMBER ']'      { 
+                                                                if(!$3._int) {
+                                                                    fprintf(stderr, "Please only use integers for array declarations");
+                                                                    exit(0);
+                                                                }
 
-                                                                            SYMBOL* sym = $1; 
+                                                                ast_node_t* temp = new_array($1->node, $3._int); 
+                                                                SYMBOL* sym = $1; 
 
-                                                                            if(sym->node) sym->node = combine_nodes(sym->node, temp);
-                                                                            else sym->node = temp;
+                                                                if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                else sym->node = temp;
 
-                                                                            $$ = sym;
-                                                                        }
+                                                                $$ = sym;
+                                                            }
                     ;
-
-constant_expression : conditional_expression    {$$ = $1;}
-                    ;
-
 
 
 function_declarator : direct_declarator '(' ')'                     {   
@@ -358,10 +370,27 @@ function_declarator : direct_declarator '(' ')'                     {
                     ;
 
 
-identifier_list : IDENT
-                | identifier_list ',' IDENT
+identifier_list : IDENT                         { $$ = new_ident($1.string_literal); }
+                | identifier_list ',' IDENT     { $$ = append_item($1, new_ident($3.string_literal)); }
                 ;
 
+type_name : specifier_list
+          | specifier_list abstract_declarator {}
+          ;
+
+abstract_declarator : pointer
+                    | direct_abstract_declarator
+                    | pointer direct_abstract_declarator
+                    ;
+
+direct_abstract_declarator : '(' abstract_declarator ')'                { $$ = $2; }
+                           | '[' ']'                                    { $$ = new_array(NULL, 0);          }
+                           | '[' NUMBER ']'                             { $$ = new_array(NULL, $2._int);    }
+                           | direct_abstract_declarator '[' ']'         { $$ = new_array($1, 0);            }
+                           | direct_abstract_declarator '[' NUMBER ']'  { $$ = new_array($1, $3._int);      }
+                           | '(' ')'                                    { $$ = new_function(NULL, NULL);    }
+                           | direct_abstract_declarator '(' ')'         { $$ = new_function($1, NULL);      }
+                           ;
 
 statement : compound_statement
           | expression ';' { ast_root = $1; print_ast_tree(ast_root, 0); }
@@ -431,7 +460,7 @@ unary_expression : postfix_expression /* have precedence lower than postfix but 
 
 
 cast_expression : unary_expression  { $$ = $1; }
-                | '(' type_name ')' cast_expression { /* here for now, ignore! */ }
+                | '(' type_name ')' cast_expression { $$ = $4; }
                 ;
 
 
@@ -439,13 +468,6 @@ sizeof_expression : SIZEOF '(' type_name ')'    { $$ = new_unop(SIZEOF, $3); }
                   | SIZEOF unary_expression     { $$ = new_unop(SIZEOF, $2); }
                   ; 
 
-
-type_name : INT
-          | CHAR
-          | FLOAT
-          | DOUBLE
-          | LONG
-          ;
 
 
 unary_minus_expression : '-' cast_expression    { $$ = new_unop('-', $2); }

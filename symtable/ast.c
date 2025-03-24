@@ -130,12 +130,11 @@ ast_node_t* new_list(ast_node_t* head) {
 }
 
 ast_node_t* append_item(ast_node_t* list, ast_node_t* entry) {
-    if (!list) {
-        return new_list(entry);
-    }
+    if (!list) return new_list(entry);
+    
     ast_node_t* current = list;
 
-    while (current->list.next != NULL) {
+    while (current->list.next) {
         current = current->list.next;
     }
     current->list.next = new_element(entry);
