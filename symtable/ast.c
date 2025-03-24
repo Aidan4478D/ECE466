@@ -169,20 +169,28 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
                 decl->array.element_type = combine_nodes(base, decl->array.element_type);
             return decl;
 
+        /*case POINTER_N: {*/
+            /*ast_node_t* head = decl;*/
+            /*ast_node_t* curr = decl;*/
+            /*while (curr->pointer.next != NULL)*/
+                /*curr = curr->pointer.next;*/
+            /*curr->pointer.next = base;*/
+            /*return head;*/
+        /*}*/
+
         case POINTER_N: {
-            ast_node_t* head = decl;
-            ast_node_t* curr = decl;
-            while (curr->pointer.next != NULL)
-                curr = curr->pointer.next;
-            curr->pointer.next = base;
-            return head;
+            if (decl->pointer.next == NULL) {
+                decl->pointer.next = base;
+            } else {
+                decl->pointer.next = combine_nodes(base, decl->pointer.next);
+            }
+            return decl;
         }
 
         case FUNCT_N:
-            if (decl->function.left == NULL)
-                decl->function.left = base;
-            else
-                decl->function.left = combine_nodes(base, decl->function.left);
+            if (decl->function.left == NULL || decl->function.left->type == IDENT_N) decl->function.left = base;
+            else decl->function.left = combine_nodes(base, decl->function.left);
+
             return decl;
 
         case DECLSPEC_N:

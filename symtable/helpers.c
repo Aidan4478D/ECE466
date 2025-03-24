@@ -149,6 +149,13 @@ char* get_node_type(int op) {
     }
 }
 
+void print_tabs(int tabs, char* message) {
+    for (int i = 0; i < tabs; i++)
+        printf("\t");
+
+    printf("%s\n", message); 
+}
+
 void print_ast_tree(ast_node_t *node, int indent) {
     if (!node)
         return;
@@ -230,9 +237,11 @@ void print_ast_tree(ast_node_t *node, int indent) {
         }
         case FUNCT_N:
             printf("FUNCTION CALL\n");
-            print_ast_tree(node->function.left, indent + 1);
+            print_tabs(indent + 1, "RETURN TYPE: ");
+            print_ast_tree(node->function.left, indent + 2);
             if (node->function.right)
-                print_ast_tree(node->function.right, indent + 1);
+                print_tabs(indent + 1, "PARAMETERS: ");
+                print_ast_tree(node->function.right, indent + 2);
             break;
         case LOGOP_N: {
             const char *op_str = get_operator_string(node->genop.op);

@@ -10,5 +10,6 @@ void print_sym_table(SYMTABLE *st);
 char* get_symbol_type(int op);
 char* get_storage_class(int op);
 char* get_node_type(int op);
+char* get_scope_name(int scope);
 
 #endif //_HELPERS_H

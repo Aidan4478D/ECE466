@@ -6,8 +6,11 @@
 #include "stack.h"
 #include "symtable.h"
 
+#define YYDEBUG 1
+
 void yyerror(char *s);
 int yylex();
+int yydebug = 0;
 
 ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
@@ -73,6 +76,7 @@ stack_t* scope_stack;
 %type<string> simple_declarator
 %type<ast_node> pointer
 %type<ast_node> identifier_list
+%type<ast_node> parameter_list parameter_declaration param_decl_list 
 
 %type<ast_node> abstract_declarator direct_abstract_declarator
 
@@ -124,7 +128,8 @@ stack_t* scope_stack;
 %left '+' '-'
 %left '*' '/' '%'
 %right SIZEOF '~' '!'
-%left POINT PLUSPLUS MINMIN '(' ')' '[' ']'
+%left POINT PLUSPLUS MINMIN 
+%left '(' ')' '[' ']'
 
 
 %start parser
@@ -182,24 +187,37 @@ init_declarator_list : init_declarator
 init_declarator : declarator
                 ; 
 
-function_definition     : decl_specifiers declarator compound_statement {   
-                                                                            fprintf(stderr, "Entering function scope\n"); 
-                                                                            //ast_node_t* final_type = combine_nodes($1, $2);
-                                                                            //SYMTABLE* global = stack_peek(scope_stack);
-                                                    
-                                                                            // assume identifier comes from direct_declarator
-                                                                            //char* funct_name = "";
-                                                                            //if($2 && $2->type == IDENT_N) funct_name = $2->ident.name;
+function_definition : decl_specifiers declarator    {
+                                                        fprintf(stderr, "doing whaky function\n"); 
+                                                        SYMBOL* sym = $2;
+                                                        
 
-                                                                            //SYMBOL* funct_sym = st_new_symbol(funct_name, final_type, GENERAL_NS, FUNCT_SYM, EXTERN_SC); 
-                                                                            //st_install(global, funct_sym);
-                                                                            //print_sym_table(global);
+                                                        if (sym->type == FUNCT_SYM) {
+                                                            sym->node = combine_nodes($1, sym->node);
+    
+                                                            //install function into global scope
+                                                            SYMTABLE* global = stack_peek(scope_stack);
+                                                            st_install(global, sym);
+                                                            fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
 
-                                                                            //stack_push(scope_stack, st_create(FUNCT_SCOPE, global));
-                                                                            
-                                                                        }
-                        ;
+                                                            //SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
+                                                            //stack_push(scope_stack, funct_scope);
+                                                            //fprintf(stderr, "Entering function scope for '%s'\n", sym->key);
+                                                            print_sym_table(global); 
 
+                                                        } else {
+                                                            fprintf("Expected function definition for symbol: %s", sym->key);
+                                                            exit(1);
+                                                        }
+                                                    } param_decl_list compound_statement { 
+                                                        //SYMTABLE* st = stack_pop(scope_stack); 
+                                                        fprintf(stderr, "Exiting function scope");
+                                                    }
+                    ;
+
+param_decl_list : /* empty */           { $$ = NULL; }
+                | param_decl_list declaration { $$ = $2; }
+                ;
 
 compound_statement  : '{'   {
                                 fprintf(stderr, "Entering block or function scope\n");
@@ -322,7 +340,7 @@ array_declarator    : direct_declarator '[' ']'             {
                                                                 }
                                                                 else sym->node = temp;
 
-                                                                //print_ast_tree(sym->node, 0); 
+                                                                print_ast_tree(sym->node, 0); 
 
                                                                 $$ = sym;
                                                             }
@@ -344,16 +362,17 @@ array_declarator    : direct_declarator '[' ']'             {
 
 
 function_declarator : direct_declarator '(' ')'                     {   
-                                                                        //fprintf(stderr, "function declarator detected\n"); 
-                                                                        ast_node_t* temp = new_function($1->node, NULL); 
+                                                                        fprintf(stderr, "function declarator detected\n"); 
+                                                                        ast_node_t* temp = new_function(NULL, NULL); 
 
                                                                         SYMBOL* sym = $1;
 
                                                                         if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
-
-                                                                        if(sym->node) sym->node = combine_nodes(temp, sym->node);
-                                                                        else sym->node = temp;
-
+                                                                        
+                                                                        temp->function.left = sym->node;
+                                                                        sym->node = temp;
+                                                                        
+                                                                        print_ast_tree(sym->node, 0); 
                                                                         $$ = sym;
                                                                     }
                     | direct_declarator '(' identifier_list ')'     { 
@@ -367,7 +386,35 @@ function_declarator : direct_declarator '(' ')'                     {
 
                                                                         $$ = sym;
                                                                     }
+                    | direct_declarator '(' parameter_list ')'      {
+                                                                        SYMBOL* sym = $1;
+                                                                        if (sym->type == VAR_SYM) sym->type = FUNCT_SYM;
+
+                                                                        ast_node_t* temp;
+                                                                        if (sym->node && sym->node->type == POINTER_N) {
+                                                                            ast_node_t* inner_funct = new_function(NULL, $3);  // Inner function with int y
+                                                                            sym->node->pointer.next = inner_funct;             // Pointer points to inner function
+                                                                            temp = sym->node;                                  // Keep the pointer structure
+                                                                        } else {
+                                                                            temp = new_function(sym->node, $3);
+                                                                            sym->node = temp;
+                                                                        }
+
+                                                                        print_ast_tree(sym->node, 0);
+                                                                        $$ = sym;
+                                                                    }
                     ;
+
+parameter_list : parameter_declaration { $$ = $1; }
+               | parameter_list ',' parameter_declaration { $$ = append_item($1, $3); }
+               ;
+
+parameter_declaration : decl_specifiers declarator  {
+                                                        SYMBOL* sym = $2;
+                                                        sym->node = combine_nodes($1, sym->node);
+                                                        $$ = sym->node;
+                                                    }
+                      | decl_specifiers
 
 
 identifier_list : IDENT                         { $$ = new_ident($1.string_literal); }
