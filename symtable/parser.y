@@ -309,7 +309,7 @@ declarator  : pointer_declarator  { $$ = $1; }
             ;
 
 
-direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, UNKNOWN_SC); }
+direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, new_ident($1.string_literal), GENERAL_NS, VAR_SYM, UNKNOWN_SC); }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator
                     | array_declarator
@@ -320,8 +320,8 @@ simple_declarator   : IDENT
                     ; 
 
 pointer_declarator  : pointer direct_declarator {     
-                                                    $$ = $2; 
                                                     $2->node = combine_nodes($1, $2->node); 
+                                                    $$ = $2; 
                                                     //fprintf(stderr, "adding ptr\n");  
                                                 }
                     ;
@@ -387,34 +387,27 @@ function_declarator : direct_declarator '(' ')'                     {
                                                                         $$ = sym;
                                                                     }
                     | direct_declarator '(' parameter_list ')'      {
+                                                                        ast_node_t* temp = new_function(NULL, NULL);
                                                                         SYMBOL* sym = $1;
+
                                                                         if (sym->type == VAR_SYM) sym->type = FUNCT_SYM;
 
-                                                                        ast_node_t* temp;
-                                                                        if (sym->node && sym->node->type == POINTER_N) {
-                                                                            ast_node_t* inner_funct = new_function(NULL, $3);  // Inner function with int y
-                                                                            sym->node->pointer.next = inner_funct;             // Pointer points to inner function
-                                                                            temp = sym->node;                                  // Keep the pointer structure
-                                                                        } else {
-                                                                            temp = new_function(sym->node, $3);
-                                                                            sym->node = temp;
-                                                                        }
+                                                                        temp->function.left = sym->node;
+                                                                        temp->function.right = $3;
+                                                                        sym->node = temp;
 
-                                                                        print_ast_tree(sym->node, 0);
+                                                                        print_ast_tree(sym->node, 0); 
+
                                                                         $$ = sym;
                                                                     }
                     ;
 
-parameter_list : parameter_declaration { $$ = $1; }
+parameter_list : parameter_declaration { $$ = new_list($1); }
                | parameter_list ',' parameter_declaration { $$ = append_item($1, $3); }
                ;
 
-parameter_declaration : decl_specifiers declarator  {
-                                                        SYMBOL* sym = $2;
-                                                        sym->node = combine_nodes($1, sym->node);
-                                                        $$ = sym->node;
-                                                    }
-                      | decl_specifiers
+parameter_declaration : decl_specifiers declarator  { $$ = new_param($1, $2->node); }
+                      | decl_specifiers             { $$ = new_param($1, NULL); }
 
 
 identifier_list : IDENT                         { $$ = new_ident($1.string_literal); }

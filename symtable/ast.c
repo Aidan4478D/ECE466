@@ -155,6 +155,19 @@ ast_node_t* new_array(ast_node_t* element_type, int size) {
     return node;
 }
 
+ast_node_t* new_param(ast_node_t* type, ast_node_t* ident) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = PARAM_N;
+
+    // implement array through list
+    // need to have some sort of type indication
+    node->parameter.type = type;
+    node->parameter.ident = ident;  // if size is NULL, then it's an unsized array
+
+    return node;
+}
+
+
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
     if (!decl)
         return base;
@@ -199,11 +212,16 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
             if (base->type == DECLSPEC_N) {
                 // combine multiple declaration specifiers
                 return append_item(base, decl);
-            } else {
+            } 
+            else {
                 // Attach the declspec as the base of the type
                 return combine_nodes(decl, base);
             }
-
+        /*case IDENT_N: {*/
+            /*ast_node_t* list = new_list(base);  // base is decl_specifiers*/
+            /*list = append_item(list, decl);     // decl is IDENT_N*/
+            /*return list;*/
+        /*}*/
         default:
             return decl;
     }

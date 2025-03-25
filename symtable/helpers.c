@@ -141,6 +141,7 @@ char* get_node_type(int op) {
         case POINTER_N:     return "POINTER";
         case ARRAY_N:       return "ARRAY";
         case DECLSPEC_N:    return "DECLARATION SPECIFIER";
+        case PARAM_N:       return "PARAMETER";
         default: {
             static char buf[3];
             snprintf(buf, sizeof(buf), "%c", op);
@@ -237,13 +238,17 @@ void print_ast_tree(ast_node_t *node, int indent) {
         }
         case FUNCT_N:
             printf("FUNCTION CALL\n");
-            print_tabs(indent + 1, "RETURN TYPE: ");
-            print_ast_tree(node->function.left, indent + 2);
-            if (node->function.right)
-                print_tabs(indent + 1, "PARAMETERS: ");
+            if (node->function.left) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("RETURN TYPE\n");
+                print_ast_tree(node->function.left, indent + 2);
+            }
+            if (node->function.right) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("PARAMETERS:\n");
                 print_ast_tree(node->function.right, indent + 2);
-            break;
-        case LOGOP_N: {
+            }
+            break;        case LOGOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
             printf("LOGICAL OP (%s)\n", op_str);
             print_ast_tree(node->genop.left, indent + 1);
@@ -276,12 +281,13 @@ void print_ast_tree(ast_node_t *node, int indent) {
             print_ast_tree(node->array.element_type, indent + 1);
             break;
         case DECLSPEC_N:
-            if (node->decl_spec.stg_class) {
-                printf("STORAGE CLASS: %s\n", get_storage_class(node->decl_spec.stg_class));
-            }
-            if (node->decl_spec.decl_type) {
-                printf("TYPE: %s\n", get_decl_spec(node->decl_spec.decl_type));
-            }
+            if (node->decl_spec.stg_class) printf("STORAGE CLASS: %s\n", get_storage_class(node->decl_spec.stg_class));
+            if (node->decl_spec.decl_type) printf("TYPE: %s\n", get_decl_spec(node->decl_spec.decl_type));
+            break;
+        case PARAM_N:
+            printf("PARAMETER\n");
+            if (node->parameter.type) print_ast_tree(node->parameter.type, indent + 1);
+            if (node->parameter.ident) print_ast_tree(node->parameter.ident, indent + 1);
             break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);
