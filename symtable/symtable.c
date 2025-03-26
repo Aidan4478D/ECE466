@@ -27,8 +27,24 @@ void st_destroy(SYMTABLE* st) {
 // install symbol in the scope's symbol table
 int st_install(SYMTABLE* st, SYMBOL* sym) {
     
-    // implement namespace stuff later
     /*fprintf(stderr, "ket is: %s\n", sym->key); */
+    if (st == NULL || sym == NULL) {
+        fprintf(stderr, "Invalid symbol table or symbol\n");
+        return -1;
+    }
+
+    
+    bool found = false;
+    SYMBOL* existing_sym = (SYMBOL*) ht_get_pointer(st->ht, sym->key, &found);
+    
+    //might have to have 3 different hash tables if I don't want to restructure hash table
+    if (found && existing_sym) {
+        fprintf(stderr, "trying to insert symbol %s sym ns: %d, existing ns: %d\n", sym->key, sym->name_space, existing_sym->name_space);
+        if (existing_sym->name_space == sym->name_space) {
+            fprintf(stderr, "symbol %s already exists in namespace %d\n", sym->key, sym->name_space);
+            return -1;
+        }
+    }
 
     switch(ht_insert(st->ht, sym->key, sym)) {
         case 0: fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); return 0;
@@ -46,18 +62,16 @@ SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns) {
     for (SYMTABLE* current = st; current != NULL; current = current->outer) {
 
         sym = (SYMBOL*) ht_get_pointer(current->ht, key, &found);
-        if (found && sym != NULL) {
-            if (sym->name_space == ns) {
-                return sym;
-            }
-        }
+
+        if (found && sym && sym->name_space == ns) return sym;
+
         if (current->scope == FILE_SCOPE) break;
     }
     return NULL;
 }
 
 
-SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class) {
+SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st) {
 
     SYMBOL* sym = (SYMBOL*) malloc(sizeof(SYMBOL));
 
@@ -67,11 +81,14 @@ SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, S
     sym->name_space = ns;
     sym->type = type;
     sym->stg_class = stg_class;
-
     
     /*printf("key = %s, namespace = %d, type = %d, storage = %d\n", sym->key,sym->name_space, sym->type, sym->stg_class);*/
-
     sym->node = node;
+
+    if(type == STRUCT_SYM || type == UNION_SYM) {
+        sym->is_complete = 0;
+        sym->mini_st = st_create(BLOCK_SCOPE, st);
+    }
 
     return sym;
 }

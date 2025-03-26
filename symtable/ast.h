@@ -5,6 +5,10 @@
 
 //#include "symtable.h"
 
+// forward declaration of struct symbol (from symtable.h)
+struct symbol;
+typedef struct symbol SYMBOL;
+
 // stuff that was in the lexer .h file
 
 enum num_type {
@@ -87,6 +91,8 @@ typedef enum node_type {
     ARRAY_N,
     DECLSPEC_N,
     PARAM_N,
+    STRUCT_N,
+    UNION_N,
 } NODETYPE;
 
 // assignment 2 stuff
@@ -175,6 +181,9 @@ typedef struct ast_node_param {
     ast_node_t* ident;  // ident node
 } ast_node_param_t; 
 
+typedef struct ast_node_struct_union {
+    SYMBOL* sym;
+} ast_node_struct_union_t; 
 
 struct ast_node {
     NODETYPE type;
@@ -191,6 +200,7 @@ struct ast_node {
         ast_node_declspec_t decl_spec;
         ast_node_array_t array;
         ast_node_param_t parameter;
+        ast_node_struct_union_t struct_union;
     };
 };
 
@@ -210,6 +220,7 @@ ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl);
 ast_node_t* new_array(ast_node_t* element_type, int size);
 ast_node_t* new_param(ast_node_t* type, ast_node_t* ident); 
+ast_node_t* new_struct_union(int token, SYMBOL* sym);
 
 #endif 
 

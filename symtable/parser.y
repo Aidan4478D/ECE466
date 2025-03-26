@@ -18,6 +18,7 @@ int in_struct_union = 0;
 
 // create a new stack and initialze it
 stack_t* scope_stack;
+SYMBOL* current_struct_union = NULL;
 
 //int yydebug = 1;
 
@@ -68,20 +69,20 @@ stack_t* scope_stack;
 %type<ast_node> decl_or_stmt decl_specifiers
 %type<ast_node> stg_class_specifier type_specifier 
 %type<ast_node> struct_union_specifier struct_declaration_list struct_declaration
-%type<TOKEN> struct_or_union
-%type<ast_node> specifier_list struct_declarator_list struct_declarator
-%type<symbol> direct_declarator declarator
-%type<symbol> pointer_declarator
-%type<symbol> function_declarator array_declarator
-%type<string> simple_declarator
+%type<ast_node> specifier_list 
 %type<ast_node> pointer
 %type<ast_node> identifier_list
 %type<ast_node> parameter_list parameter_declaration param_decl_list 
-
 %type<ast_node> abstract_declarator direct_abstract_declarator
 
+%type<symbol>struct_declarator_list struct_declarator
+%type<symbol> direct_declarator declarator
+%type<symbol> pointer_declarator
+%type<symbol> function_declarator array_declarator
 %type<symbol> init_declarator_list init_declarator
 
+%type<TOKEN> struct_or_union
+%type<string> simple_declarator
 
 %type<ast_node> cast_expression unary_expression
 %type<ast_node> sizeof_expression
@@ -274,9 +275,61 @@ type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
 
 
 
-struct_union_specifier : struct_or_union IDENT '{' struct_declaration_list '}'
-                       | struct_or_union '{' struct_declaration_list '}'
-                       | struct_or_union IDENT
+struct_union_specifier : struct_or_union IDENT '{' {
+                                                        fprintf(stderr, "Entering struct scope\n"); 
+                                                        SYMTABLE* current_scope = stack_peek(scope_stack);
+                                                        SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
+
+                                                        if (sym != NULL && sym->is_complete) {
+                                                            fprintf(stderr, "Error: redefinition of %s %s\n", ($1 == STRUCT ? "struct" : "union"), $2.string_literal);
+                                                            exit(1);
+                                                        } 
+                                                        if (sym == NULL) {
+                                                            sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                            st_install(current_scope, sym);
+                                                        }
+                                                        sym->mini_st = st_create(BLOCK_SCOPE, NULL);
+                                                        stack_push(scope_stack, sym->mini_st);
+                                                        current_struct_union = sym;
+
+                                                        print_sym_table(current_scope);
+                                                    }
+                       struct_declaration_list '}'  { 
+                                                        stack_pop(scope_stack);
+                                                        current_struct_union->is_complete = 1;
+                                                        $$ = new_struct_union($1, current_struct_union);
+                                                        current_struct_union = NULL;
+
+                                                        fprintf(stderr, "Exited struct scope\n"); 
+                                                    }
+                       | struct_or_union '{'    { 
+                                                    fprintf(stderr, "Entering struct scope\n"); 
+                                                    SYMTABLE* current_scope = stack_peek(scope_stack);
+
+                                                    SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                    sym->mini_st = st_create(BLOCK_SCOPE, NULL);
+                                                    stack_push(scope_stack, sym->mini_st);
+                                                    current_struct_union = sym;
+
+                                                    print_sym_table(current_scope);
+                                                }
+                        struct_declaration_list '}' {
+                                                        stack_pop(scope_stack);
+                                                        current_struct_union->is_complete = 1;
+                                                        $$ = new_struct_union($1, current_struct_union);
+                                                        current_struct_union = NULL;
+                                                        fprintf(stderr, "Exited struct scope\n"); 
+                                                    }
+                       | struct_or_union IDENT  {
+                                                    SYMTABLE* current_scope = stack_peek(scope_stack);
+                                                    SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
+                                                    if (sym == NULL) {
+                                                        sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                        st_install(current_scope, sym);
+                                                    }
+                                                    $$ = new_struct_union($1, sym);
+                                                }
+                        ;
 
 
 struct_or_union : STRUCT
@@ -288,7 +341,28 @@ struct_declaration_list : struct_declaration
                         | struct_declaration_list struct_declaration
                         ;
 
-struct_declaration  : specifier_list struct_declarator_list ';'
+struct_declaration  : specifier_list struct_declarator_list ';' { 
+                                                                    SYMBOL* sym_list = $2;
+                                                                    ast_node_t* spec = $1;
+                                                                    SYMTABLE* member_st = stack_peek(scope_stack);
+
+                                                                    fprintf(stderr, "going to member st\n"); 
+
+                                                                    while (sym_list != NULL) {
+                                                                        SYMBOL* sym = sym_list;
+                                                                        sym_list = sym_list->next;
+                                                                        sym->node = combine_nodes(spec, sym->node);
+                                                                        sym->name_space = MEMBER_NS;
+                                                                        sym->type = MEMBER_SYM;
+                                                                        sym->stg_class = UNKNOWN_SC;
+                                                                        
+                                                                        if (st_install(member_st, sym) != 0) {
+                                                                            fprintf(stderr, "Error: duplicate member %s\n", sym->key);
+                                                                            exit(1);
+                                                                        }
+                                                                    }
+                                                                    print_sym_table(member_st);
+                                                                }
                     ;
 
 
@@ -298,7 +372,13 @@ specifier_list  : type_specifier                { $$ = $1; }
 
 
 struct_declarator_list  : struct_declarator                             { $$ = $1; }
-                        | struct_declarator_list ',' struct_declarator  { $$ = append_item($1, $3); }
+                        | struct_declarator_list ',' struct_declarator  { 
+                                                                            SYMBOL* p = $1;
+                                                                            while (p->next != NULL) p = p->next;
+                                                                            p->next = $3; 
+                                                                            $$ = $1;
+                                                                        }
+                        ;
 
 struct_declarator   : declarator {$$ = $1; }
                     ;
@@ -309,7 +389,7 @@ declarator  : pointer_declarator  { $$ = $1; }
             ;
 
 
-direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, new_ident($1.string_literal), GENERAL_NS, VAR_SYM, UNKNOWN_SC); }
+direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, new_ident($1.string_literal), GENERAL_NS, VAR_SYM, UNKNOWN_SC, NULL); }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator
                     | array_declarator

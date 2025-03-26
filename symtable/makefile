@@ -18,13 +18,13 @@ lex.yy.c: lexer.l y.tab.h
 lex.yy.o: lex.yy.c y.tab.h ast.h
 	$(CC) $(CFLAGS) -c lex.yy.c
 
-ast.o: ast.c ast.h
+ast.o: ast.c ast.h symtable.h
 	$(CC) $(CFLAGS) -c ast.c
 
 helpers.o: helpers.c helpers.h
 	$(CC) $(CFLAGS) -c helpers.c
 
-symtable.o: ast.o symtable.c symtable.h
+symtable.o: ast.o symtable.c symtable.h ast.h
 	$(CC) $(CFLAGS) -c symtable.c
 
 hash.o: hash.c hash.h

@@ -142,6 +142,8 @@ char* get_node_type(int op) {
         case ARRAY_N:       return "ARRAY";
         case DECLSPEC_N:    return "DECLARATION SPECIFIER";
         case PARAM_N:       return "PARAMETER";
+        case STRUCT_N:      return "STRUCT";
+        case UNION_N:       return "UNION";
         default: {
             static char buf[3];
             snprintf(buf, sizeof(buf), "%c", op);
@@ -288,6 +290,12 @@ void print_ast_tree(ast_node_t *node, int indent) {
             printf("PARAMETER\n");
             if (node->parameter.type) print_ast_tree(node->parameter.type, indent + 1);
             if (node->parameter.ident) print_ast_tree(node->parameter.ident, indent + 1);
+            break;
+        case STRUCT_N:
+            printf("STRUCT %s\n", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
+            break;
+        case UNION_N:
+            printf("UNION %s\n", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
             break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);

@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "y.tab.h"
 #include "helpers.h"
 
 #include <stdlib.h>
@@ -159,14 +160,20 @@ ast_node_t* new_param(ast_node_t* type, ast_node_t* ident) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
     node->type = PARAM_N;
 
-    // implement array through list
-    // need to have some sort of type indication
-    node->parameter.type = type;
+    node->parameter.type = type;    // not node->type, this is an ast_node that references a decl spec type (ex. INT)
     node->parameter.ident = ident;  // if size is NULL, then it's an unsized array
 
     return node;
 }
 
+ast_node_t* new_struct_union(int token, SYMBOL* sym) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = (token == STRUCT ? STRUCT_N : UNION_N);
+
+    node->struct_union.sym = sym;
+
+    return node;
+}
 
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
     if (!decl)
