@@ -206,6 +206,13 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case UNOP_N: {
             const char *op_str = get_operator_string(node->unop.op);
             printf("UNARY OP (%s)\n", op_str);
+            if (node->unop.op == SIZEOF) {
+                if (node->unop.node->type == DECLSPEC_N || node->unop.node->type == POINTER_N || node->unop.node->type == ARRAY_N) {
+                    printf("sizeof type:\n");
+                } else {
+                    printf("sizeof expression:\n");
+                }
+            }
             print_ast_tree(node->unop.node, indent + 1);
             break;
         }

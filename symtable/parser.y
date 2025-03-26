@@ -10,7 +10,7 @@
 
 void yyerror(char *s);
 int yylex();
-int yydebug = 0;
+int yydebug = 1;
 
 ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
@@ -389,7 +389,7 @@ declarator  : pointer_declarator  { $$ = $1; }
             ;
 
 
-direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, new_ident($1.string_literal), GENERAL_NS, VAR_SYM, UNKNOWN_SC, NULL); }
+direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, UNKNOWN_SC, NULL); }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator
                     | array_declarator
@@ -495,12 +495,12 @@ identifier_list : IDENT                         { $$ = new_ident($1.string_liter
                 ;
 
 type_name : specifier_list
-          | specifier_list abstract_declarator {}
+          | specifier_list abstract_declarator  { $$ = combine_nodes($1, $2); }
           ;
 
 abstract_declarator : pointer
                     | direct_abstract_declarator
-                    | pointer direct_abstract_declarator
+                    | pointer direct_abstract_declarator { $$ = combine_nodes($1, $2); }
                     ;
 
 direct_abstract_declarator : '(' abstract_declarator ')'                { $$ = $2; }
