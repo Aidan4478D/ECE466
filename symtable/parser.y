@@ -275,6 +275,7 @@ type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
 
 
 struct_union_specifier : struct_or_union IDENT '{' {
+                                                        //fprintf(stderr, "Token value: %d (STRUCT=%d, UNION=%d)\n", $1, STRUCT, UNION);
                                                         fprintf(stderr, "Entering struct/union scope\n"); 
                                                         SYMTABLE* current_scope = stack_peek(scope_stack);
                                                         SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
@@ -296,7 +297,11 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                     }
                        struct_declaration_list '}'  { 
                                                         stack_pop(scope_stack);
+
+                                                        // set parent to current (if not used) so we can print where struct is defined
+                                                        if(!current_struct_union->parent_sym) current_struct_union->parent_sym = current_struct_union;
                                                         current_struct_union->is_complete = 1;
+
                                                         $$ = new_struct_union($1, current_struct_union);
                                                         current_struct_union = NULL;
 
@@ -316,7 +321,11 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                     }
                         struct_declaration_list '}' {
                                                         stack_pop(scope_stack);
+
+                                                        // set parent to current (if not used) so we can print where struct is defined
+                                                        if(!current_struct_union->parent_sym) current_struct_union->parent_sym = current_struct_union;
                                                         current_struct_union->is_complete = 1;
+
                                                         $$ = new_struct_union($1, current_struct_union);
                                                         current_struct_union = NULL;
                                                         fprintf(stderr, "Exited struct/union scope\n"); 
@@ -333,8 +342,8 @@ struct_union_specifier : struct_or_union IDENT '{' {
                         ;
 
 
-struct_or_union : STRUCT
-                | UNION
+struct_or_union : STRUCT    { $$ = STRUCT; }
+                | UNION     { $$ = UNION; }
                 ;
 
 
@@ -355,7 +364,7 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
                                                                         sym->node = combine_nodes(spec, sym->node);
                                                                         sym->name_space = MEMBER_NS;
                                                                         sym->type = MEMBER_SYM;
-                                                                        sym->stg_class = UNKNOWN_SC;
+                                                                        sym->stg_class = AUTO_SC;
 
                                                                         sym->parent_sym = current_struct_union;
                                                                         

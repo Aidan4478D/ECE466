@@ -25,9 +25,7 @@ typedef enum sym_types {
     VAR_SYM=0,
     FUNCT_SYM,
     STRUCT_SYM,
-    STAG_SYM,
     UNION_SYM,
-    UTAG_SYM,
     MEMBER_SYM,
     LABEL_SYM
 } SYMTYPE;
@@ -52,7 +50,7 @@ typedef struct symbol {
     STGCLASS stg_class;
 
     ast_node_t* node;
-    struct symbol* next; //allow for chained symbols
+    struct symbol* next; //allow for chained symbols like int x, y 
     
     int is_complete;
     SYMTABLE* mini_st;

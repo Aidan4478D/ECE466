@@ -44,9 +44,8 @@ void print_symbol(SYMTABLE *st, SYMBOL* sym) {
     
     if(st_lookup(st, st->scope, sym->key, sym->name_space)) {
         printf("---------------------------------------------\n");
-        if (sym->parent_sym && (sym->parent_sym->type == STRUCT_SYM || sym->parent_sym->type == UNION_SYM)) {
+        if (sym->parent_sym && sym->parent_sym != sym && (sym->parent_sym->type == STRUCT_SYM || sym->parent_sym->type == UNION_SYM)) {
             const char* su_type = (sym->parent_sym->type == STRUCT_SYM) ? "struct" : "union";
-            const char* su_name = sym->parent_sym->key ? sym->parent_sym->key : "(anonymous)";
             printf("[in %s scope starting at <%s>:%d]\n", su_type, sym->parent_sym->file_name, sym->parent_sym->line_num);
         }
         printf("<%s>:%d\n", sym->file_name, sym->line_num);
@@ -155,9 +154,7 @@ char* get_symbol_type(int op) {
         case VAR_SYM:       return "VARIABLE";
         case FUNCT_SYM:     return "FUNCTION";
         case STRUCT_SYM:    return "STRUCT";
-        case STAG_SYM:      return "STRUCT TAG";
         case UNION_SYM:     return "UNION";
-        case UTAG_SYM:      return "UNION TAG";
         case MEMBER_SYM:    return "MEMBER";
         case LABEL_SYM:     return "LABEL";
         default: {
@@ -387,10 +384,16 @@ void print_ast_tree(ast_node_t *node, int indent) {
             }
             break;
         case STRUCT_N:
-            printf("STRUCT %s\n", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
+            printf("STRUCT %s ", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
+            printf("(%s) ", node->struct_union.sym->is_complete ? "complete" : "incomplete");
+            if(node->struct_union.sym->parent_sym) printf("defined at <%s>:%d\n", node->struct_union.sym->parent_sym->file_name, node->struct_union.sym->parent_sym->line_num);
+            else printf("\n");
             break;
         case UNION_N:
             printf("UNION %s\n", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
+            printf(" (%s)\n", node->struct_union.sym->is_complete ? "complete" : "incomplete");
+            if(node->struct_union.sym->parent_sym) printf("defined at <%s>:%d\n", node->struct_union.sym->parent_sym->file_name, node->struct_union.sym->parent_sym->line_num);
+            else printf("\n");
             break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);
