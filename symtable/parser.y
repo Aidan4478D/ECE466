@@ -169,7 +169,7 @@ declaration : decl_specifiers ';'   { $$ = $1; }
 
                                                                 st_install(cur_scope, sym);
                                                                 //print_sym_table(cur_scope, file_name, line_num);
-                                                                print_symbol(cur_scope, sym, file_name, line_num);
+                                                                print_symbol(cur_scope, sym);
                                                                 
                                                                 sym = sym->next;
                                                             }
@@ -204,7 +204,7 @@ function_definition : decl_specifiers declarator    {
                                                             //stack_push(scope_stack, funct_scope);
                                                             //fprintf(stderr, "Entering function scope for '%s'\n", sym->key);
                                                             //print_sym_table(global, file_name, line_num); 
-                                                            print_symbol(global, sym, file_name, line_num);
+                                                            print_symbol(global, sym);
 
                                                         } else {
                                                             fprintf("Expected function definition for symbol: %s", sym->key);
@@ -275,7 +275,7 @@ type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
 
 
 struct_union_specifier : struct_or_union IDENT '{' {
-                                                        fprintf(stderr, "Entering struct scope\n"); 
+                                                        fprintf(stderr, "Entering struct/union scope\n"); 
                                                         SYMTABLE* current_scope = stack_peek(scope_stack);
                                                         SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
 
@@ -284,7 +284,7 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                             exit(1);
                                                         } 
                                                         if (sym == NULL) {
-                                                            sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                            sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope, file_name, line_num);
                                                             st_install(current_scope, sym);
                                                         }
                                                         sym->mini_st = st_create(BLOCK_SCOPE, NULL);
@@ -292,7 +292,7 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                         current_struct_union = sym;
 
                                                         //print_sym_table(current_scope, file_name, line_num);
-                                                        print_symbol(current_scope, sym, file_name, line_num);
+                                                        print_symbol(current_scope, sym);
                                                     }
                        struct_declaration_list '}'  { 
                                                         stack_pop(scope_stack);
@@ -300,32 +300,32 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                         $$ = new_struct_union($1, current_struct_union);
                                                         current_struct_union = NULL;
 
-                                                        fprintf(stderr, "Exited struct scope\n"); 
+                                                        fprintf(stderr, "Exited struct/union scope\n"); 
                                                     }
                        | struct_or_union '{'        { 
-                                                        fprintf(stderr, "Entering struct scope\n"); 
+                                                        fprintf(stderr, "Entering struct/union scope\n"); 
                                                         SYMTABLE* current_scope = stack_peek(scope_stack);
 
-                                                        SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                        SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope, file_name, line_num);
                                                         sym->mini_st = st_create(BLOCK_SCOPE, NULL);
                                                         stack_push(scope_stack, sym->mini_st);
                                                         current_struct_union = sym;
 
                                                         //print_sym_table(current_scope, file_name, line_num);
-                                                        print_symbol(current_scope, sym, file_name, line_num);
+                                                        print_symbol(current_scope, sym);
                                                     }
                         struct_declaration_list '}' {
                                                         stack_pop(scope_stack);
                                                         current_struct_union->is_complete = 1;
                                                         $$ = new_struct_union($1, current_struct_union);
                                                         current_struct_union = NULL;
-                                                        fprintf(stderr, "Exited struct scope\n"); 
+                                                        fprintf(stderr, "Exited struct/union scope\n"); 
                                                     }
                        | struct_or_union IDENT  {
                                                     SYMTABLE* current_scope = stack_peek(scope_stack);
                                                     SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
                                                     if (sym == NULL) {
-                                                        sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                        sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope, file_name, line_num);
                                                         st_install(current_scope, sym);
                                                     }
                                                     $$ = new_struct_union($1, sym);
@@ -356,12 +356,14 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
                                                                         sym->name_space = MEMBER_NS;
                                                                         sym->type = MEMBER_SYM;
                                                                         sym->stg_class = UNKNOWN_SC;
+
+                                                                        sym->parent_sym = current_struct_union;
                                                                         
                                                                         if (st_install(member_st, sym) != 0) {
                                                                             fprintf(stderr, "Error: duplicate member %s\n", sym->key);
                                                                             exit(1);
                                                                         }
-                                                                        print_symbol(member_st, sym, file_name, line_num);
+                                                                        print_symbol(member_st, sym);
                                                                     }
                                                                     //print_sym_table(member_st, file_name, line_num);
                                                                 }
@@ -394,7 +396,7 @@ declarator  : pointer_declarator  { $$ = $1; }
 
 direct_declarator   : simple_declarator     { 
                                                 SYMTABLE* st = stack_peek(scope_stack);
-                                                $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, (st->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC), NULL); 
+                                                $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, (st->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC), NULL, file_name, line_num); 
                                             }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator

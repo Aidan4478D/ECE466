@@ -11,7 +11,7 @@ void print_current_scope(stack_t* scope_stack) {
 }
 
 
-void print_sym_table(SYMTABLE *st, char* fname, int lineno) {
+void print_sym_table(SYMTABLE *st) {
     if (!st || !st->ht) {
         printf("Symbol table is empty.\n");
         return;
@@ -26,7 +26,7 @@ void print_sym_table(SYMTABLE *st, char* fname, int lineno) {
             SYMBOL *sym = (SYMBOL *) item->pv;
 
             printf("\n---------------------------------------------\n");
-            printf("<%s>:%d\n", fname, lineno);
+            printf("<%s>:%d\n", sym->file_name, sym->line_num);
             printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
             printf("AST Tree for your symbol:\n---------------------------------------------\n");
             print_ast_tree(sym->node, 0);
@@ -36,7 +36,7 @@ void print_sym_table(SYMTABLE *st, char* fname, int lineno) {
 }
 
 
-void print_symbol(SYMTABLE *st, SYMBOL* sym, char* fname, int lineno) {
+void print_symbol(SYMTABLE *st, SYMBOL* sym) {
     if (!sym) {
         printf("Symbol is NULL.\n");
         return;
@@ -44,7 +44,12 @@ void print_symbol(SYMTABLE *st, SYMBOL* sym, char* fname, int lineno) {
     
     if(st_lookup(st, st->scope, sym->key, sym->name_space)) {
         printf("---------------------------------------------\n");
-        printf("<%s>:%d\n", fname, lineno);
+        if (sym->parent_sym && (sym->parent_sym->type == STRUCT_SYM || sym->parent_sym->type == UNION_SYM)) {
+            const char* su_type = (sym->parent_sym->type == STRUCT_SYM) ? "struct" : "union";
+            const char* su_name = sym->parent_sym->key ? sym->parent_sym->key : "(anonymous)";
+            printf("[in %s scope starting at <%s>:%d]\n", su_type, sym->parent_sym->file_name, sym->parent_sym->line_num);
+        }
+        printf("<%s>:%d\n", sym->file_name, sym->line_num);
         printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
         printf("AST Tree for your symbol:\n---------------------------------------------\n");
         print_ast_tree(sym->node, 0);

@@ -47,10 +47,18 @@ int st_install(SYMTABLE* st, SYMBOL* sym) {
     }
 
     switch(ht_insert(st->ht, sym->key, sym)) {
-        case 0: fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); return 0;
-        case 1: fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", sym->key); return -1;
-        case 2: fprintf(stderr, "Error inserting into hash table: rehashing failed\n"); return -1;
-        default: fprintf(stderr, "Unknown return from hash table insert\n"); return -1;
+        case 0: 
+            /*fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); */
+            return 0;
+        case 1: 
+            /*fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", sym->key); */
+            return -1;
+        case 2: 
+            /*fprintf(stderr, "Error inserting into hash table: rehashing failed\n"); */
+            return -1;
+        default: 
+            /*fprintf(stderr, "Unknown return from hash table insert\n"); */
+            return -1;
     }
 }
 
@@ -71,7 +79,7 @@ SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns) {
 }
 
 
-SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st) {
+SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st, char* fname, int lineno) {
 
     SYMBOL* sym = (SYMBOL*) malloc(sizeof(SYMBOL));
 
@@ -81,6 +89,10 @@ SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, S
     sym->name_space = ns;
     sym->type = type;
     sym->stg_class = stg_class;
+
+    sym->file_name = strdup(fname);
+    sym->line_num = lineno;
+    sym->parent_sym = NULL;
     
     /*printf("key = %s, namespace = %d, type = %d, storage = %d\n", sym->key,sym->name_space, sym->type, sym->stg_class);*/
     sym->node = node;

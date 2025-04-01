@@ -43,7 +43,9 @@ typedef struct sym_table {
 
 typedef struct symbol {
     char* key; // key for hash table
-    int lineno;
+    char* file_name;
+    int line_num;
+    struct symbol* parent_sym; //purely for printing purposes so we can trace which scope symbol is defined within
 
     NAMESPACE name_space; //namespace is a keyword :(
     SYMTYPE type;
@@ -60,7 +62,7 @@ typedef struct symbol {
 SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer); 
 int st_install(SYMTABLE* st, SYMBOL* sym);
 SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns);
-SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st);
+SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st, char* fname, int lineno);
 
 
 #endif
