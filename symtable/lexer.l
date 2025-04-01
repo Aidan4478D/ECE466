@@ -14,7 +14,7 @@ Things to fix:
 #include <ctype.h>
 #include <string.h>
 
-char* file_name = NULL; 
+char* file_name = "stdin"; 
 int line_num = 1;
 
 char* buf = NULL;

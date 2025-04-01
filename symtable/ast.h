@@ -4,6 +4,8 @@
 #define MAX_CHILDREN 4096
 
 //#include "symtable.h"
+extern int line_num;
+extern char* file_name;
 
 // forward declaration of struct symbol (from symtable.h)
 struct symbol;
@@ -177,8 +179,8 @@ typedef struct ast_node_array {
 } ast_node_array_t;
 
 typedef struct ast_node_param {
-    ast_node_t* type;   // decl specs type name 
     ast_node_t* ident;  // ident node
+    ast_node_t* type;   // decl specs type
 } ast_node_param_t; 
 
 typedef struct ast_node_struct_union {
@@ -221,6 +223,8 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl);
 ast_node_t* new_array(ast_node_t* element_type, int size);
 ast_node_t* new_param(ast_node_t* type, ast_node_t* ident); 
 ast_node_t* new_struct_union(int token, SYMBOL* sym);
+ast_node_t* attach_ident(ast_node_t* node, char* ident);
+ast_node_t* extract_ident(ast_node_t* node);
 
 #endif 
 

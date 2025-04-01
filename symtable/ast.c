@@ -175,6 +175,47 @@ ast_node_t* new_struct_union(int token, SYMBOL* sym) {
     return node;
 }
 
+// ensures that the identifier is attached to the AST node, whether it’s NULL (simple declarator) 
+// or a chain like POINTER_N (complex declarator)
+ast_node_t* attach_ident(ast_node_t* node, char* ident) {
+    if (node == NULL) return new_ident(ident);
+    ast_node_t* current = node;
+
+    while (1) {
+        switch (current->type) {
+            case POINTER_N:
+                if (current->pointer.next == NULL) {
+                    current->pointer.next = new_ident(ident);
+                    return node;
+                }
+                current = current->pointer.next;
+                break;
+            case ARRAY_N:
+                if (current->array.element_type == NULL) {
+                    current->array.element_type = new_ident(ident);
+                    return node;
+                }
+                current = current->array.element_type;
+                break;
+            default:
+                // if we reach a leaf, assume its already set or not applicable
+                return node;
+        }
+    }
+}
+
+ast_node_t* extract_ident(ast_node_t* node) {
+    if (!node) return NULL;
+    switch (node->type) {
+        case IDENT_N: return node;
+        case POINTER_N: return extract_ident(node->pointer.next);
+        case ARRAY_N: return extract_ident(node->array.element_type);
+        default: return NULL;
+    }
+}
+
+
+
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
     if (!decl)
         return base;

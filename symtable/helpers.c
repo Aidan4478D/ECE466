@@ -3,32 +3,56 @@
 #include "y.tab.h"
 #include "helpers.h"
 #include "stack.h"
-
+#include <string.h>
 
 void print_current_scope(stack_t* scope_stack) {
     SYMTABLE *st = stack_peek(scope_stack);
     printf("Current scope: %d\n", st->scope);
 }
 
-void print_sym_table(SYMTABLE *st) {
+
+void print_sym_table(SYMTABLE *st, char* fname, int lineno) {
     if (!st || !st->ht) {
         printf("Symbol table is empty.\n");
         return;
     }
     
     ht_t *ht = st->ht;
-    printf("Symbol Table (Scope: %s, Capacity: %d, Filled: %d):\n", get_scope_name(st->scope), ht->capacity, ht->filled);
+    /*printf("Symbol Table (Scope: %s, Capacity: %d, Filled: %d):\n", get_scope_name(st->scope), ht->capacity, ht->filled);*/
     
     for (int i = 0; i < ht->capacity; i++) {
         hash_item *item = &ht->data[i];
         if (item->isOccupied && !item->isDeleted) {
             SYMBOL *sym = (SYMBOL *) item->pv;
-            // For clarity, you might later convert enum values to strings.
-            printf("Slot %d: key = %s, namespace = %d, type = %d, storage = %d\n", i, sym->key, sym->name_space, sym->type, sym->stg_class);
+
+            printf("\n---------------------------------------------\n");
+            printf("<%s>:%d\n", fname, lineno);
+            printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
+            printf("AST Tree for your symbol:\n---------------------------------------------\n");
             print_ast_tree(sym->node, 0);
+            printf("\n---------------------------------------------\n");
         }
     }
 }
+
+
+void print_symbol(SYMTABLE *st, SYMBOL* sym, char* fname, int lineno) {
+    if (!sym) {
+        printf("Symbol is NULL.\n");
+        return;
+    }
+    
+    if(st_lookup(st, st->scope, sym->key, sym->name_space)) {
+        printf("---------------------------------------------\n");
+        printf("<%s>:%d\n", fname, lineno);
+        printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
+        printf("AST Tree for your symbol:\n---------------------------------------------\n");
+        print_ast_tree(sym->node, 0);
+        printf("---------------------------------------------\n\n");
+    }
+    else fprintf(stderr, "Symbol %s not found in %s symbol table!", sym->key, get_scope_name(st->scope)); 
+}
+
 
 char* get_operator_string(int op) {
     switch(op) {
@@ -66,6 +90,7 @@ char* get_scope_name(int scope) {
         case FILE_SCOPE: return "FILE_SCOPE";
         case FUNCT_SCOPE: return "FUNCT_SCOPE";
         case BLOCK_SCOPE: return "BLOCK_SCOPE";
+        case PROTO_SCOPE: return "PROTO_SCOPE"; 
         default: return "UNKNOWN_SCOPE";
     }
 }
@@ -103,6 +128,22 @@ char* get_storage_class(int op) {
         }
     }
 }
+
+
+char* get_name_space(int op) {
+    switch(op) {
+        case TAG_NS:        return "TAG";
+        case LABEL_NS:      return "LABEL";
+        case MEMBER_NS:     return "MEMBER";
+        case GENERAL_NS:    return "GENERAL";
+        default: {
+            static char buf[3];
+            snprintf(buf, sizeof(buf), "%c", op);
+            return buf;
+        }
+    }
+}
+
 
 char* get_symbol_type(int op) {
     switch(op) {
@@ -254,8 +295,8 @@ void print_ast_tree(ast_node_t *node, int indent) {
             }
             if (node->function.right) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
-                printf("PARAMETERS:\n");
-                print_ast_tree(node->function.right, indent + 2);
+                printf("\n"); 
+                print_ast_tree(node->function.right, indent + 1);
             }
             break;        case LOGOP_N: {
             const char *op_str = get_operator_string(node->genop.op);
@@ -291,12 +332,54 @@ void print_ast_tree(ast_node_t *node, int indent) {
             break;
         case DECLSPEC_N:
             if (node->decl_spec.stg_class) printf("STORAGE CLASS: %s\n", get_storage_class(node->decl_spec.stg_class));
-            if (node->decl_spec.decl_type) printf("TYPE: %s\n", get_decl_spec(node->decl_spec.decl_type));
+            if (node->decl_spec.decl_type) printf("%s\n", get_decl_spec(node->decl_spec.decl_type));
             break;
         case PARAM_N:
             printf("PARAMETER\n");
-            if (node->parameter.type) print_ast_tree(node->parameter.type, indent + 1);
-            if (node->parameter.ident) print_ast_tree(node->parameter.ident, indent + 1);
+            ast_node_t* ident_node = extract_ident(node->parameter.ident);
+            if (ident_node) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("IDENT: %s\n", ident_node->ident.name);
+            }
+            if (node->parameter.type || node->parameter.ident) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("TYPE: ");
+                ast_node_t* current = node->parameter.ident;
+                int type_indent = indent + 1;
+
+                while (current && current->type != IDENT_N) {
+                    if(current->type == POINTER_N) {
+                        printf("POINTER to:");
+                        current = current->pointer.next;
+                        if (current && current->type != IDENT_N) {
+                            printf("\n");
+                            type_indent++;
+                            for (int i = 0; i < type_indent; i++) printf("\t");
+                        }
+                    }
+                    else if(current->type == ARRAY_N) {
+                        printf("ARRAY of size: %d", current->array.size);
+                        current = current->array.element_type;
+                        if (current && current->type != IDENT_N) {
+                            printf("\n");
+                            type_indent++;
+                            for (int i = 0; i < type_indent; i++) printf("\t");
+                        }
+                    }
+                    else current = NULL;
+                }
+
+                if (node->parameter.type) {
+                    if (node->parameter.ident && node->parameter.ident->type != IDENT_N) {
+                        printf("\n");
+                        for (int i = 0; i < type_indent; i++) printf("\t");
+                    } 
+                    printf("\t");
+                    print_ast_tree(node->parameter.type, 0);
+                } else {
+                    printf("\n");
+                }
+            }
             break;
         case STRUCT_N:
             printf("STRUCT %s\n", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");

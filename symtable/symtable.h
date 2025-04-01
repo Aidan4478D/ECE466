@@ -8,7 +8,8 @@
 typedef enum scope_types {
     FILE_SCOPE,
     FUNCT_SCOPE,
-    BLOCK_SCOPE
+    BLOCK_SCOPE,
+    PROTO_SCOPE
 } SCOPETYPE;
 
 

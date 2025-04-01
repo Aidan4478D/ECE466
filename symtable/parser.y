@@ -10,7 +10,7 @@
 
 void yyerror(char *s);
 int yylex();
-int yydebug = 1;
+int yydebug = 0;
 
 ast_node_t* ast_root = NULL;
 void print_ast_tree(ast_node_t *node, int indent);
@@ -141,7 +141,7 @@ parser  : declaration_or_fndef
         | parser declaration_or_fndef
         ;
 
-declaration_or_fndef    : declaration           { ast_root = $1; /*print_ast_tree(ast_root, 0); print_sym_table(stack_peek(scope_stack));*/ }
+declaration_or_fndef    : declaration           { ast_root = $1; /*print_ast_tree(ast_root, 0); print_sym_table(stack_peek(scope_stack), file_name, line_num);*/ }
                         | function_definition   {}
                         ;
 
@@ -163,12 +163,13 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                     current_spec = current_spec->list.next;
                                                                 }
 
-                                                                fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
-                                                                fprintf(stderr, "Storage Class: %s\n", get_storage_class(sym->stg_class)); 
-                                                                print_ast_tree(sym->node, 0);
+                                                                //fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
+                                                                //fprintf(stderr, "Storage Class: %s\n", get_storage_class(sym->stg_class)); 
+                                                                //print_ast_tree(sym->node, 0);
 
                                                                 st_install(cur_scope, sym);
-                                                                print_sym_table(cur_scope);
+                                                                //print_sym_table(cur_scope, file_name, line_num);
+                                                                print_symbol(cur_scope, sym, file_name, line_num);
                                                                 
                                                                 sym = sym->next;
                                                             }
@@ -189,9 +190,7 @@ init_declarator : declarator
                 ; 
 
 function_definition : decl_specifiers declarator    {
-                                                        fprintf(stderr, "doing whaky function\n"); 
                                                         SYMBOL* sym = $2;
-                                                        
 
                                                         if (sym->type == FUNCT_SYM) {
                                                             sym->node = combine_nodes($1, sym->node);
@@ -199,12 +198,13 @@ function_definition : decl_specifiers declarator    {
                                                             //install function into global scope
                                                             SYMTABLE* global = stack_peek(scope_stack);
                                                             st_install(global, sym);
-                                                            fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
+                                                            //fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
 
                                                             //SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
                                                             //stack_push(scope_stack, funct_scope);
                                                             //fprintf(stderr, "Entering function scope for '%s'\n", sym->key);
-                                                            print_sym_table(global); 
+                                                            //print_sym_table(global, file_name, line_num); 
+                                                            print_symbol(global, sym, file_name, line_num);
 
                                                         } else {
                                                             fprintf("Expected function definition for symbol: %s", sym->key);
@@ -212,41 +212,40 @@ function_definition : decl_specifiers declarator    {
                                                         }
                                                     } param_decl_list compound_statement { 
                                                         //SYMTABLE* st = stack_pop(scope_stack); 
-                                                        fprintf(stderr, "Exiting function scope");
+                                                        //fprintf(stderr, "Exiting function scope");
                                                     }
                     ;
 
-param_decl_list : /* empty */           { $$ = NULL; }
-                | param_decl_list declaration { $$ = $2; }
+param_decl_list : /* empty */                   { $$ = NULL; }
+                | param_decl_list declaration   { $$ = $2; }
                 ;
 
 compound_statement  : '{'   {
-                                fprintf(stderr, "Entering block or function scope\n");
+                                fprintf(stderr, "Entering block or function scope: <%s>:%d\n", file_name, line_num);
                                 SYMTABLE* current = stack_peek(scope_stack);
                                 stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
                             } 
                       '}'   {
                                 SYMTABLE* st = stack_pop(scope_stack);
-                                fprintf(stderr, "Exiting block/funct scope\n"); 
+                                fprintf(stderr, "Exiting block/funct scope: <%s>:%d\n", file_name, line_num); 
                             }
                     | '{'   {
-                                fprintf(stderr, "Entering block or function scope\n");
+                                fprintf(stderr, "Entering block or function scope: <%s>:%d\n", file_name, line_num);
                                 SYMTABLE* current = stack_peek(scope_stack);
                                 stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
                             } 
                       decl_or_stmt_list '}'   {
                                 SYMTABLE* st = stack_pop(scope_stack);
-                                fprintf(stderr, "Exiting block/funct scope\n"); 
+                                fprintf(stderr, "Exiting block/funct scope: <%s>:%d\n", file_name, line_num); 
                             }
-
                     ;
 
 decl_or_stmt_list   : decl_or_stmt
                     | decl_or_stmt_list decl_or_stmt
                     ;
 
-decl_or_stmt    : declaration {fprintf(stderr, "reducing a declaration\n"); }
-                | statement {fprintf(stderr, "reducing a statement\n"); }
+decl_or_stmt    : declaration { /*fprintf(stderr, "reducing a declaration\n");*/ }
+                | statement { /**fprintf(stderr, "reducing a statement\n");*/ }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = $1; }
@@ -292,7 +291,8 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                         stack_push(scope_stack, sym->mini_st);
                                                         current_struct_union = sym;
 
-                                                        print_sym_table(current_scope);
+                                                        //print_sym_table(current_scope, file_name, line_num);
+                                                        print_symbol(current_scope, sym, file_name, line_num);
                                                     }
                        struct_declaration_list '}'  { 
                                                         stack_pop(scope_stack);
@@ -302,17 +302,18 @@ struct_union_specifier : struct_or_union IDENT '{' {
 
                                                         fprintf(stderr, "Exited struct scope\n"); 
                                                     }
-                       | struct_or_union '{'    { 
-                                                    fprintf(stderr, "Entering struct scope\n"); 
-                                                    SYMTABLE* current_scope = stack_peek(scope_stack);
+                       | struct_or_union '{'        { 
+                                                        fprintf(stderr, "Entering struct scope\n"); 
+                                                        SYMTABLE* current_scope = stack_peek(scope_stack);
 
-                                                    SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
-                                                    sym->mini_st = st_create(BLOCK_SCOPE, NULL);
-                                                    stack_push(scope_stack, sym->mini_st);
-                                                    current_struct_union = sym;
+                                                        SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope);
+                                                        sym->mini_st = st_create(BLOCK_SCOPE, NULL);
+                                                        stack_push(scope_stack, sym->mini_st);
+                                                        current_struct_union = sym;
 
-                                                    print_sym_table(current_scope);
-                                                }
+                                                        //print_sym_table(current_scope, file_name, line_num);
+                                                        print_symbol(current_scope, sym, file_name, line_num);
+                                                    }
                         struct_declaration_list '}' {
                                                         stack_pop(scope_stack);
                                                         current_struct_union->is_complete = 1;
@@ -360,10 +361,12 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
                                                                             fprintf(stderr, "Error: duplicate member %s\n", sym->key);
                                                                             exit(1);
                                                                         }
+                                                                        print_symbol(member_st, sym, file_name, line_num);
                                                                     }
-                                                                    print_sym_table(member_st);
+                                                                    //print_sym_table(member_st, file_name, line_num);
                                                                 }
                     ;
+
 
 
 specifier_list  : type_specifier                { $$ = $1; }
@@ -389,7 +392,10 @@ declarator  : pointer_declarator  { $$ = $1; }
             ;
 
 
-direct_declarator   : simple_declarator     { $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, UNKNOWN_SC, NULL); }
+direct_declarator   : simple_declarator     { 
+                                                SYMTABLE* st = stack_peek(scope_stack);
+                                                $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, (st->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC), NULL); 
+                                            }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator
                     | array_declarator
@@ -420,7 +426,7 @@ array_declarator    : direct_declarator '[' ']'             {
                                                                 }
                                                                 else sym->node = temp;
 
-                                                                print_ast_tree(sym->node, 0); 
+                                                                //print_ast_tree(sym->node, 0); 
 
                                                                 $$ = sym;
                                                             }
@@ -452,7 +458,7 @@ function_declarator : direct_declarator '(' ')'                     {
                                                                         temp->function.left = sym->node;
                                                                         sym->node = temp;
                                                                         
-                                                                        print_ast_tree(sym->node, 0); 
+                                                                        //print_ast_tree(sym->node, 0); 
                                                                         $$ = sym;
                                                                     }
                     | direct_declarator '(' identifier_list ')'     { 
@@ -476,7 +482,7 @@ function_declarator : direct_declarator '(' ')'                     {
                                                                         temp->function.right = $3;
                                                                         sym->node = temp;
 
-                                                                        print_ast_tree(sym->node, 0); 
+                                                                        //print_ast_tree(sym->node, 0); 
 
                                                                         $$ = sym;
                                                                     }
@@ -486,7 +492,7 @@ parameter_list : parameter_declaration { $$ = new_list($1); }
                | parameter_list ',' parameter_declaration { $$ = append_item($1, $3); }
                ;
 
-parameter_declaration : decl_specifiers declarator  { $$ = new_param($1, $2->node); }
+parameter_declaration : decl_specifiers declarator  { $$ = new_param($1, attach_ident($2->node, $2->key)); }
                       | decl_specifiers             { $$ = new_param($1, NULL); }
 
 
@@ -513,7 +519,7 @@ direct_abstract_declarator : '(' abstract_declarator ')'                { $$ = $
                            ;
 
 statement : compound_statement
-          | expression ';' { ast_root = $1; print_ast_tree(ast_root, 0); }
+          | expression ';'
           ; 
 
 primary_expression  : IDENT { $$ = new_ident($1.string_literal); }
