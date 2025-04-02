@@ -205,6 +205,7 @@ ast_node_t* attach_ident(ast_node_t* node, char* ident) {
     }
 }
 
+// use mainly for printing but kept in here because it returns an ast node lol
 ast_node_t* extract_ident(ast_node_t* node) {
     if (!node) return NULL;
     switch (node->type) {
