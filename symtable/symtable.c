@@ -4,6 +4,7 @@
 
 #include "symtable.h"
 #include "hash.h"
+#include "helpers.h"
 
 // create a symbol table for a given scope which can be pushed onto the sym table stack
 SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer) {
@@ -39,9 +40,9 @@ int st_install(SYMTABLE* st, SYMBOL* sym) {
     
     //might have to have 3 different hash tables if I don't want to restructure hash table
     if (found && existing_sym) {
-        fprintf(stderr, "trying to insert symbol %s sym ns: %d, existing ns: %d\n", sym->key, sym->name_space, existing_sym->name_space);
+        //fprintf(stderr, "trying to insert symbol %s sym ns: %d, existing ns: %d\n", sym->key, sym->name_space, existing_sym->name_space);
         if (existing_sym->name_space == sym->name_space) {
-            fprintf(stderr, "symbol %s already exists in namespace %d\n", sym->key, sym->name_space);
+            fprintf(stderr, "symbol %s already exists in namespace %s\n", sym->key, get_name_space(sym->name_space));
             return -1;
         }
     }

@@ -20,19 +20,18 @@ void print_sym_table(SYMTABLE *st) {
     ht_t *ht = st->ht;
     /*printf("Symbol Table (Scope: %s, Capacity: %d, Filled: %d):\n", get_scope_name(st->scope), ht->capacity, ht->filled);*/
     
+    printf("\n---------------------------------------------\n");
     for (int i = 0; i < ht->capacity; i++) {
         hash_item *item = &ht->data[i];
         if (item->isOccupied && !item->isDeleted) {
             SYMBOL *sym = (SYMBOL *) item->pv;
-
-            printf("\n---------------------------------------------\n");
             printf("<%s>:%d\n", sym->file_name, sym->line_num);
             printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
-            printf("AST Tree for your symbol:\n---------------------------------------------\n");
-            print_ast_tree(sym->node, 0);
-            printf("\n---------------------------------------------\n");
+            //printf("AST Tree for your symbol:\n---------------------------------------------\n");
+            //print_ast_tree(sym->node, 0);
         }
     }
+    printf("---------------------------------------------\n");
 }
 
 

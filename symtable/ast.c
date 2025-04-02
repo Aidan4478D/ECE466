@@ -132,12 +132,13 @@ ast_node_t* new_list(ast_node_t* head) {
 
 ast_node_t* append_item(ast_node_t* list, ast_node_t* entry) {
     if (!list) return new_list(entry);
-    
+
     ast_node_t* current = list;
 
     while (current->list.next) {
         current = current->list.next;
     }
+
     current->list.next = new_element(entry);
     return list;
 }
@@ -230,15 +231,6 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
                 decl->array.element_type = combine_nodes(base, decl->array.element_type);
             return decl;
 
-        /*case POINTER_N: {*/
-            /*ast_node_t* head = decl;*/
-            /*ast_node_t* curr = decl;*/
-            /*while (curr->pointer.next != NULL)*/
-                /*curr = curr->pointer.next;*/
-            /*curr->pointer.next = base;*/
-            /*return head;*/
-        /*}*/
-
         case POINTER_N: {
             if (decl->pointer.next == NULL) {
                 decl->pointer.next = base;
@@ -265,11 +257,6 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
                 // Attach the declspec as the base of the type
                 return combine_nodes(decl, base);
             }
-        /*case IDENT_N: {*/
-            /*ast_node_t* list = new_list(base);  // base is decl_specifiers*/
-            /*list = append_item(list, decl);     // decl is IDENT_N*/
-            /*return list;*/
-        /*}*/
         default:
             return decl;
     }

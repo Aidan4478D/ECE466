@@ -152,23 +152,36 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                             ast_node_t *spec = $1; //dec specs
 
                                                             while (sym != NULL) {
-                                                                if (spec) sym->node = combine_nodes(spec, sym->node);
 
                                                                 // set storage class if provided in decl_specifiers
-                                                                ast_node_t *current_spec = spec;
+                                                                int stg_class_set = 0;
+                                                                ast_node_t* current_spec = spec;
+                                                                ast_node_t* type_specs = NULL;
+
                                                                 while (current_spec) {
-                                                                    if (current_spec->type == DECLSPEC_N && current_spec->decl_spec.stg_class) {
-                                                                        sym->stg_class = current_spec->decl_spec.stg_class;
+                                                                    ast_node_t* spec_item = current_spec->list.head;
+                                                                    //fprintf(stderr, "current spec type is: %s\n", get_node_type(spec_item));
+
+                                                                    if (spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.stg_class) {
+                                                                        if (stg_class_set) {
+                                                                            fprintf(stderr, "Error: multiple storage class specifiers in declaration\n");
+                                                                            exit(1);
+                                                                        }
+                                                                        sym->stg_class = spec_item->decl_spec.stg_class;
+                                                                        stg_class_set = 1;
+                                                                        //fprintf(stderr, "Set storage class for %s to: %s\n", sym->key, get_storage_class(sym->stg_class));
+                                                                    }                                                                    
+                                                                    if (spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.decl_type) {
+                                                                        if(!type_specs) type_specs = new_list(spec_item);
+                                                                        else append_item(type_specs, spec_item);
                                                                     }
                                                                     current_spec = current_spec->list.next;
                                                                 }
 
-                                                                //fprintf(stderr, "Symbol Type: %s\n", get_symbol_type(sym->type));
-                                                                //fprintf(stderr, "Storage Class: %s\n", get_storage_class(sym->stg_class)); 
-                                                                //print_ast_tree(sym->node, 0);
+                                                                // just keep this as a list of AST nodes for now, it's kinda sketch when printed but it works
+                                                                if(type_specs) sym->node = combine_nodes(type_specs, sym->node);
 
                                                                 st_install(cur_scope, sym);
-                                                                //print_sym_table(cur_scope, file_name, line_num);
                                                                 print_symbol(cur_scope, sym);
                                                                 
                                                                 sym = sym->next;
@@ -198,21 +211,59 @@ function_definition : decl_specifiers declarator    {
                                                             //install function into global scope
                                                             SYMTABLE* global = stack_peek(scope_stack);
                                                             st_install(global, sym);
+                                                            print_symbol(global, sym);
                                                             //fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
 
-                                                            //SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
-                                                            //stack_push(scope_stack, funct_scope);
-                                                            //fprintf(stderr, "Entering function scope for '%s'\n", sym->key);
-                                                            //print_sym_table(global, file_name, line_num); 
-                                                            print_symbol(global, sym);
+                                                            SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
+                                                            stack_push(scope_stack, funct_scope);
+                                                            //print_sym_table(global, file_name, line_num);
 
-                                                        } else {
+
+                                                            // prototype scope
+                                                            if (sym->type == FUNCT_SYM && sym->node->type == FUNCT_N && sym->node->function.right) {
+                                                                SYMTABLE* proto_scope = st_create(PROTO_SCOPE, funct_scope);
+                                                                stack_push(scope_stack, proto_scope);
+                                                                ast_node_t* param_list = sym->node->function.right;
+
+                                                                // add parameters to proto scope
+                                                                while (param_list) {
+                                                                    ast_node_t* param_node = param_list->list.head;
+                                                                    if (param_node->type == PARAM_N) {
+                                                                        char* key = (param_node->parameter.ident && param_node->parameter.ident->type == IDENT_N)
+                                                                                   ? param_node->parameter.ident->ident.name
+                                                                                   : NULL;
+                                                                        SYMBOL* param_sym = st_new_symbol(key, param_node, GENERAL_NS, VAR_SYM, AUTO_SC, NULL, file_name, line_num);
+                                                                        st_install(proto_scope, param_sym);
+                                                                        //print_symbol(proto_scope, param_sym);
+                                                                    }
+                                                                    param_list = param_list->list.next;
+                                                                }
+                                                                print_sym_table(proto_scope);
+
+                                                                // "promote" symbols within proto scope to funct scope
+                                                                ht_t *ht = proto_scope->ht;
+                                                                for (int i = 0; i < ht->capacity; i++) {
+                                                                    hash_item *item = &ht->data[i];
+                                                                    if (item->isOccupied && !item->isDeleted) {
+                                                                        SYMBOL *proto_sym = (SYMBOL *) item->pv;
+                                                                        //fprintf(stderr, "moving key %s from proto scope to funct scope\n", proto_sym->key);
+                                                                        st_install(funct_scope, proto_sym); 
+                                                                    }
+                                                                }
+                                                                
+                                                                //pop proto_scope off stack
+                                                                stack_pop(scope_stack);
+                                                            }
+                                                            fprintf(stderr, "\nEntering function scope for '%s'\n", sym->key);
+                                                            print_sym_table(funct_scope);
+                                                        }
+                                                        else {
                                                             fprintf("Expected function definition for symbol: %s", sym->key);
                                                             exit(1);
                                                         }
                                                     } param_decl_list compound_statement { 
-                                                        //SYMTABLE* st = stack_pop(scope_stack); 
-                                                        //fprintf(stderr, "Exiting function scope");
+                                                        SYMTABLE* st = stack_pop(scope_stack); 
+                                                        fprintf(stderr, "Exiting function scope\n");
                                                     }
                     ;
 
@@ -221,22 +272,12 @@ param_decl_list : /* empty */                   { $$ = NULL; }
                 ;
 
 compound_statement  : '{'   {
-                                fprintf(stderr, "Entering block or function scope: <%s>:%d\n", file_name, line_num);
-                                SYMTABLE* current = stack_peek(scope_stack);
-                                stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
                             } 
                       '}'   {
-                                SYMTABLE* st = stack_pop(scope_stack);
-                                fprintf(stderr, "Exiting block/funct scope: <%s>:%d\n", file_name, line_num); 
                             }
                     | '{'   {
-                                fprintf(stderr, "Entering block or function scope: <%s>:%d\n", file_name, line_num);
-                                SYMTABLE* current = stack_peek(scope_stack);
-                                stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
                             } 
                       decl_or_stmt_list '}'   {
-                                SYMTABLE* st = stack_pop(scope_stack);
-                                fprintf(stderr, "Exiting block/funct scope: <%s>:%d\n", file_name, line_num); 
                             }
                     ;
 
@@ -248,9 +289,9 @@ decl_or_stmt    : declaration { /*fprintf(stderr, "reducing a declaration\n");*/
                 | statement { /**fprintf(stderr, "reducing a statement\n");*/ }
                 ;
 
-decl_specifiers : stg_class_specifier                   { $$ = $1; }
+decl_specifiers : stg_class_specifier                   { $$ = new_list($1); }
                 | stg_class_specifier decl_specifiers   { $$ = append_item($2, $1); }
-                | type_specifier                        { $$ = $1; }
+                | type_specifier                        { $$ = new_list($1); }
                 | type_specifier decl_specifiers        { $$ = append_item($2, $1); }
                 ;
 
