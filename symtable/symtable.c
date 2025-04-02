@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "symtable.h"
 #include "hash.h"
@@ -14,6 +15,8 @@ SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer) {
     st->scope = scope;
     st->ht = ht;
     st->outer = outer;
+    st->start_line = line_num;
+    st->start_file = file_name;
 
     return st;
 }
@@ -33,6 +36,7 @@ int st_install(SYMTABLE* st, SYMBOL* sym) {
         fprintf(stderr, "Invalid symbol table or symbol\n");
         return -1;
     }
+    sym->scope = st;  // associate symbol with its scope
 
     
     bool found = false;

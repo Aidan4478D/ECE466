@@ -20,6 +20,9 @@ int in_struct_union = 0;
 stack_t* scope_stack;
 SYMBOL* current_struct_union = NULL;
 
+// this is sketch but a quick fix
+int in_function = 0; 
+
 //int yydebug = 1;
 
 /* Although this is great, it does not include: 
@@ -72,7 +75,7 @@ SYMBOL* current_struct_union = NULL;
 %type<ast_node> specifier_list 
 %type<ast_node> pointer
 %type<ast_node> identifier_list
-%type<ast_node> parameter_list parameter_declaration param_decl_list 
+%type<ast_node> parameter_list parameter_declaration
 %type<ast_node> abstract_declarator direct_abstract_declarator
 
 %type<symbol>struct_declarator_list struct_declarator
@@ -213,7 +216,8 @@ function_definition : decl_specifiers declarator    {
                                                             st_install(global, sym);
                                                             print_symbol(global, sym);
                                                             //fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
-
+                                                            
+                                                            // function scope for function body
                                                             SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
                                                             stack_push(scope_stack, funct_scope);
                                                             //print_sym_table(global, file_name, line_num);
@@ -226,28 +230,33 @@ function_definition : decl_specifiers declarator    {
                                                                 ast_node_t* param_list = sym->node->function.right;
 
                                                                 // add parameters to proto scope
+                                                                int cnt = 1;
                                                                 while (param_list) {
                                                                     ast_node_t* param_node = param_list->list.head;
                                                                     if (param_node->type == PARAM_N) {
-                                                                        char* key = (param_node->parameter.ident && param_node->parameter.ident->type == IDENT_N)
-                                                                                   ? param_node->parameter.ident->ident.name
-                                                                                   : NULL;
-                                                                        SYMBOL* param_sym = st_new_symbol(key, param_node, GENERAL_NS, VAR_SYM, AUTO_SC, NULL, file_name, line_num);
-                                                                        st_install(proto_scope, param_sym);
-                                                                        //print_symbol(proto_scope, param_sym);
+
+                                                                        char* key = (param_node->parameter.ident && param_node->parameter.ident->type == IDENT_N) ? param_node->parameter.ident->ident.name : NULL;
+
+                                                                        if(key) {
+                                                                            SYMBOL* param_sym = st_new_symbol(key, param_node, GENERAL_NS, VAR_SYM, AUTO_SC, NULL, file_name, line_num);
+                                                                            st_install(proto_scope, param_sym);
+                                                                        }
+                                                                        else fprintf(stderr, "No key associated with input parameter #%d\n", cnt++); 
                                                                     }
                                                                     param_list = param_list->list.next;
                                                                 }
-                                                                print_sym_table(proto_scope);
 
-                                                                // "promote" symbols within proto scope to funct scope
+                                                                // "promote" symbols within proto scope to funct scope (if there are any)
                                                                 ht_t *ht = proto_scope->ht;
-                                                                for (int i = 0; i < ht->capacity; i++) {
-                                                                    hash_item *item = &ht->data[i];
-                                                                    if (item->isOccupied && !item->isDeleted) {
-                                                                        SYMBOL *proto_sym = (SYMBOL *) item->pv;
-                                                                        //fprintf(stderr, "moving key %s from proto scope to funct scope\n", proto_sym->key);
-                                                                        st_install(funct_scope, proto_sym); 
+                                                                if(ht->filled) {
+                                                                    print_sym_table(proto_scope);
+                                                                    for (int i = 0; i < ht->capacity; i++) {
+                                                                        hash_item *item = &ht->data[i];
+                                                                        if (item->isOccupied && !item->isDeleted) {
+                                                                            SYMBOL *proto_sym = (SYMBOL *) item->pv;
+                                                                            //fprintf(stderr, "moving key %s from proto scope to funct scope\n", proto_sym->key);
+                                                                            st_install(funct_scope, proto_sym); 
+                                                                        }
                                                                     }
                                                                 }
                                                                 
@@ -256,30 +265,45 @@ function_definition : decl_specifiers declarator    {
                                                             }
                                                             fprintf(stderr, "\nEntering function scope for '%s'\n", sym->key);
                                                             print_sym_table(funct_scope);
+                                                            in_function = 1;
                                                         }
                                                         else {
-                                                            fprintf("Expected function definition for symbol: %s", sym->key);
+                                                            fprintf(stderr, "Expected function definition for symbol: %s", sym->key);
                                                             exit(1);
                                                         }
-                                                    } param_decl_list compound_statement { 
-                                                        SYMTABLE* st = stack_pop(scope_stack); 
+                                                    } 
+                                                    compound_statement { 
                                                         fprintf(stderr, "Exiting function scope\n");
+                                                        in_function = 0;
                                                     }
                     ;
 
-param_decl_list : /* empty */                   { $$ = NULL; }
-                | param_decl_list declaration   { $$ = $2; }
-                ;
 
 compound_statement  : '{'   {
+                                if(in_function != 1) {
+                                    SYMTABLE* current = stack_peek(scope_stack);
+                                    fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(current->scope), file_name, line_num);
+                                    stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
+                                }
+                                in_function = 0;
                             } 
                       '}'   {
+                                SYMTABLE* st = stack_pop(scope_stack);
+                                fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(st->scope), file_name, line_num);
                             }
                     | '{'   {
-                            } 
-                      decl_or_stmt_list '}'   {
+                                if(in_function != 1) {
+                                    SYMTABLE* current = stack_peek(scope_stack);
+                                    fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(current->scope), file_name, line_num);
+                                    stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
+                                } 
+                                in_function = 0;
                             }
-                    ;
+                      decl_or_stmt_list '}'   {
+                                SYMTABLE* st = stack_pop(scope_stack);
+                                fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line); 
+                            }
+                    ;                    ;
 
 decl_or_stmt_list   : decl_or_stmt
                     | decl_or_stmt_list decl_or_stmt
@@ -772,7 +796,12 @@ expression : comma_expression { $$ = $1; }
 int main(void) {
     scope_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(scope_stack);
-    stack_push(scope_stack, st_create(FILE_SCOPE, NULL)); 
+    
+    SYMTABLE* global = st_create(FILE_SCOPE, NULL);
+    global->start_line = 1;
+    global->start_file = file_name;
+
+    stack_push(scope_stack, global); 
     yyparse(); 
     return 0;
 }

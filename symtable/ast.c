@@ -242,7 +242,12 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
         }
 
         case FUNCT_N:
-            if (decl->function.left == NULL || decl->function.left->type == IDENT_N) decl->function.left = base;
+            // If base is a pointer, it applies to the entire function
+            if (base->type == POINTER_N) {
+                ast_node_t* ptr_node = new_pointer(decl);
+                return ptr_node;
+            } 
+            else if (decl->function.left == NULL || decl->function.left->type == IDENT_N) decl->function.left = base;
             else decl->function.left = combine_nodes(base, decl->function.left);
 
             return decl;

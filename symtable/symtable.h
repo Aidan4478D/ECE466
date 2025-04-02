@@ -36,14 +36,21 @@ typedef struct sym_table {
     SCOPETYPE scope;
     ht_t* ht; 
     struct sym_table* outer;
+
+    // for keeping track of where scope is defined
+    int start_line;
+    char* start_file;
 } SYMTABLE;
 
 
 typedef struct symbol {
     char* key; // key for hash table
+
+    // symbol specific line num & file name, parent scope st
+    SYMTABLE* scope;
     char* file_name;
     int line_num;
-    struct symbol* parent_sym; //purely for printing purposes so we can trace which scope symbol is defined within
+    struct symbol* parent_sym; //purely for printing purposes so we can trace where struct/union is defined
 
     NAMESPACE name_space; //namespace is a keyword :(
     SYMTYPE type;

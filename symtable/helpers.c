@@ -35,32 +35,36 @@ void print_sym_table(SYMTABLE *st) {
 }
 
 
+// chat gpt helped me generate this
 void print_symbol(SYMTABLE *st, SYMBOL* sym) {
     if (!sym) {
         printf("Symbol is NULL.\n");
         return;
     }
-    
     if (st_lookup(st, st->scope, sym->key, sym->name_space)) {
         printf("---------------------------------------------\n");
-        if (sym->parent_sym && sym->parent_sym != sym && (sym->parent_sym->type == STRUCT_SYM || sym->parent_sym->type == UNION_SYM)) {
+        if (sym->type == MEMBER_SYM && sym->parent_sym) {
             const char* su_type = (sym->parent_sym->type == STRUCT_SYM) ? "struct" : "union";
-            printf("[in %s scope starting at <%s>:%d]\n", su_type, sym->parent_sym->file_name, sym->parent_sym->line_num);
-        }
+            printf("[in %s %s starting at <%s>:%d]\n", su_type, sym->parent_sym->key ? sym->parent_sym->key : "(anonymous)", sym->parent_sym->file_name, sym->parent_sym->line_num);
+        } 
+        else if (sym->scope) printf("[in %s scope starting at <%s>:%d]\n", get_scope_name(sym->scope->scope), sym->scope->start_file, sym->scope->start_line);
+
         printf("<%s>:%d\n", sym->file_name, sym->line_num);
         printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
         printf("AST Tree for your symbol:\n---------------------------------------------\n");
-        
-        if (sym->type == VAR_SYM) {
+
+        if (sym->type == FUNCT_SYM) print_full_type(sym->node, 0); 
+        else if (sym->type == VAR_SYM) {
             printf("TYPE: ");
             print_type(sym->node);
             printf("\n");
         } 
         else print_ast_tree(sym->node, 0);
-        
+    
         printf("---------------------------------------------\n\n");
     } 
     else fprintf(stderr, "Symbol %s not found in %s symbol table!\n", sym->key, get_scope_name(st->scope));
+    
 }
 
 char* get_operator_string(int op) {
@@ -231,6 +235,55 @@ void print_type(ast_node_t *node) {
 
 
 
+void print_full_type(ast_node_t* node, int indent) {
+    if (!node) {
+        for (int i = 0; i < indent; i++) printf("\t");
+        printf("unknown\n");
+        return;
+    }
+
+    switch (node->type) {
+        case FUNCT_N:
+            for (int i = 0; i < indent; i++) printf("\t");
+            printf("FUNCTION CALL\n");
+            if (node->function.left) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("RETURN TYPE: ");
+                if (node->function.left->type == POINTER_N && 
+                    node->function.left->pointer.next && 
+                    node->function.left->pointer.next->type == FUNCT_N) {
+                    printf("POINTER to\n");
+                    print_full_type(node->function.left->pointer.next, indent + 2);
+                } else {
+                    print_type(node->function.left);
+                    printf("\n");
+                }
+            }
+            if (node->function.right) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("PARAMETERS:\n");
+                ast_node_t* param_list = node->function.right;
+                int param_count = 1;
+                while (param_list) {
+                    for (int i = 0; i < indent + 2; i++) printf("\t");
+                    printf("PARAMETER #%d\n", param_count++);
+                    print_ast_tree(param_list->list.head, indent + 3);
+                    param_list = param_list->list.next;
+                }
+            }
+            break;
+        case DECLSPEC_N:
+            for (int i = 0; i < indent; i++) printf("\t");
+            printf("%s\n", get_decl_spec(node->decl_spec.decl_type));
+            break;
+        default:
+            print_ast_tree(node, indent);
+            break;
+    }
+}
+
+
+
 void print_ast_tree(ast_node_t *node, int indent) {
     if (!node)
         return;
@@ -378,7 +431,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
                 if (ident_node) printf("IDENT: %s\n", ident_node->ident.name);
             }
             if (node->parameter.type) {
-                for (int i = 0; i < indent; i++) printf("\t");
+                if(node->parameter.ident) for (int i = 0; i < indent; i++) printf("\t");
                 printf("TYPE: ");
                 print_type(node->parameter.type);
                 printf("\n");
