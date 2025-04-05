@@ -6,7 +6,7 @@
 #include <string.h>
 
 void print_current_scope(stack_t* scope_stack) {
-    SYMTABLE *st = stack_peek(scope_stack);
+    SYMTABLE *st = (SYMTABLE*) stack_peek(scope_stack);
     printf("Current scope: %d\n", st->scope);
 }
 
