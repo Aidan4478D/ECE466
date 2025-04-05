@@ -144,18 +144,16 @@ ast_node_t* append_item(ast_node_t* list, ast_node_t* entry) {
 }
 
 
-// array builds off of list
 ast_node_t* new_array(ast_node_t* element_type, int size) {
 
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
     node->type = ARRAY_N;
 
-    // implement array through list
-    // need to have some sort of type indication
     node->array.element_type = element_type;
-    node->array.size = size;  // if size is NULL, then it's an unsized array
+    node->array.size = size;
     return node;
 }
+
 
 ast_node_t* new_param(ast_node_t* type, ast_node_t* ident) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
@@ -171,13 +169,13 @@ ast_node_t* new_struct_union(int token, SYMBOL* sym) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
     node->type = (token == STRUCT ? STRUCT_N : UNION_N);
 
-    node->struct_union.sym = sym;
+    node->struct_union.sym = sym; //struct union just gonna be tracked through symbol
 
     return node;
 }
 
 // ensures that the identifier is attached to the AST node, whether it’s NULL (simple declarator) 
-// or a chain like POINTER_N (complex declarator)
+// or a chain like POINTER_N
 ast_node_t* attach_ident(ast_node_t* node, char* ident) {
     if (node == NULL) return new_ident(ident);
     ast_node_t* current = node;
@@ -219,25 +217,20 @@ ast_node_t* extract_ident(ast_node_t* node) {
 
 
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
-    if (!decl)
-        return base;
-    if (!base)
-        return decl;
+    if (!decl) return base;
+    if (!base) return decl;
 
     switch (decl->type) {
         case ARRAY_N:
-            if (decl->array.element_type == NULL)
-                decl->array.element_type = base;
-            else
-                decl->array.element_type = combine_nodes(base, decl->array.element_type);
+            if (!decl->array.element_type) decl->array.element_type = base;
+            else decl->array.element_type = combine_nodes(base, decl->array.element_type);
+
             return decl;
 
         case POINTER_N: {
-            if (decl->pointer.next == NULL) {
-                decl->pointer.next = base;
-            } else {
-                decl->pointer.next = combine_nodes(base, decl->pointer.next);
-            }
+            if (!decl->pointer.next) decl->pointer.next = base;
+            else decl->pointer.next = combine_nodes(base, decl->pointer.next);
+        
             return decl;
         }
 
@@ -247,7 +240,7 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
                 ast_node_t* ptr_node = new_pointer(decl);
                 return ptr_node;
             } 
-            else if (decl->function.left == NULL || decl->function.left->type == IDENT_N) decl->function.left = base;
+            else if (!decl->function.left || decl->function.left->type == IDENT_N) decl->function.left = base;
             else decl->function.left = combine_nodes(base, decl->function.left);
 
             return decl;
@@ -255,14 +248,12 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
         case DECLSPEC_N:
             // declaration specifiers should be the base type
             // if base is another DECLSPEC_N or something else, we can combine them
-            if (base->type == DECLSPEC_N) {
-                // combine multiple declaration specifiers
-                return append_item(base, decl);
-            } 
-            else {
-                // Attach the declspec as the base of the type
-                return combine_nodes(decl, base);
-            }
+
+            // combine multiple declaration specifiers
+            if (base->type == DECLSPEC_N) return append_item(base, decl);
+
+            // Attach the declspec as the base of the type
+            else return combine_nodes(decl, base);
         default:
             return decl;
     }

@@ -203,6 +203,7 @@ char* get_node_type(int op) {
     }
 }
 
+// below is pretty inefficient but it works
 
 // use for making display look nice in output AST tree
 void print_type(ast_node_t *node) {

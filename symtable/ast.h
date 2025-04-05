@@ -11,8 +11,6 @@ extern char* file_name;
 struct symbol;
 typedef struct symbol SYMBOL;
 
-// stuff that was in the lexer .h file
-
 enum num_type {
     INT_T=1024, //set to 1024 to guarentee no collision
     LONG_T,
@@ -153,7 +151,6 @@ typedef struct ast_node_element {
 } ast_node_element_t;
 
 
-// List of Arguments
 typedef struct ast_node_list {
     ast_node_t* head;
     ast_node_t* next;

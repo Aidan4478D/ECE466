@@ -18,7 +18,6 @@ void stack_push(stack_t* stack, void* value) {
         return;
     }
     stack->arr[++stack->top] = value;
-    // Removed printf since void* can't be printed directly as a string
 }
 
 void* stack_pop(stack_t* stack) {
@@ -28,7 +27,6 @@ void* stack_pop(stack_t* stack) {
     }
     void* popped = stack->arr[stack->top];
     stack->top--;
-    // Removed printf since void* doesn't have a specific type
     return popped;
 }
 

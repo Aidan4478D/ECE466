@@ -173,7 +173,6 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                 ast_node_t* current_spec = spec;
                                                                 ast_node_t* type_specs = NULL;
 
-    
                                                                 while (current_spec) {
                                                                     ast_node_t* spec_item = current_spec->list.head;
 
@@ -231,13 +230,11 @@ function_definition : decl_specifiers declarator    {
                                                             //install function into global scope
                                                             SYMTABLE* global = (SYMTABLE*) stack_peek(scope_stack);
                                                             st_install(global, sym);
-                                                            //print_symbol(global, sym);
                                                             //fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
                                                             
                                                             // function scope for function body
                                                             SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
                                                             stack_push(scope_stack, funct_scope);
-                                                            //print_sym_table(global, file_name, line_num);
 
 
                                                             // prototype scope
@@ -391,9 +388,9 @@ struct_union_specifier : struct_or_union IDENT '{' {
 
                                                         // set parent to current (if not used) so we can print where struct is defined
                                                         if(!sym->parent_sym) sym->parent_sym = sym;
+
                                                         sym->is_complete = 1;
                                                         $$ = new_struct_union($1, sym);
-
                                                         //fprintf(stderr, "Exited struct/union scope started at <%s>:%d\n", st->start_file, st->start_line); 
                                                     }
                        | struct_or_union '{'        { 
@@ -460,9 +457,8 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
 
                                                                     fprintf(stderr, "going to member st\n"); 
 
-                                                                    while (sym_list != NULL) {
+                                                                    while (sym_list) {
                                                                         SYMBOL* sym = sym_list;
-                                                                        sym_list = sym_list->next;
                                                                         sym->node = combine_nodes(spec, sym->node);
                                                                         sym->name_space = MEMBER_NS;
                                                                         sym->type = MEMBER_SYM;
@@ -477,6 +473,8 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
                                                                             exit(1);
                                                                         }
                                                                         print_symbol(member_st, sym);
+
+                                                                        sym_list = sym_list->next;
                                                                     }
                                                                     //print_sym_table(member_st, file_name, line_num);
                                                                 }

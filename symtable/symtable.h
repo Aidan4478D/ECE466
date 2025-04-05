@@ -52,7 +52,6 @@ typedef struct symbol {
     SYMTABLE* scope;
     char* file_name;
     int line_num;
-    struct symbol* parent_sym; //purely for printing purposes so we can trace where struct/union is defined
 
     NAMESPACE name_space; //namespace is a keyword :(
     SYMTYPE type;
@@ -61,8 +60,10 @@ typedef struct symbol {
     ast_node_t* node;
     struct symbol* next; //allow for chained symbols like int x, y 
     
+    // for structs and unions
     int is_complete;
     SYMTABLE* mini_st;
+    struct symbol* parent_sym; //purely for printing purposes so we can trace where struct/union is defined
 } SYMBOL;
 
 
