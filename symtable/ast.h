@@ -34,7 +34,7 @@ enum str_type {
 
 
 typedef enum decl_spec {
-    FLOAT_DT,
+    FLOAT_DT=1,
     DOUBLE_DT,
     INT_DT,
     LONG_DT,
