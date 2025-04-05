@@ -8,6 +8,7 @@ Things to fix:
 
 #include "ast.h"
 #include "y.tab.h"
+#include "stack.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,6 +21,9 @@ int line_num = 1;
 char* buf = NULL;
 int buf_size = 0;
 int buf_len = 0;
+
+extern stack_t* scope_stack;
+extern int global_scope_updated;
 
 void init_buf() {
     buf_size = 128;
@@ -67,14 +71,19 @@ HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 [ \t\v\f\r]+    /* do nothing for whitespace */
 [\n]        { line_num++; }
 
-^#   { BEGIN(PREPROC); }
+^#   { fprintf(stderr, "Found # directive\n"); BEGIN(PREPROC); }
 <PREPROC>{
 	\"([^"\\]|\\.)*\"	{
         yytext[strlen(yytext)-1] = '\0';
         file_name = strdup(yytext+1);
+        fprintf(stderr, "file name is %s\n", file_name);
         line_num = 1;
+        
+        SYMTABLE* global = (SYMTABLE*) stack_peek(scope_stack);
+        global->start_file = file_name;
+        global->start_line = line_num;
     }
-	\n	{BEGIN(INITIAL);}
+	\n	{fprintf(stderr, "exiting PREPROC state\n"); BEGIN(INITIAL);}
 	.   {}
 }
 

@@ -21,6 +21,7 @@ stack_t* struct_union_stack;
 
 // this is sketch but a quick fix
 int in_function = 0; 
+int global_scope_updated = 0;
 
 //int yydebug = 1;
 
@@ -30,13 +31,12 @@ int in_function = 0;
     - Qualifiers like const, volatile, and restrict
     - Initialized declarations
     - Arrays are declarators are assumed to be arr[] or arr[NUMBER] (no variable length arrays)
-
+    - Does not support K&R function declarations and definitions (ex. int add(a, b) int a; int b; { return a + b; } <== WILL NOT WORK!)
 */
 
 /* known issues: 
-    - can enter things like int double signed char x; and it would work
+    - can enter things like "int double signed char x;" and it would work
     - void (*g(double d))(int, char); mixes up the parameter lists
-    - you don't have to end struct defs with a ;
 */
 %}
 
@@ -843,8 +843,6 @@ int main(void) {
     stack_init(struct_union_stack);
     
     SYMTABLE* global = st_create(FILE_SCOPE, NULL);
-    global->start_line = 1;
-    global->start_file = file_name;
 
     stack_push(scope_stack, global); 
     yyparse(); 
