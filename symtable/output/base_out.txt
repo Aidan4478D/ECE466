@@ -1,0 +1,144 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:1
+symbol: i1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:2
+symbol: i14, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = STATIC
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:3
+symbol: ui1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT UNSIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:4
+symbol: ui2, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: UNSIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:5
+symbol: ul1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: UNSIGNED LONG
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:6
+symbol: i3, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: SIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:7
+symbol: c1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: CHAR
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:8
+symbol: c2, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: CHAR UNSIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:9
+symbol: c3, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: CHAR SIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:10
+symbol: ll1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: LONG LONG
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:11
+symbol: ull1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: LONG LONG UNSIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:12
+symbol: s1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: SHORT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:13
+symbol: us1, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: SHORT UNSIGNED
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:14
+symbol: d, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: DOUBLE
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:15
+symbol: ld, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: DOUBLE LONG
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/base.c>:1]
+<tests/base.c>:16
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: FLOAT
+---------------------------------------------
+

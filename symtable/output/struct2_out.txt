@@ -1,0 +1,129 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/struct2.c>:1]
+<tests/struct2.c>:1
+symbol: s1, scope: FILE_SCOPE, namespace = TAG, type = STRUCT, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in struct s1 starting at <tests/struct2.c>:1]
+<tests/struct2.c>:2
+symbol: a, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/struct2.c>:1]
+<tests/struct2.c>:5
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: VOID
+	PARAMETERS:
+		PARAMETER #1
+			TYPE: VOID
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/struct2.c>:6]
+<tests/struct2.c>:8
+symbol: s2, scope: FUNCT_SCOPE, namespace = TAG, type = STRUCT, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in struct s2 starting at <tests/struct2.c>:8]
+<tests/struct2.c>:9
+symbol: p1, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to STRUCT s1 (incomplete) 
+
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/struct2.c>:6]
+<tests/struct2.c>:11
+symbol: s3, scope: FUNCT_SCOPE, namespace = TAG, type = STRUCT, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in struct s3 starting at <tests/struct2.c>:11]
+<tests/struct2.c>:12
+symbol: p2, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to STRUCT s2 (complete) defined at <tests/struct2.c>:8
+
+---------------------------------------------
+
+---------------------------------------------
+[in BLOCK_SCOPE scope starting at <tests/struct2.c>:11]
+<tests/struct2.c>:7
+symbol: s1, scope: BLOCK_SCOPE, namespace = TAG, type = STRUCT, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in struct s1 starting at <tests/struct2.c>:7]
+<tests/struct2.c>:14
+symbol: d, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: DOUBLE
+---------------------------------------------
+
+---------------------------------------------
+[in struct s1 starting at <tests/struct2.c>:7]
+<tests/struct2.c>:15
+symbol: p1, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to STRUCT s1 (complete) defined at <tests/struct2.c>:7
+
+---------------------------------------------
+
+---------------------------------------------
+[in struct s1 starting at <tests/struct2.c>:7]
+<tests/struct2.c>:16
+symbol: x, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in BLOCK_SCOPE scope starting at <tests/struct2.c>:19]
+<tests/struct2.c>:7
+symbol: s1, scope: BLOCK_SCOPE, namespace = TAG, type = STRUCT, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in struct s1 starting at <tests/struct2.c>:7]
+<tests/struct2.c>:20
+symbol: f, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: FLOAT
+---------------------------------------------
+
+---------------------------------------------
+[in BLOCK_SCOPE scope starting at <tests/struct2.c>:19]
+<tests/struct2.c>:21
+symbol: s1, scope: BLOCK_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: STRUCT s1 (complete) defined at <tests/struct2.c>:7
+
+---------------------------------------------
+

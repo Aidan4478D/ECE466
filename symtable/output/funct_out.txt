@@ -1,0 +1,87 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/funct.c>:1]
+<tests/funct.c>:1
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/funct.c>:1]
+<tests/funct.c>:2
+symbol: h, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/funct.c>:1]
+<tests/funct.c>:4
+symbol: g, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: POINTER to
+		FUNCTION CALL
+			RETURN TYPE: VOID
+			PARAMETERS:
+				PARAMETER #1
+					IDENT: d
+					TYPE: DOUBLE
+	PARAMETERS:
+		PARAMETER #1
+			TYPE: INT
+		PARAMETER #2
+			TYPE: CHAR
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/funct.c>:4]
+<tests/funct.c>:5
+symbol: f, scope: FUNCT_SCOPE, namespace = GENERAL, type = FUNCTION, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/funct.c>:4]
+<tests/funct.c>:6
+symbol: g, scope: FUNCT_SCOPE, namespace = GENERAL, type = FUNCTION, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/funct.c>:1]
+<tests/funct.c>:9
+symbol: h, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: x
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/funct.c>:9]
+<tests/funct.c>:10
+symbol: h, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+

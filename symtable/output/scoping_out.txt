@@ -1,0 +1,67 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/scoping.c>:1]
+<tests/scoping.c>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/scoping.c>:1]
+<tests/scoping.c>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION CALL
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			TYPE: VOID
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/scoping.c>:4]
+<tests/scoping.c>:5
+symbol: a, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in BLOCK_SCOPE scope starting at <tests/scoping.c>:7]
+<tests/scoping.c>:7
+symbol: a, scope: BLOCK_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in BLOCK_SCOPE scope starting at <tests/scoping.c>:7]
+<tests/scoping.c>:8
+symbol: b, scope: BLOCK_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <tests/scoping.c>:4]
+<tests/scoping.c>:10
+symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <tests/scoping.c>:1]
+<tests/scoping.c>:13
+symbol: b, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+

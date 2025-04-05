@@ -1,0 +1,16 @@
+int i1;
+static int i14;
+unsigned int ui1;
+unsigned ui2;
+long unsigned ul1;
+signed i3;
+char c1;
+unsigned char c2;
+signed char c3;
+long long ll1;
+unsigned long long ull1;
+short s1;
+unsigned short us1;
+double d;
+long double ld;
+float f;
