@@ -35,11 +35,13 @@ typedef enum sym_types {
 typedef struct sym_table {
     SCOPETYPE scope;
     ht_t* ht; 
-    struct sym_table* outer;
 
     // for keeping track of where scope is defined
     int start_line;
     char* start_file;
+
+    struct sym_table* outer;
+    int is_struct_scope;
 } SYMTABLE;
 
 
@@ -66,8 +68,13 @@ typedef struct symbol {
 
 SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer); 
 int st_install(SYMTABLE* st, SYMBOL* sym);
-SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns);
 SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st, char* fname, int lineno);
 
+// lookup thorugh each ascending symbol table
+SYMBOL* st_lookup(SYMTABLE* st, char* key, NAMESPACE ns);
+
+// lookup in a specific symbol table
+SYMBOL* st_lookup_single(SYMTABLE* st, char* key, NAMESPACE ns);
 
 #endif
+

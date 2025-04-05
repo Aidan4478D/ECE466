@@ -35,26 +35,25 @@ void print_sym_table(SYMTABLE *st) {
 }
 
 
-// chat gpt helped me generate this
 void print_symbol(SYMTABLE *st, SYMBOL* sym) {
     if (!sym) {
         printf("Symbol is NULL.\n");
         return;
     }
-    if (st_lookup(st, st->scope, sym->key, sym->name_space)) {
+    if (st_lookup(st, sym->key, sym->name_space)) {
         printf("---------------------------------------------\n");
         if (sym->type == MEMBER_SYM && sym->parent_sym) {
             const char* su_type = (sym->parent_sym->type == STRUCT_SYM) ? "struct" : "union";
             printf("[in %s %s starting at <%s>:%d]\n", su_type, sym->parent_sym->key ? sym->parent_sym->key : "(anonymous)", sym->parent_sym->file_name, sym->parent_sym->line_num);
         } 
-        else if (sym->scope) printf("[in %s scope starting at <%s>:%d]\n", get_scope_name(sym->scope->scope), sym->scope->start_file, sym->scope->start_line);
+        else if (sym->scope) printf("[in %s scope starting at <%s>:%d]\n", get_scope_name(st->scope), st->start_file, st->start_line);
 
         printf("<%s>:%d\n", sym->file_name, sym->line_num);
         printf("symbol: %s, scope: %s, namespace = %s, type = %s, storage = %s\n", sym->key, get_scope_name(st->scope), get_name_space(sym->name_space), get_symbol_type(sym->type), get_storage_class(sym->stg_class));
         printf("AST Tree for your symbol:\n---------------------------------------------\n");
 
         if (sym->type == FUNCT_SYM) print_full_type(sym->node, 0); 
-        else if (sym->type == VAR_SYM) {
+        else if (sym->type == VAR_SYM || sym->type == MEMBER_SYM) {
             printf("TYPE: ");
             print_type(sym->node);
             printf("\n");
@@ -226,6 +225,18 @@ void print_type(ast_node_t *node) {
         case ARRAY_N:
             printf("ARRAY of size %d of ", node->array.size);
             print_type(node->array.element_type);
+            break;
+        case STRUCT_N:
+            printf("STRUCT %s ", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
+            printf("(%s) ", node->struct_union.sym->is_complete ? "complete" : "incomplete");
+            if(node->struct_union.sym->parent_sym) printf("defined at <%s>:%d\n", node->struct_union.sym->parent_sym->file_name, node->struct_union.sym->parent_sym->line_num);
+            else printf("\n");
+            break;
+        case UNION_N:
+            printf("UNION %s\n", node->struct_union.sym->key ? node->struct_union.sym->key : "(anonymous)");
+            printf(" (%s)\n", node->struct_union.sym->is_complete ? "complete" : "incomplete");
+            if(node->struct_union.sym->parent_sym) printf("defined at <%s>:%d\n", node->struct_union.sym->parent_sym->file_name, node->struct_union.sym->parent_sym->line_num);
+            else printf("\n");
             break;
         default:
             print_ast_tree(node, 0);

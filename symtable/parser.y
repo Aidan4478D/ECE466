@@ -33,6 +33,12 @@ int in_function = 0;
     - Arrays are declarators are assumed to be arr[] or arr[NUMBER] (no variable length arrays)
 
 */
+
+/* known issues: 
+    - can enter things like int double signed char x; and it would work
+    - void (*g(double d))(int, char); mixes up the parameter lists
+    - you don't have to end struct defs with a ;
+*/
 %}
 
 %code requires {
@@ -154,6 +160,13 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                             SYMTABLE *cur_scope = stack_peek(scope_stack); 
                                                             ast_node_t *spec = $1; //dec specs
 
+                                                            
+                                                            fprintf(stderr, "current scope is: %s\n", get_scope_name(cur_scope->scope));
+                                                            if (!cur_scope) {
+                                                                fprintf(stderr, "Error: No current scope available\n");
+                                                                exit(1);
+                                                            }
+
                                                             while (sym != NULL) {
 
                                                                 // set storage class if provided in decl_specifiers
@@ -161,22 +174,24 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                 ast_node_t* current_spec = spec;
                                                                 ast_node_t* type_specs = NULL;
 
+    
                                                                 while (current_spec) {
                                                                     ast_node_t* spec_item = current_spec->list.head;
-                                                                    //fprintf(stderr, "current spec type is: %s\n", get_node_type(spec_item));
 
                                                                     if (spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.stg_class) {
                                                                         if (stg_class_set) {
-                                                                            fprintf(stderr, "Error: multiple storage class specifiers in declaration\n");
+                                                                            fprintf(stderr, "multiple storage class specifiers in declaration\n");
                                                                             exit(1);
                                                                         }
+                                                                        //fprintf(stderr, "current spec type is: %s\n", get_node_type(spec_item));
                                                                         sym->stg_class = spec_item->decl_spec.stg_class;
                                                                         stg_class_set = 1;
                                                                         //fprintf(stderr, "Set storage class for %s to: %s\n", sym->key, get_storage_class(sym->stg_class));
                                                                     }                                                                    
-                                                                    if (spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.decl_type) {
+                                                                    if ((spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.decl_type) || spec_item->type == STRUCT_N || spec_item->type == UNION_N) {
                                                                         if(!type_specs) type_specs = new_list(spec_item);
                                                                         else append_item(type_specs, spec_item);
+                                                                        //fprintf(stderr, "type spec is of type %s: ", get_node_type(spec_item->type)); 
                                                                     }
                                                                     current_spec = current_spec->list.next;
                                                                 }
@@ -184,8 +199,11 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                 // just keep this as a list of AST nodes for now, it's kinda sketch when printed but it works
                                                                 if(type_specs) sym->node = combine_nodes(type_specs, sym->node);
 
-                                                                st_install(cur_scope, sym);
-                                                                print_symbol(cur_scope, sym);
+                                                                if(!st_lookup_single(cur_scope, sym->key, sym->name_space)) {
+                                                                    st_install(cur_scope, sym);
+                                                                    print_symbol(cur_scope, sym);
+                                                                }
+                                                                else fprintf(stderr, "%s '%s' already defined in your %s <%s>:%d namespace!\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), cur_scope->start_file, cur_scope->start_line); 
                                                                 
                                                                 sym = sym->next;
                                                             }
@@ -303,7 +321,7 @@ compound_statement  : '{'   {
                                 SYMTABLE* st = stack_pop(scope_stack);
                                 fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line); 
                             }
-                    ;                    ;
+                    ;                    
 
 decl_or_stmt_list   : decl_or_stmt
                     | decl_or_stmt_list decl_or_stmt
@@ -341,27 +359,41 @@ type_specifier  : FLOAT     { $$ = new_decl_spec(FLOAT_DT, 0);   }
 
 struct_union_specifier : struct_or_union IDENT '{' {
                                                         //fprintf(stderr, "Token value: %d (STRUCT=%d, UNION=%d)\n", $1, STRUCT, UNION);
-                                                        fprintf(stderr, "Entering struct/union scope\n"); 
-                                                        SYMTABLE* current_scope = stack_peek(scope_stack);
-                                                        SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
+                                                        SYMTABLE* st = stack_peek(scope_stack);
 
-                                                        if (sym != NULL && sym->is_complete) {
+                                                        // use another variable to store where to insert symbol as we don't want a struct within a struct
+                                                        SYMTABLE* insert_st = st;
+                                                        if(st->is_struct_scope) insert_st = st->outer;
+                                                        
+                                                        SYMBOL* sym = st_lookup(insert_st, $2.string_literal, TAG_NS);
+                                                        fprintf(stderr, "Entering struct/union scope: <%s>:%d\n", insert_st->start_file, insert_st->start_line); 
+
+                                                        if (sym && sym->is_complete) {
                                                             fprintf(stderr, "Error: redefinition of %s %s\n", ($1 == STRUCT ? "struct" : "union"), $2.string_literal);
                                                             exit(1);
                                                         } 
-                                                        if (sym == NULL) {
-                                                            sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope, file_name, line_num);
-                                                            st_install(current_scope, sym);
+                                                        if (!sym) {
+                                                            sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, insert_st, file_name, line_num);
+                                                            st_install(insert_st, sym);
+                                                            fprintf(stderr, "installed struct/union with key %s in %s scope: <%s>:%d\n", sym->key, get_scope_name(insert_st->scope), insert_st->start_file, insert_st->start_line);
                                                         }
-                                                        sym->mini_st = st_create(BLOCK_SCOPE, NULL);
+                                                        if (!sym->mini_st) {
+                                                            sym->mini_st = st_create(BLOCK_SCOPE, insert_st);
+                                                            sym->mini_st->is_struct_scope = true;
+                                                        }
                                                         stack_push(scope_stack, sym->mini_st);
                                                         current_struct_union = sym;
 
-                                                        //print_sym_table(current_scope, file_name, line_num);
-                                                        print_symbol(current_scope, sym);
+                                                        fprintf(stderr, "Entering struct/union scope %s: <%s>:%d\n", get_scope_name(insert_st->scope), insert_st->start_file, insert_st->start_line); 
+
+                                                        st = stack_peek(scope_stack);
+                                                        fprintf(stderr, "current scope is %s\n", get_scope_name(st->scope));
+
+                                                        //print_sym_table(st, file_name, line_num);
+                                                        print_symbol(st, sym);
                                                     }
                        struct_declaration_list '}'  { 
-                                                        stack_pop(scope_stack);
+                                                        SYMTABLE *st = stack_pop(scope_stack);
 
                                                         // set parent to current (if not used) so we can print where struct is defined
                                                         if(!current_struct_union->parent_sym) current_struct_union->parent_sym = current_struct_union;
@@ -370,22 +402,30 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                         $$ = new_struct_union($1, current_struct_union);
                                                         current_struct_union = NULL;
 
-                                                        fprintf(stderr, "Exited struct/union scope\n"); 
+                                                        fprintf(stderr, "Exited struct/union scope started at <%s>:%d\n", st->start_file, st->start_line); 
                                                     }
                        | struct_or_union '{'        { 
-                                                        fprintf(stderr, "Entering struct/union scope\n"); 
-                                                        SYMTABLE* current_scope = stack_peek(scope_stack);
+                                                        SYMTABLE* st = stack_peek(scope_stack);
 
-                                                        SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope, file_name, line_num);
-                                                        sym->mini_st = st_create(BLOCK_SCOPE, NULL);
+                                                        // use another variable to store where to insert symbol as we don't want a struct within a struct
+                                                        SYMTABLE* insert_st = st;
+                                                        if(st->is_struct_scope) insert_st = st->outer;
+                                                        fprintf(stderr, "Entering struct/union scope: <%s>:%d\n", st->start_file, insert_st->start_line); 
+
+                                                        SYMBOL* sym = st_new_symbol(NULL, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, insert_st, file_name, line_num);
+
+                                                        if (!sym->mini_st) {
+                                                            sym->mini_st = st_create(BLOCK_SCOPE, insert_st);
+                                                            sym->mini_st->is_struct_scope = true;
+                                                        }
                                                         stack_push(scope_stack, sym->mini_st);
                                                         current_struct_union = sym;
 
-                                                        //print_sym_table(current_scope, file_name, line_num);
-                                                        print_symbol(current_scope, sym);
+                                                        //print_sym_table(st, file_name, line_num);
+                                                        //print_symbol(st, sym);
                                                     }
                         struct_declaration_list '}' {
-                                                        stack_pop(scope_stack);
+                                                        SYMTABLE* st = stack_pop(scope_stack);
 
                                                         // set parent to current (if not used) so we can print where struct is defined
                                                         if(!current_struct_union->parent_sym) current_struct_union->parent_sym = current_struct_union;
@@ -393,16 +433,24 @@ struct_union_specifier : struct_or_union IDENT '{' {
 
                                                         $$ = new_struct_union($1, current_struct_union);
                                                         current_struct_union = NULL;
-                                                        fprintf(stderr, "Exited struct/union scope\n"); 
+                                                        fprintf(stderr, "Exited struct/union scope started at <%s>:%d\n", st->start_file, st->start_line); 
                                                     }
                        | struct_or_union IDENT  {
-                                                    SYMTABLE* current_scope = stack_peek(scope_stack);
-                                                    SYMBOL* sym = st_lookup(current_scope, FILE_SCOPE, $2.string_literal, TAG_NS);
-                                                    if (sym == NULL) {
-                                                        sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, current_scope, file_name, line_num);
-                                                        st_install(current_scope, sym);
+                                                    SYMTABLE* st = stack_peek(scope_stack);
+
+                                                    // use another variable to store where to insert symbol as we don't want a struct within a struct
+                                                    SYMTABLE* insert_st = st;
+                                                    if(st->is_struct_scope) insert_st = st->outer;
+                                                        
+                                                    SYMBOL* sym = st_lookup(insert_st, $2.string_literal, TAG_NS);
+                                                    fprintf(stderr, "current scope is: %s at <%s>:%d\n", get_scope_name(insert_st->scope), insert_st->start_file, insert_st->start_line); 
+                                                    if (!sym) {
+                                                        sym = st_new_symbol($2.string_literal, NULL, TAG_NS, ($1 == STRUCT ? STRUCT_SYM : UNION_SYM), UNKNOWN_SC, insert_st, file_name, line_num);
+                                                        st_install(insert_st, sym);
+                                                        print_symbol(insert_st, sym);
                                                     }
                                                     $$ = new_struct_union($1, sym);
+
                                                 }
                         ;
 

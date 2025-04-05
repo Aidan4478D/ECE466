@@ -18,6 +18,8 @@ SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer) {
     st->start_line = line_num;
     st->start_file = file_name;
 
+    st->is_struct_scope = 0;
+
     return st;
 }
 
@@ -68,7 +70,9 @@ int st_install(SYMTABLE* st, SYMBOL* sym) {
 }
 
 /*void* ht_get_pointer(ht_t *ht, const char *key, bool *b);*/
-SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns) {
+
+// lookup through every symbol table (going up)
+SYMBOL* st_lookup(SYMTABLE* st, char* key, NAMESPACE ns) {
     SYMBOL* sym = NULL;
     bool found = false;
 
@@ -84,13 +88,27 @@ SYMBOL* st_lookup(SYMTABLE* st, SCOPETYPE scope, char* key, NAMESPACE ns) {
 }
 
 
+// lookup for single symbol table
+SYMBOL* st_lookup_single(SYMTABLE* st, char* key, NAMESPACE ns) {
+    SYMBOL* sym = NULL;
+    bool found = false;
+
+    sym = (SYMBOL*) ht_get_pointer(st->ht, key, &found);
+
+    if (found && sym && sym->name_space == ns) return sym;
+
+    return NULL;
+}
+
+
+
 SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, STGCLASS stg_class, SYMTABLE* st, char* fname, int lineno) {
 
     SYMBOL* sym = (SYMBOL*) malloc(sizeof(SYMBOL));
 
     /*fprintf(stderr, "str type is: %d with key %s\n", key.type, key.string_literal); */
 
-    sym->key = key;
+    sym->key = key ? strdup(key) : NULL; // anonymous symbol if NULL
     sym->name_space = ns;
     sym->type = type;
     sym->stg_class = stg_class;
@@ -105,6 +123,7 @@ SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, S
     if(type == STRUCT_SYM || type == UNION_SYM) {
         sym->is_complete = 0;
         sym->mini_st = st_create(BLOCK_SCOPE, st);
+        sym->mini_st->is_struct_scope = true;
     }
 
     return sym;

@@ -114,8 +114,8 @@ ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stg_class) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
 
     node->type = DECLSPEC_N;
-    if(decl_type) node->decl_spec.decl_type = decl_type;
-    if(stg_class) node->decl_spec.stg_class = stg_class;
+    node->decl_spec.decl_type = decl_type;
+    node->decl_spec.stg_class = stg_class;
 
     return node; 
 }
