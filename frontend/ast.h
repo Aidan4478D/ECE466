@@ -86,13 +86,25 @@ typedef enum node_type {
     ELEMENT_N,
     LOGOP_N,
     
-    //new stuff
+    // assignment 3
     POINTER_N,
     ARRAY_N,
     DECLSPEC_N,
     PARAM_N,
     STRUCT_N,
     UNION_N,
+
+    // assignment 4
+    IF_N,
+    WHILE_N,
+    DOWHILE_N,
+    FOR_N,
+    LABEL_N, // also a symbol
+    GOTO_N,
+    CONTINUE_N,
+    BREAK_N,
+    SWITCH_N,
+    RETURN_N
 } NODETYPE;
 
 // assignment 2 stuff
@@ -157,6 +169,8 @@ typedef struct ast_node_list {
 } ast_node_list_t;
 
 
+/* ASSIGNMENT 3 STUFF */
+
 typedef struct ast_node_pointer {
     ast_node_t* next;
 } ast_node_pointer_t;
@@ -184,6 +198,50 @@ typedef struct ast_node_struct_union {
     SYMBOL* sym;
 } ast_node_struct_union_t; 
 
+
+/* ASSIGNMENT 4 STUFF */
+
+typedef struct ast_node_if {
+    ast_node_t* expression;
+    ast_node_t* statement;
+} ast_node_if_t;
+
+typedef struct ast_node_for {
+    ast_node_t* init;
+    ast_node_t* condition;
+    ast_node_t* update;
+    ast_node_t* statement;
+} ast_node_for_t; 
+
+typedef struct ast_node_while {
+    ast_node_t* expression;
+    ast_node_t* statement;
+} ast_node_while_t;
+
+typedef struct ast_node_switch {
+    ast_node_t* expression;
+    ast_node_t* statement;
+} ast_node_switch_t; 
+
+typedef struct ast_node_label {
+    SYMBOL* sym;
+    ast_node_t* statement;
+} ast_node_label_t;
+
+typedef struct ast_node_goto {
+    SYMBOL* sym;
+} ast_node_goto_t;
+
+typedef struct ast_node_return {
+    ast_node_t* expression;
+} ast_node_return_t;
+
+typedef struct ast_node_switch_label {
+    ast_node_t* name;
+    ast_node_t* statement; 
+} ast_node_switch_label_t;
+
+
 struct ast_node {
     NODETYPE type;
     union {
@@ -200,6 +258,15 @@ struct ast_node {
         ast_node_array_t array;
         ast_node_param_t parameter;
         ast_node_struct_union_t struct_union;
+
+        ast_node_if_t if_node;
+        ast_node_for_t for_node;
+        ast_node_while_t while_node;
+        ast_node_switch_t switch_node;
+        ast_node_label_t label_node;
+        ast_node_goto_t goto_node;
+        ast_node_return_t return_node;
+        ast_node_switch_label_t switch_label;
     };
 };
 
@@ -222,6 +289,16 @@ ast_node_t* new_param(ast_node_t* type, ast_node_t* ident);
 ast_node_t* new_struct_union(int token, SYMBOL* sym);
 ast_node_t* attach_ident(ast_node_t* node, char* ident);
 ast_node_t* extract_ident(ast_node_t* node);
+
+ast_node_t* new_if(ast_node_t* exp, ast_node_t* statement);
+ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* update, ast_node_t* statement);
+ast_node_t* new_while(ast_node_t* exp, ast_node_t* statement); 
+ast_node_t* new_switch(ast_node_t* exp, ast_node_t* statement); 
+ast_node_t* new_label(SYMBOL* label, ast_node_t* statement); 
+ast_node_t* new_switch_label(NODETYPE type, ast_node_t* name, ast_node_t* statement); 
+ast_node_t* new_goto(SYMBOL* sym); 
+ast_node_t* new_return(ast_node_t* exp); 
+ast_node_t* new_continue_break(NODETYPE type); 
 
 #endif 
 

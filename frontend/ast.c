@@ -216,6 +216,97 @@ ast_node_t* extract_ident(ast_node_t* node) {
 
 
 
+ast_node_t* new_if(ast_node_t* exp, ast_node_t* statement) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = IF_N;
+
+    node->if_node.expression = exp;
+    node->if_node.statement = statement;
+
+    return node;
+}
+
+ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* update, ast_node_t* statement) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = FOR_N;
+
+    node->for_node.init = init;
+    node->for_node.condition = condition;
+    node->for_node.update = update;
+    node->for_node.statement = statement;
+
+    return node;
+}
+
+ast_node_t* new_while(ast_node_t* exp, ast_node_t* statement) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = WHILE_N;
+
+    node->while_node.expression = exp;
+    node->while_node.statement = statement;
+
+    return node;
+}
+
+ast_node_t* new_switch(ast_node_t* exp, ast_node_t* statement) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = SWITCH_N;
+
+    node->switch_node.expression = exp;
+    node->switch_node.statement = statement;
+
+    return node;
+}
+
+ast_node_t* new_label(SYMBOL* sym, ast_node_t* statement) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = LABEL_N;
+
+    node->label_node.sym = sym;
+    node->label_node.statement = statement;
+
+    return node;
+}
+
+ast_node_t* new_goto(SYMBOL* sym) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = GOTO_N;
+
+    node->goto_node.sym = sym;
+
+    return node;
+}
+
+ast_node_t* new_return(ast_node_t* exp) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = RETURN_N;
+
+    node->return_node.expression = exp;
+
+    return node;
+}
+
+
+ast_node_t* new_switch_label(NODETYPE type, ast_node_t* name, ast_node_t* statement) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = type;
+
+    node->switch_label.name = name;
+    node->switch_label.statement = statement;
+
+    return node;
+}
+
+
+ast_node_t* new_continue_break(NODETYPE type) {
+    ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    node->type = type;
+
+    return node;
+}
+
+
+
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
     if (!decl) return base;
     if (!base) return decl;

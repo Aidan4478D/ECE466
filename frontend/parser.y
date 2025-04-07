@@ -25,6 +25,10 @@ int global_scope_updated = 0;
 
 //int yydebug = 1;
 
+// are break and continue their own ast nodes
+// can you just implement if & else with a ternary operator
+// are case and default installed within the sym table as well?
+
 /* Although this is great, it does not include: 
     - Function specifiers (inline)
     - Typdef support
@@ -60,7 +64,6 @@ int global_scope_updated = 0;
 %token<TOKEN> ENUM EXTERN FOR GOTO IF INLINE LONG REGISTER RETURN SHORT
 %token<TOKEN> SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID VOLATILE WHILE
 %token<TOKEN> INT FLOAT DOUBLE
-
 
 %type<ast_node> primary_expression postfix_expression
 
@@ -127,6 +130,7 @@ int global_scope_updated = 0;
 %type<ast_node> null_statement
 
 %type<ast_node> constant_expression
+%type<ast_node> statement
 
 %left ','
 %left '=' PLUSEQ MINUSEQ MULTEQ DIVEQ MODEQ SLEQ SREQ ANDEQ XOREQ OREQ
@@ -659,9 +663,28 @@ if_else_statement : if_statement ELSE statement
 if_statement : IF '(' expression ')' statement
              ;
 
-labeled_statement : IDENT ':' statement
-                  | CASE constant_expression ':' statement
-                  | DEFAULT ':' statement
+labeled_statement : IDENT ':' statement                     { 
+                                                                char* key = $1.string_literal;
+
+                                                                // attach label to funct or file scope
+                                                                SYMTABLE* st = stack_peek(scope_stack);
+                                                                if (st->scope == FILE_SCOPE) {
+                                                                    fprintf(stderr, "Cannot install label '%s' into file scope!", key); 
+                                                                    exit(0); 
+                                                                }
+                                                                while(st->outer->scope != FUNCT_SCOPE)
+                                                                    st = st->outer;
+                                                                
+                                                                SYMBOL* sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
+                                                                sym->is_complete = 1;
+                                                                st_install(st, sym); 
+                                                                
+                                                                print_symbol(st, sym); 
+
+                                                                $$ = new_label(sym, $3); 
+                                                            }
+                  | CASE constant_expression ':' statement  { $$ = new_switch_label(CASE, $2, $4); }
+                  | DEFAULT ':' statement                   { $$ = new_switch_label(DEFAULT, NULL, $3); } 
                   ;
 
 
@@ -670,39 +693,37 @@ iterative_statement : do_statement
                     | for_statement
                     ;
 
-while_statement : WHILE '(' expression ')' statement
+while_statement : WHILE '(' expression ')' statement    { $$ = new_while($3, $5); }
                 ;
 
-do_statement : DO statement WHILE '(' expression ')' ';'
+do_statement : DO statement WHILE '(' expression ')' ';' { $$ = new_while($2, $5); }
              ;
 
-for_statement : FOR for_expressions statement
+
+for_statement : FOR '(' ';' ';' ';' ')' statement                                       { $$ = new_for(NULL, NULL, NULL, $7); }
+              | FOR '(' expression ';' expression ';' expression ';' ')' statement    { $$ = new_for($3, $5, $7, $10); }
+              | FOR '(' declaration ';' expression ';' expression ';' ')' statement   { $$ = new_for($3, $5, $7, $10); }
               ;
 
-for_expressions : '(' ';' ';' ';' ')' 
-                | '(' expression ';' expression ';' expression ';' ')' 
-                | '(' declaration ';' expression ';' expression ';' ')' 
-                ;
 
-
-switch_statement : SWITCH '(' expression ')' statement
+switch_statement : SWITCH '(' expression ')' statement  { $$ = new_switch($3, $5); }
                  ;
 
 
-break_statement : BREAK ';'
+break_statement : BREAK ';' { $$ = new_continue_break(BREAK); } 
                 ; 
 
 
-continue_statement : CONTINUE ';'
+continue_statement : CONTINUE ';' { $$ = new_continue_break(CONTINUE); }
                    ;
 
 
-return_statement : RETURN ';'
-                 | RETURN expression ';'
+return_statement : RETURN ';'               { $$ = new_return(NULL); }
+                 | RETURN expression ';'    { $$ = new_return($2); }
                  ; 
 
 
-goto_statement : GOTO IDENT ';'
+goto_statement : GOTO IDENT ';' { $$ = NULL; }
                ;
 
 null_statement : ';'

@@ -61,7 +61,7 @@ typedef struct symbol {
     struct symbol* next; //allow for chained symbols like int x, y 
     
     // for structs and unions
-    int is_complete;
+    int is_complete;  // use for "seen" field in labels as well
     SYMTABLE* mini_st;
     struct symbol* parent_sym; //purely for printing purposes so we can trace where struct/union is defined
 } SYMBOL;
