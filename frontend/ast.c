@@ -216,34 +216,35 @@ ast_node_t* extract_ident(ast_node_t* node) {
 
 
 
-ast_node_t* new_if(ast_node_t* exp, ast_node_t* statement) {
+ast_node_t* new_if(ast_node_t* condition, ast_node_t* then_statement, ast_node_t* else_statement) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
     node->type = IF_N;
 
-    node->if_node.expression = exp;
-    node->if_node.statement = statement;
+    node->if_node.condition = condition;
+    node->if_node.then_statement = then_statement;
+    node->if_node.else_statement = else_statement;
 
     return node;
 }
 
-ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* update, ast_node_t* statement) {
+ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* increment, ast_node_t* body) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
     node->type = FOR_N;
 
     node->for_node.init = init;
     node->for_node.condition = condition;
-    node->for_node.update = update;
-    node->for_node.statement = statement;
+    node->for_node.increment = increment;
+    node->for_node.body = body;
 
     return node;
 }
 
-ast_node_t* new_while(ast_node_t* exp, ast_node_t* statement) {
+ast_node_t* new_while(NODETYPE type, ast_node_t* condition, ast_node_t* body) {
     ast_node_t* node = (ast_node_t*) malloc(sizeof(ast_node_t));
-    node->type = WHILE_N;
+    node->type = type;
 
-    node->while_node.expression = exp;
-    node->while_node.statement = statement;
+    node->while_node.condition = condition;
+    node->while_node.body = body;
 
     return node;
 }

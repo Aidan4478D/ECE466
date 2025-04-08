@@ -298,6 +298,9 @@ function_definition : decl_specifiers declarator    {
                                                     } 
                                                     compound_statement { 
                                                         //fprintf(stderr, "Exiting function scope\n");
+                                                        SYMBOL* sym = $2;
+                                                        fprintf(stderr, "AST Dump for function %s\n", sym->key); 
+                                                        print_ast_tree($4, 0);
                                                         in_function = 0;
                                                     }
                     ;
@@ -329,12 +332,12 @@ compound_statement  : '{'   {
                             }
                     ;                    
 
-decl_or_stmt_list   : decl_or_stmt
-                    | decl_or_stmt_list decl_or_stmt
+decl_or_stmt_list   : decl_or_stmt                      { $$ = new_list($1); }
+                    | decl_or_stmt_list decl_or_stmt    { $$ = append_item($2, $1); }
                     ;
 
 decl_or_stmt    : declaration { /*fprintf(stderr, "reducing a declaration\n");*/ }
-                | statement { /**fprintf(stderr, "reducing a statement\n");*/ }
+                | statement { print_ast_tree($1, 0); /**fprintf(stderr, "reducing a statement\n");*/ }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = new_list($1); }
@@ -455,8 +458,8 @@ struct_or_union : STRUCT    { $$ = STRUCT; }
                 ;
 
 
-struct_declaration_list : struct_declaration
-                        | struct_declaration_list struct_declaration
+struct_declaration_list : struct_declaration                            { $$ = new_list($1); }
+                        | struct_declaration_list struct_declaration    { $$ = append_item($2, $1); }
                         ;
 
 struct_declaration  : specifier_list struct_declarator_list ';' { 
@@ -491,7 +494,7 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
 
 
 
-specifier_list  : type_specifier                { $$ = $1; }
+specifier_list  : type_specifier                { $$ = new_list($1); }
                 | type_specifier specifier_list { $$ = append_item($1, $2); }
                 ;
 
@@ -657,10 +660,13 @@ conditional_statement: if_statement
                      | if_else_statement
                      ; 
 
-if_else_statement : if_statement ELSE statement
+if_else_statement : if_statement ELSE statement { 
+                                                    $1->if_node.else_statement = $3;
+                                                    $$ = $3;
+                                                }
                   ;
 
-if_statement : IF '(' expression ')' statement
+if_statement : IF '(' expression ')' statement  { $$ = new_if($3, $5, NULL); }
              ;
 
 labeled_statement : IDENT ':' statement                     { 
@@ -683,8 +689,8 @@ labeled_statement : IDENT ':' statement                     {
 
                                                                 $$ = new_label(sym, $3); 
                                                             }
-                  | CASE constant_expression ':' statement  { $$ = new_switch_label(CASE, $2, $4); }
-                  | DEFAULT ':' statement                   { $$ = new_switch_label(DEFAULT, NULL, $3); } 
+                  | CASE constant_expression ':' statement  { $$ = new_switch_label(CASE_N, $2, $4); }
+                  | DEFAULT ':' statement                   { $$ = new_switch_label(DEFAULT_N, NULL, $3); } 
                   ;
 
 
@@ -693,16 +699,16 @@ iterative_statement : do_statement
                     | for_statement
                     ;
 
-while_statement : WHILE '(' expression ')' statement    { $$ = new_while($3, $5); }
+while_statement : WHILE '(' expression ')' statement    { $$ = new_while(WHILE_N, $3, $5); }
                 ;
 
-do_statement : DO statement WHILE '(' expression ')' ';' { $$ = new_while($2, $5); }
+do_statement : DO statement WHILE '(' expression ')' ';' { $$ = new_while(DOWHILE_N, $5, $2); }
              ;
 
 
 for_statement : FOR '(' ';' ';' ';' ')' statement                                       { $$ = new_for(NULL, NULL, NULL, $7); }
-              | FOR '(' expression ';' expression ';' expression ';' ')' statement    { $$ = new_for($3, $5, $7, $10); }
-              | FOR '(' declaration ';' expression ';' expression ';' ')' statement   { $$ = new_for($3, $5, $7, $10); }
+              | FOR '(' expression ';' expression ';' expression ')' statement      { $$ = new_for($3, $5, $7, $9); }
+              | FOR '(' declaration ';' expression ';' expression ')' statement     { $$ = new_for($3, $5, $7, $9); }
               ;
 
 
@@ -710,11 +716,11 @@ switch_statement : SWITCH '(' expression ')' statement  { $$ = new_switch($3, $5
                  ;
 
 
-break_statement : BREAK ';' { $$ = new_continue_break(BREAK); } 
+break_statement : BREAK ';' { $$ = new_continue_break(BREAK_N); } 
                 ; 
 
 
-continue_statement : CONTINUE ';' { $$ = new_continue_break(CONTINUE); }
+continue_statement : CONTINUE ';' { $$ = new_continue_break(CONTINUE_N); }
                    ;
 
 
@@ -723,10 +729,29 @@ return_statement : RETURN ';'               { $$ = new_return(NULL); }
                  ; 
 
 
-goto_statement : GOTO IDENT ';' { $$ = NULL; }
+goto_statement : GOTO IDENT ';' { 
+                                    char* key = $2.string_literal;
+                                    SYMTABLE* st = stack_peek(scope_stack);
+                                    SYMBOL* sym = st_lookup(st, key, LABEL_NS); 
+
+                                    // if sym doesn't already exist, install it in function scope and mark it as not "seen" (incomplete)
+                                    if(!sym) {
+                                        // make sure we install in function scope
+                                        while(st->outer->scope != FUNCT_SCOPE)
+                                            st = st->outer;
+
+                                        SYMBOL* sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
+                                        sym->is_complete = 0;
+                                    }
+                                    else sym->is_complete = 1;
+
+                                    st_install(st, sym); 
+
+                                    $$ = new_goto(sym); 
+                                }
                ;
 
-null_statement : ';'
+null_statement : ';' { $$ = NULL; }
                ;
 
 

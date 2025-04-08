@@ -464,6 +464,108 @@ void print_ast_tree(ast_node_t *node, int indent) {
             if(node->struct_union.sym->parent_sym) printf("defined at <%s>:%d\n", node->struct_union.sym->parent_sym->file_name, node->struct_union.sym->parent_sym->line_num);
             else printf("\n");
             break;
+        case IF_N:
+            printf("IF\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("COND:\n");
+            print_ast_tree(node->if_node.condition, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("THEN:\n");
+            print_ast_tree(node->if_node.then_statement, indent + 2);
+            if (node->if_node.else_statement) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("ELSE:\n");
+                print_ast_tree(node->if_node.else_statement, indent + 2);
+            }
+            break;
+        case WHILE_N:
+            printf("WHILE\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("COND:\n");
+            print_ast_tree(node->while_node.condition, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("BODY:\n");
+            print_ast_tree(node->while_node.body, indent + 2);
+            break;
+        case DOWHILE_N:
+            printf("DO_WHILE\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("BODY:\n");
+            print_ast_tree(node->while_node.body, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("COND:\n");
+            print_ast_tree(node->while_node.condition, indent + 2);
+            break;
+        case FOR_N:
+            printf("FOR\n");
+            if (node->for_node.init) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("INIT:\n");
+                print_ast_tree(node->for_node.init, indent + 2);
+            }
+            if (node->for_node.condition) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("COND:\n");
+                print_ast_tree(node->for_node.condition, indent + 2);
+            }
+            if (node->for_node.increment) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("INCR:\n");
+                print_ast_tree(node->for_node.increment, indent + 2);
+            }
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("BODY:\n");
+            print_ast_tree(node->for_node.body, indent + 2);
+            break;
+        case SWITCH_N:
+            printf("SWITCH\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("EXPR:\n");
+            print_ast_tree(node->switch_node.expression, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("BODY:\n");
+            print_ast_tree(node->switch_node.statement, indent + 2);
+            break;
+        case RETURN_N:
+            printf("RETURN\n");
+            if (node->return_node.expression) print_ast_tree(node->return_node.expression, indent + 1);
+            break;
+        case GOTO_N:
+            printf("GOTO\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("Name=%s def @<%s>:%d\n", node->goto_node.sym->key, node->goto_node.sym->file_name, node->goto_node.sym->line_num);
+            break;
+        case CONTINUE_N:
+            printf("CONTINUE\n");
+            break;
+        case BREAK_N:
+            printf("BREAK\n");
+            break;
+        case LABEL_N:
+            printf("LABEL\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("stab_label name=%s def @<%s>:%d\n",
+                   node->label_node.sym->key, node->label_node.sym->file_name,
+                   node->label_node.sym->line_num);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("STMT:\n");
+            print_ast_tree(node->label_node.statement, indent + 2);
+            break;
+        case CASE_N:
+            printf("CASE\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("EXPR:\n");
+            print_ast_tree(node->switch_label.name, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("STMT:\n");
+            print_ast_tree(node->switch_label.statement, indent + 2);
+            break;
+        case DEFAULT_N:
+            printf("DEFAULT\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("STMT:\n");
+            print_ast_tree(node->switch_label.statement, indent + 2);
+            break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);
             break;

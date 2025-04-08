@@ -104,7 +104,9 @@ typedef enum node_type {
     CONTINUE_N,
     BREAK_N,
     SWITCH_N,
-    RETURN_N
+    RETURN_N,
+    CASE_N,
+    DEFAULT_N
 } NODETYPE;
 
 // assignment 2 stuff
@@ -202,20 +204,21 @@ typedef struct ast_node_struct_union {
 /* ASSIGNMENT 4 STUFF */
 
 typedef struct ast_node_if {
-    ast_node_t* expression;
-    ast_node_t* statement;
+    ast_node_t* condition;
+    ast_node_t* then_statement;
+    ast_node_t* else_statement;
 } ast_node_if_t;
 
 typedef struct ast_node_for {
     ast_node_t* init;
     ast_node_t* condition;
-    ast_node_t* update;
-    ast_node_t* statement;
+    ast_node_t* increment;
+    ast_node_t* body;
 } ast_node_for_t; 
 
 typedef struct ast_node_while {
-    ast_node_t* expression;
-    ast_node_t* statement;
+    ast_node_t* condition;
+    ast_node_t* body;
 } ast_node_while_t;
 
 typedef struct ast_node_switch {
@@ -290,9 +293,9 @@ ast_node_t* new_struct_union(int token, SYMBOL* sym);
 ast_node_t* attach_ident(ast_node_t* node, char* ident);
 ast_node_t* extract_ident(ast_node_t* node);
 
-ast_node_t* new_if(ast_node_t* exp, ast_node_t* statement);
-ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* update, ast_node_t* statement);
-ast_node_t* new_while(ast_node_t* exp, ast_node_t* statement); 
+ast_node_t* new_if(ast_node_t* condition, ast_node_t* then_statement, ast_node_t* else_statement);
+ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* increment, ast_node_t* body);
+ast_node_t* new_while(NODETYPE type, ast_node_t* condition, ast_node_t* body); 
 ast_node_t* new_switch(ast_node_t* exp, ast_node_t* statement); 
 ast_node_t* new_label(SYMBOL* label, ast_node_t* statement); 
 ast_node_t* new_switch_label(NODETYPE type, ast_node_t* name, ast_node_t* statement); 
