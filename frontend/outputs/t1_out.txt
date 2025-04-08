@@ -22,7 +22,7 @@ TYPE: ARRAY of size 5 of INT
 symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
 AST Tree for your symbol:
 ---------------------------------------------
-FUNCTION 'f' CALL
+FUNCTION 'f'
 	RETURN TYPE: INT
 	PARAMETERS:
 		PARAMETER #1
@@ -31,6 +31,24 @@ FUNCTION 'f' CALL
 		PARAMETER #2
 			IDENT: b
 			TYPE: DOUBLE
+---------------------------------------------
+
+---------------------------------------------
+[in BLOCK_SCOPE scope starting at <stdin>:6]
+<stdin>:7
+symbol: x, scope: BLOCK_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:9
+symbol: z, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to INT
 ---------------------------------------------
 
 
@@ -74,3 +92,23 @@ LIST ELEMENT #1:
 						BINARY OP (+)
 							IDENT: b
 							IDENT: i
+			LIST ELEMENT #2:
+				DECLARATION
+					SPECIFIERS: INT 
+					DECLARATOR #1
+						IDENT: x
+						TYPE: INT
+
+LIST ELEMENT #2:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: z
+			TYPE: POINTER to INT
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: z
+		BINARY OP (+)
+			IDENT: z
+			NUM (numtype=int)	10	SIGNED

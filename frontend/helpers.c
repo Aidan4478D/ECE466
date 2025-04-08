@@ -260,13 +260,11 @@ void print_full_type(ast_node_t* node, int indent) {
     switch (node->type) {
         case FUNCT_N:
             for (int i = 0; i < indent; i++) printf("\t");
-            printf("FUNCTION '%s' CALL\n", node->function.name);
+            printf("FUNCTION '%s'\n", node->function.name);
             if (node->function.left) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
                 printf("RETURN TYPE: ");
-                if (node->function.left->type == POINTER_N && 
-                    node->function.left->pointer.next && 
-                    node->function.left->pointer.next->type == FUNCT_N) {
+                if (node->function.left->type == POINTER_N && node->function.left->pointer.next && node->function.left->pointer.next->type == FUNCT_N) {
                     printf("POINTER to\n");
                     print_full_type(node->function.left->pointer.next, indent + 2);
                 } else {
@@ -287,6 +285,50 @@ void print_full_type(ast_node_t* node, int indent) {
                 }
             }
             break;
+
+        case DECL_N:
+            // already indented from 
+            printf("DECLARATION\n", indent);
+
+            // decl specs
+            if (node->decl.specifiers) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                printf("SPECIFIERS: ");
+                if (node->decl.specifiers->type == LIST_N) {
+                    ast_node_t* current = node->decl.specifiers;
+                    while (current) {
+                        if (current->list.head->type == DECLSPEC_N) printf("%s ", get_decl_spec(current->list.head->decl_spec.decl_type));
+                        else print_type(current->list.head);
+                        current = current->list.next;
+                    }
+                } 
+                else if (node->decl.specifiers->type == DECLSPEC_N) printf("%s ", get_decl_spec(node->decl.specifiers->decl_spec.decl_type));
+                else print_type(node->decl.specifiers);
+                printf("\n");
+            }
+
+            // declarators
+            if (node->decl.declarators) {
+                SYMBOL* sym = node->decl.declarators;
+                int decl_count = 1;
+                while (sym) {
+                    for (int i = 0; i < indent + 1; i++) printf("\t");
+                    printf("DECLARATOR #%d\n", decl_count++);
+                    for (int i = 0; i < indent + 2; i++) printf("\t");
+                    printf("IDENT: %s\n", sym->key); 
+
+                    // could be redundant but could also not be!
+                    if (sym->node) {
+                        for (int i = 0; i < indent + 2; i++) printf("\t");
+                        printf("TYPE: ");
+                        print_type(sym->node);
+                        printf("\n");
+                    }
+                    sym = sym->next;
+                }
+            }
+            break;
+
         case DECLSPEC_N:
             for (int i = 0; i < indent; i++) printf("\t");
             printf("%s\n", get_decl_spec(node->decl_spec.decl_type));
@@ -387,23 +429,8 @@ void print_ast_tree(ast_node_t *node, int indent) {
             break;
         }
         case FUNCT_N:
-            printf("FUNCTION '%s'\n", node->function.name);
-            if (node->function.left) {
-                for (int i = 0; i < indent + 1; i++) printf("\t");
-                printf("RETURN TYPE: ");
-                print_type(node->function.left);
-                printf("\n");
-            }
-            if (node->function.right) {
-                ast_node_t* param_list = node->function.right;
-                int param_count = 1;
-                while (param_list) {
-                    for (int i = 0; i < indent + 1; i++) printf("\t");
-                    printf("PARAMETER #%d\n", param_count++);
-                    print_ast_tree(param_list->list.head, indent + 2);
-                    param_list = param_list->list.next;
-                }
-            }
+            print_full_type(node, indent); 
+            printf("\n"); 
             break;
         case FUNCTCALL_N:
             printf("FUNCTION CALL\n");
@@ -550,9 +577,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
             if (node->return_node.expression) print_ast_tree(node->return_node.expression, indent + 1);
             break;
         case GOTO_N:
-            printf("GOTO\n");
-            for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("Name=%s def @<%s>:%d\n", node->goto_node.sym->key, node->goto_node.sym->file_name, node->goto_node.sym->line_num);
+            printf("GOTO %s defined at <%s>:%d\n", node->goto_node.sym->key, node->goto_node.sym->file_name, node->goto_node.sym->line_num);
             break;
         case CONTINUE_N:
             printf("CONTINUE\n");
@@ -561,13 +586,9 @@ void print_ast_tree(ast_node_t *node, int indent) {
             printf("BREAK\n");
             break;
         case LABEL_N:
-            printf("LABEL\n");
+            printf("LABEL (%s) defined at <%s>:%d\n", node->label_node.sym->key, node->label_node.sym->file_name, node->label_node.sym->line_num);
             for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("stab_label name=%s def @<%s>:%d\n",
-                   node->label_node.sym->key, node->label_node.sym->file_name,
-                   node->label_node.sym->line_num);
-            for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("STMT:\n");
+            printf("STATEMENT:\n");
             print_ast_tree(node->label_node.statement, indent + 2);
             break;
         case CASE_N:
@@ -576,7 +597,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
             printf("EXPR:\n");
             print_ast_tree(node->switch_label.name, indent + 2);
             for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("STMT:\n");
+            printf("STATEMENT:\n");
             print_ast_tree(node->switch_label.statement, indent + 2);
             break;
         case DEFAULT_N:
@@ -584,6 +605,10 @@ void print_ast_tree(ast_node_t *node, int indent) {
             for (int i = 0; i < indent + 1; i++) printf("\t");
             printf("STMT:\n");
             print_ast_tree(node->switch_label.statement, indent + 2);
+            break;
+        case DECL_N:
+            print_full_type(node, indent);
+            printf("\n"); 
             break;
         default:
             printf("UNKNOWN NODE TYPE %d\n", node->type);

@@ -1,0 +1,77 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: e, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: g, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'g'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:5
+symbol: a, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:13
+symbol: past, scope: FUNCT_SCOPE, namespace = LABEL, type = LABEL, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:13
+symbol: future, scope: FUNCT_SCOPE, namespace = LABEL, type = LABEL, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function g
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: a
+			TYPE: INT
+
+LIST ELEMENT #2:
+	UNARY OP (++)
+		IDENT: a
+LIST ELEMENT #3:
+	GOTO future defined at <stdin>:7
+LIST ELEMENT #4:
+	ASSIGNMENT OP (-)
+		IDENT: e
+		NUM (numtype=int)	1	UNSIGNED
+LIST ELEMENT #5:
+	LABEL future defined at <stdin>:13
+		STATEMENT:
+		LABEL past defined at <stdin>:13
+			STATEMENT:
+			IF
+				COND:
+					IDENT: a
+				THEN:
+					ASSIGNMENT OP (/=)
+						IDENT: e
+						NUM (numtype=int)	3	SIGNED

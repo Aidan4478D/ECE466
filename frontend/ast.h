@@ -107,7 +107,8 @@ typedef enum node_type {
     SWITCH_N,
     RETURN_N,
     CASE_N,
-    DEFAULT_N
+    DEFAULT_N,
+    DECL_N
 } NODETYPE;
 
 // assignment 2 stuff
@@ -252,6 +253,12 @@ typedef struct ast_node_switch_label {
 } ast_node_switch_label_t;
 
 
+typedef struct ast_node_decl {
+    ast_node_t* specifiers;  // type specifiers
+    SYMBOL* declarators;     // list of declarators
+} ast_node_decl_t;
+
+
 struct ast_node {
     NODETYPE type;
     union {
@@ -278,6 +285,7 @@ struct ast_node {
         ast_node_return_t return_node;
         ast_node_switch_label_t switch_label;
         ast_node_function_call_t funct_call;
+        ast_node_decl_t decl;
     };
 };
 
@@ -310,7 +318,8 @@ ast_node_t* new_label(SYMBOL* label, ast_node_t* statement);
 ast_node_t* new_switch_label(NODETYPE type, ast_node_t* name, ast_node_t* statement); 
 ast_node_t* new_goto(SYMBOL* sym); 
 ast_node_t* new_return(ast_node_t* exp); 
-ast_node_t* new_continue_break(NODETYPE type); 
+ast_node_t* new_continue_break(NODETYPE type);
+ast_node_t* new_decl(ast_node_t* specifiers, SYMBOL* declarators);
 
 #endif 
 

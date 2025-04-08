@@ -214,7 +214,7 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                                 
                                                                 sym = sym->next;
                                                             }
-                                                            $$ = NULL;
+                                                            $$ = new_decl(spec, $2);
                                                         }
                                                         ;
 
@@ -337,7 +337,7 @@ compound_statement  : '{'   {
                     ;                    
 
 decl_or_stmt_list   : decl_or_stmt                      { $$ = new_list($1); }
-                    | decl_or_stmt_list decl_or_stmt    { $$ = append_item($2, $1); }
+                    | decl_or_stmt_list decl_or_stmt    { $$ = append_item($1, $2); }
                     ;
 
 decl_or_stmt    : declaration { $$ = $1; }
@@ -345,9 +345,9 @@ decl_or_stmt    : declaration { $$ = $1; }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = new_list($1); }
-                | stg_class_specifier decl_specifiers   { $$ = append_item($2, $1); }
+                | stg_class_specifier decl_specifiers   { $$ = append_item($1, $2); }
                 | type_specifier                        { $$ = new_list($1); }
-                | type_specifier decl_specifiers        { $$ = append_item($2, $1); }
+                | type_specifier decl_specifiers        { $$ = append_item($1, $2); }
                 ;
 
 stg_class_specifier : EXTERN    { $$ = new_decl_spec(0, EXTERN_SC); }
@@ -463,7 +463,7 @@ struct_or_union : STRUCT    { $$ = STRUCT; }
 
 
 struct_declaration_list : struct_declaration                            { $$ = new_list($1); }
-                        | struct_declaration_list struct_declaration    { $$ = append_item($2, $1); }
+                        | struct_declaration_list struct_declaration    { $$ = append_item($1, $2); }
                         ;
 
 struct_declaration  : specifier_list struct_declarator_list ';' { 
@@ -682,7 +682,7 @@ labeled_statement : IDENT ':' statement                     {
                                                                     fprintf(stderr, "Cannot install label '%s' into file scope!", key); 
                                                                     exit(0); 
                                                                 }
-                                                                while(st->outer->scope != FUNCT_SCOPE)
+                                                                while(st->scope != FUNCT_SCOPE)
                                                                     st = st->outer;
                                                                 
                                                                 SYMBOL* sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
@@ -741,17 +741,23 @@ goto_statement : GOTO IDENT ';' {
                                     // if sym doesn't already exist, install it in function scope and mark it as not "seen" (incomplete)
                                     if(!sym) {
                                         // make sure we install in function scope
-                                        while(st->outer->scope != FUNCT_SCOPE)
+                                        fprintf(stderr, "sym %s doesn't exist!\n", key); 
+                                        while(st->scope != FUNCT_SCOPE) {
                                             st = st->outer;
+                                        }
 
-                                        SYMBOL* sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
+                                        //fprintf(stderr, "insert scope is %s\n", get_scope_name(st->scope)); 
+                                        sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
+                                        //fprintf(stderr, "created symbol %s\n", sym->key); 
                                         sym->is_complete = 0;
                                     }
                                     else sym->is_complete = 1;
 
                                     st_install(st, sym); 
+                                    //fprintf(stderr, "installed %s into %s scope!\n", sym->key, get_scope_name(st->scope));
 
                                     $$ = new_goto(sym); 
+                                    //fprintf(stderr, "created goto symbol\n");
                                 }
                ;
 

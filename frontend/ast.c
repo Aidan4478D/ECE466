@@ -318,6 +318,16 @@ ast_node_t* new_continue_break(NODETYPE type) {
 }
 
 
+ast_node_t* new_decl(ast_node_t* specifiers, SYMBOL* declarators) {
+    ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t));
+    new_node->type = DECL_N;
+
+    new_node->decl.specifiers = specifiers;
+    new_node->decl.declarators = declarators;
+
+    return new_node;
+}
+
 
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
     if (!decl) return base;
