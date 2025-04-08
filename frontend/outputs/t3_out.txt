@@ -33,35 +33,30 @@ LIST ELEMENT #2:
 	SWITCH
 		EXPR:
 			IDENT: i
-		BODY:
-			LIST:
-			LIST ELEMENT #1:
-				CASE
-					EXPR:
-						NUM (numtype=int)	1	SIGNED
-					STATEMENT:
-						FUNCTION CALL
-							IDENT: printf
-							PARAMETER #1
-								STRING one
+			CASE
+				EXPRESSION:
+					NUM (numtype=int)	1	SIGNED
+				STATEMENT:
+					FUNCTION CALL
+						IDENT: printf
+						PARAMETER #1
+							STRING one
 
-			LIST ELEMENT #2:
-				BREAK
-			LIST ELEMENT #3:
-				CASE
-					EXPR:
-						NUM (numtype=int)	2	SIGNED
-					STATEMENT:
-						FUNCTION CALL
-							IDENT: printf
-							PARAMETER #1
-								STRING two
+			BREAK
+			CASE
+				EXPRESSION:
+					NUM (numtype=int)	2	SIGNED
+				STATEMENT:
+					FUNCTION CALL
+						IDENT: printf
+						PARAMETER #1
+							STRING two
 
-			LIST ELEMENT #4:
-				DEFAULT
-					STMT:
-						FUNCTION CALL
-							IDENT: printf
-							PARAMETER #1
-								STRING more
+			DEFAULT
+				STATEMENT:
+					FUNCTION CALL
+						IDENT: printf
+						PARAMETER #1
+							STRING more
+
 

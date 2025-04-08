@@ -1,0 +1,87 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:2
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: c
+			TYPE: FLOAT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:2]
+<stdin>:3
+symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: DOUBLE
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: DOUBLE 
+		DECLARATOR #1
+			IDENT: b
+			TYPE: DOUBLE
+
+
+LIST ELEMENT #2:
+	WHILE
+		COND:
+			COMPARISON OP (>)
+				IDENT: a
+				IDENT: b
+		BODY:
+			LIST:
+			LIST ELEMENT #1:
+				UNARY OP (--)
+					IDENT: a
+
+			LIST ELEMENT #2:
+				WHILE
+					COND:
+						COMPARISON OP (>)
+							IDENT: b
+							IDENT: c
+					BODY:
+						LIST:
+						LIST ELEMENT #1:
+							ASSIGNMENT OP (=)
+								IDENT: b
+								BINARY OP (/)
+									IDENT: b
+									IDENT: c
+
+
+
+LIST ELEMENT #3:
+	IF
+		COND:
+			COMPARISON OP (>)
+				IDENT: a
+				IDENT: c
+		THEN:
+			RETURN
+				IDENT: a
+		ELSE:
+			RETURN
+				IDENT: c
+

@@ -28,16 +28,16 @@ TYPE: INT
 
 ---------------------------------------------
 [in FUNCT_SCOPE scope starting at <stdin>:4]
-<stdin>:13
-symbol: past, scope: FUNCT_SCOPE, namespace = LABEL, type = LABEL, storage = EXTERN
+<stdin>:9
+symbol: future, scope: FUNCT_SCOPE, namespace = LABEL, type = LABEL, storage = EXTERN
 AST Tree for your symbol:
 ---------------------------------------------
 ---------------------------------------------
 
 ---------------------------------------------
 [in FUNCT_SCOPE scope starting at <stdin>:4]
-<stdin>:13
-symbol: future, scope: FUNCT_SCOPE, namespace = LABEL, type = LABEL, storage = EXTERN
+<stdin>:10
+symbol: past, scope: FUNCT_SCOPE, namespace = LABEL, type = LABEL, storage = EXTERN
 AST Tree for your symbol:
 ---------------------------------------------
 ---------------------------------------------
@@ -54,24 +54,31 @@ LIST ELEMENT #1:
 			IDENT: a
 			TYPE: INT
 
+
 LIST ELEMENT #2:
 	UNARY OP (++)
 		IDENT: a
+
 LIST ELEMENT #3:
-	GOTO future defined at <stdin>:7
+	GOTO future (complete) defined at <stdin>:9
+
 LIST ELEMENT #4:
 	ASSIGNMENT OP (-)
 		IDENT: e
 		NUM (numtype=int)	1	UNSIGNED
+
 LIST ELEMENT #5:
-	LABEL future defined at <stdin>:13
+	LABEL (future) defined at <stdin>:9
 		STATEMENT:
-		LABEL past defined at <stdin>:13
-			STATEMENT:
-			IF
-				COND:
-					IDENT: a
-				THEN:
-					ASSIGNMENT OP (/=)
-						IDENT: e
-						NUM (numtype=int)	3	SIGNED
+			LABEL (past) defined at <stdin>:10
+				STATEMENT:
+					IF
+						COND:
+							IDENT: a
+						THEN:
+							ASSIGNMENT OP (=)
+								IDENT: e
+								BINARY OP (/)
+									IDENT: e
+									NUM (numtype=int)	3	SIGNED
+

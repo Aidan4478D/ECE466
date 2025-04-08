@@ -129,6 +129,10 @@ int global_scope_updated = 0;
 %type<ast_node> goto_statement
 %type<ast_node> null_statement
 
+%type<symbol> named_label
+%type<ast_node> switch_label
+
+
 %type<ast_node> constant_expression
 %type<ast_node> statement
 
@@ -311,21 +315,23 @@ function_definition : decl_specifiers declarator    {
 compound_statement  : '{'   {
                                 if(in_function != 1) {
                                     SYMTABLE* current = (SYMTABLE*) stack_peek(scope_stack);
-                                    fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(current->scope), file_name, line_num);
-                                    stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
+                                    SYMTABLE* new_scope = st_create(BLOCK_SCOPE, current);
+                                    stack_push(scope_stack, new_scope);
+                                    fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(new_scope->scope), file_name, line_num);
                                 }
                                 in_function = 0;
                             } 
                       '}'   {
                                 SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
-                                fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(st->scope), file_name, line_num);
+                                fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line);
                                 $$ = new_list(NULL);
                             }
                     | '{'   {
                                 if(in_function != 1) {
                                     SYMTABLE* current = (SYMTABLE*) stack_peek(scope_stack);
-                                    fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(current->scope), file_name, line_num);
-                                    stack_push(scope_stack, st_create((current->scope == FILE_SCOPE ? FUNCT_SCOPE : BLOCK_SCOPE), current));
+                                    SYMTABLE* new_scope = st_create(BLOCK_SCOPE, current);
+                                    stack_push(scope_stack, new_scope);
+                                    fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(new_scope->scope), file_name, line_num);
                                 } 
                                 in_function = 0;
                             }
@@ -334,7 +340,7 @@ compound_statement  : '{'   {
                                 fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line); 
                                 $$ = $3;
                             }
-                    ;                    
+                    ;                 
 
 decl_or_stmt_list   : decl_or_stmt                      { $$ = new_list($1); }
                     | decl_or_stmt_list decl_or_stmt    { $$ = append_item($1, $2); }
@@ -666,36 +672,58 @@ conditional_statement: if_statement
 
 if_else_statement : if_statement ELSE statement { 
                                                     $1->if_node.else_statement = $3;
-                                                    $$ = $3;
+                                                    $$ = $1;
                                                 }
                   ;
 
 if_statement : IF '(' expression ')' statement  { $$ = new_if($3, $5, NULL); }
              ;
 
-labeled_statement : IDENT ':' statement                     { 
-                                                                char* key = $1.string_literal;
-
-                                                                // attach label to funct or file scope
-                                                                SYMTABLE* st = stack_peek(scope_stack);
-                                                                if (st->scope == FILE_SCOPE) {
-                                                                    fprintf(stderr, "Cannot install label '%s' into file scope!", key); 
-                                                                    exit(0); 
-                                                                }
-                                                                while(st->scope != FUNCT_SCOPE)
-                                                                    st = st->outer;
-                                                                
-                                                                SYMBOL* sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
-                                                                sym->is_complete = 1;
-                                                                st_install(st, sym); 
-                                                                
-                                                                print_symbol(st, sym); 
-
-                                                                $$ = new_label(sym, $3); 
-                                                            }
-                  | CASE constant_expression ':' statement  { $$ = new_switch_label(CASE_N, $2, $4); }
-                  | DEFAULT ':' statement                   { $$ = new_switch_label(DEFAULT_N, NULL, $3); } 
+labeled_statement : named_label statement       { $$ = new_label($1, $2); }
+                  | switch_label statement      { 
+                                                    $1->switch_label.statement = $2;
+                                                    $$ = $1;
+                                                }
                   ;
+
+named_label : IDENT ':'     {
+                                char* key = $1.string_literal;
+                                SYMTABLE* st = stack_peek(scope_stack);
+
+                                if (st->scope == FILE_SCOPE) {
+                                    fprintf(stderr, "Cannot install label '%s' into file scope!", key); 
+                                    exit(0); 
+                                }
+
+                                while(st->scope != FUNCT_SCOPE)
+                                    st = st->outer;
+
+                                SYMBOL* sym = st_lookup(st, key, LABEL_NS); 
+
+                                // if sym doesn't already exist, install it in function scope and mark it as "seen" (complete)
+                                if(!sym) {
+                                    sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
+                                    sym->is_complete = 1;
+                                    st_install(st, sym); 
+
+                                    fprintf(stderr, "created symbol '%s' in %s\n", sym->key, get_scope_name(st->scope)); 
+                                }
+                                else {
+                                    sym->is_complete = 1;
+                                    sym->line_num = line_num;
+                                }
+                                
+
+                                print_symbol(st, sym); 
+
+                                $$ = sym; //new_label(sym, $3); 
+                            }
+            ;  
+
+
+switch_label : CASE constant_expression ':' { $$ = new_switch_label(CASE_N, $2, NULL); }
+             | DEFAULT ':'                  { $$ = new_switch_label(DEFAULT_N, NULL, NULL); } 
+             ; 
 
 
 iterative_statement : do_statement
@@ -736,24 +764,25 @@ return_statement : RETURN ';'               { $$ = new_return(NULL); }
 goto_statement : GOTO IDENT ';' { 
                                     char* key = $2.string_literal;
                                     SYMTABLE* st = stack_peek(scope_stack);
+
+                                    // make sure we look/install in function scope
+                                    while(st->scope != FUNCT_SCOPE) {
+                                        st = st->outer;
+                                    }
+
                                     SYMBOL* sym = st_lookup(st, key, LABEL_NS); 
 
                                     // if sym doesn't already exist, install it in function scope and mark it as not "seen" (incomplete)
                                     if(!sym) {
-                                        // make sure we install in function scope
-                                        fprintf(stderr, "sym %s doesn't exist!\n", key); 
-                                        while(st->scope != FUNCT_SCOPE) {
-                                            st = st->outer;
-                                        }
 
                                         //fprintf(stderr, "insert scope is %s\n", get_scope_name(st->scope)); 
                                         sym = st_new_symbol(key, NULL, LABEL_NS, LABEL_SYM, EXTERN_SC, st, file_name, line_num); 
-                                        //fprintf(stderr, "created symbol %s\n", sym->key); 
                                         sym->is_complete = 0;
-                                    }
-                                    else sym->is_complete = 1;
+                                        st_install(st, sym); 
 
-                                    st_install(st, sym); 
+                                        fprintf(stderr, "created symbol '%s' in %s\n", sym->key, get_scope_name(st->scope)); 
+                                    }
+
                                     //fprintf(stderr, "installed %s into %s scope!\n", sym->key, get_scope_name(st->scope));
 
                                     $$ = new_goto(sym); 
@@ -942,16 +971,46 @@ conditional_expression : logical_or_expression  { $$ = $1; }
 
 assignment_expression : conditional_expression { $$ = $1; }
                       | unary_expression '=' assignment_expression          { $$ = new_genop(ASSIGNOP_N, '=', $1, $3); }
-                      | unary_expression PLUSEQ assignment_expression       { $$ = new_genop(ASSIGNOP_N, PLUSEQ, $1, $3); }
-                      | unary_expression MINUSEQ assignment_expression      { $$ = new_genop(ASSIGNOP_N, MINUSEQ, $1, $3); }
-                      | unary_expression MULTEQ assignment_expression       { $$ = new_genop(ASSIGNOP_N, MULTEQ, $1, $3); }
-                      | unary_expression DIVEQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, DIVEQ, $1, $3); }
-                      | unary_expression MODEQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, MODEQ, $1, $3); }
-                      | unary_expression SLEQ assignment_expression         { $$ = new_genop(ASSIGNOP_N, SLEQ, $1, $3); }
-                      | unary_expression SREQ assignment_expression         { $$ = new_genop(ASSIGNOP_N, SREQ, $1, $3); }
-                      | unary_expression ANDEQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, ANDEQ, $1, $3); }
-                      | unary_expression XOREQ assignment_expression        { $$ = new_genop(ASSIGNOP_N, XOREQ, $1, $3); }
-                      | unary_expression OREQ assignment_expression         { $$ = new_genop(ASSIGNOP_N, OREQ, $1, $3); }
+                      | unary_expression PLUSEQ assignment_expression       { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, '+', $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression MINUSEQ assignment_expression      { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, '-', $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=' , $1, tmp); 
+                                                                            }
+                      | unary_expression MULTEQ assignment_expression       { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, '*', $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression DIVEQ assignment_expression        { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, '/', $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression MODEQ assignment_expression        { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, '%', $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression SLEQ assignment_expression         { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, SL, $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression SREQ assignment_expression         { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, SR, $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression ANDEQ assignment_expression        { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, ANDAND, $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression XOREQ assignment_expression        { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, '^', $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
+                      | unary_expression OREQ assignment_expression         { 
+                                                                                ast_node_t* tmp = new_genop(BINOP_N, OROR, $1, $3); 
+                                                                                $$ = new_genop(ASSIGNOP_N, '=', $1, tmp); 
+                                                                            }
                       ; 
 
 

@@ -206,7 +206,8 @@ char* get_node_type(int op) {
     }
 }
 
-// below is pretty inefficient but it works
+// below, all the AST and symbol printing is pretty inefficient but it works
+// I know it could be optimized but to be honest I just can't bother to do it
 
 // use for making display look nice in output AST tree
 void print_type(ast_node_t *node) {
@@ -288,7 +289,7 @@ void print_full_type(ast_node_t* node, int indent) {
 
         case DECL_N:
             // already indented from 
-            printf("DECLARATION\n", indent);
+            printf("DECLARATION\n");
 
             // decl specs
             if (node->decl.specifiers) {
@@ -325,6 +326,21 @@ void print_full_type(ast_node_t* node, int indent) {
                         printf("\n");
                     }
                     sym = sym->next;
+                }
+            }
+            break;
+        case SWITCH_N:
+            printf("SWITCH\n");
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("EXPR:\n");
+            print_ast_tree(node->switch_node.expression, indent + 2);
+            if (node->switch_node.statement) {
+                ast_node_t* stmt_list = node->switch_node.statement;
+                int case_count = 1;
+                while (stmt_list) {
+                    //printf("%s #%d:\n", stmt_list->list.head->type == CASE_N ? "CASE" : "DEFAULT", case_count++);
+                    print_ast_tree(stmt_list->list.head, indent + 2);
+                    stmt_list = stmt_list->list.next;
                 }
             }
             break;
@@ -470,6 +486,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
                     printf("LIST ELEMENT #%d:\n", counter++);
                     print_ast_tree(current->list.head, indent + 1);
                     current = current->list.next;
+                    printf("\n"); 
                 }
             }
             break;
@@ -564,20 +581,15 @@ void print_ast_tree(ast_node_t *node, int indent) {
             print_ast_tree(node->for_node.body, indent + 2);
             break;
         case SWITCH_N:
-            printf("SWITCH\n");
-            for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("EXPR:\n");
-            print_ast_tree(node->switch_node.expression, indent + 2);
-            for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("BODY:\n");
-            print_ast_tree(node->switch_node.statement, indent + 2);
+            print_full_type(node, indent);
+            printf("\n"); 
             break;
         case RETURN_N:
             printf("RETURN\n");
             if (node->return_node.expression) print_ast_tree(node->return_node.expression, indent + 1);
             break;
         case GOTO_N:
-            printf("GOTO %s defined at <%s>:%d\n", node->goto_node.sym->key, node->goto_node.sym->file_name, node->goto_node.sym->line_num);
+            printf("GOTO %s (%s) defined at <%s>:%d\n", node->goto_node.sym->key, node->goto_node.sym->is_complete == 1 ? "complete" : "incomplete", node->goto_node.sym->file_name, node->goto_node.sym->line_num);
             break;
         case CONTINUE_N:
             printf("CONTINUE\n");
@@ -594,7 +606,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case CASE_N:
             printf("CASE\n");
             for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("EXPR:\n");
+            printf("EXPRESSION:\n");
             print_ast_tree(node->switch_label.name, indent + 2);
             for (int i = 0; i < indent + 1; i++) printf("\t");
             printf("STATEMENT:\n");
@@ -603,7 +615,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case DEFAULT_N:
             printf("DEFAULT\n");
             for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("STMT:\n");
+            printf("STATEMENT:\n");
             print_ast_tree(node->switch_label.statement, indent + 2);
             break;
         case DECL_N:
