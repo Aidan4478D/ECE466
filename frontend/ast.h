@@ -82,6 +82,7 @@ typedef enum node_type {
     ASSIGNOP_N,
     COMPOP_N,
     FUNCT_N,
+    FUNCTCALL_N,
     LIST_N,
     ELEMENT_N,
     LOGOP_N,
@@ -154,9 +155,15 @@ typedef struct ast_node_genop {
 
 
 typedef struct ast_node_function {
+    char* name;
     ast_node_t* left;  //function types: return type
     ast_node_t* right; //function types: params
 } ast_node_function_t;
+
+typedef struct ast_node_function_call {
+    ast_node_t* name;
+    ast_node_t* params;
+} ast_node_function_call_t;
 
 
 // elements for the list
@@ -270,6 +277,7 @@ struct ast_node {
         ast_node_goto_t goto_node;
         ast_node_return_t return_node;
         ast_node_switch_label_t switch_label;
+        ast_node_function_call_t funct_call;
     };
 };
 
@@ -279,7 +287,8 @@ ast_node_t* new_number(NUMTYPE num);
 ast_node_t* new_unop(int op, ast_node_t* node); 
 ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right); 
 ast_node_t* new_genop(NODETYPE type, int op, ast_node_t* left, ast_node_t* right); 
-ast_node_t* new_function(ast_node_t* left, ast_node_t* right); 
+ast_node_t* new_function(char* name, ast_node_t* left, ast_node_t* right);
+ast_node_t* new_function_call(ast_node_t* name, ast_node_t* params); 
 ast_node_t* new_element(ast_node_t* entry);
 ast_node_t* new_list(ast_node_t* head);
 ast_node_t* new_pointer(ast_node_t* next);

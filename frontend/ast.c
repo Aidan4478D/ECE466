@@ -68,12 +68,23 @@ ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right) 
 }
 
 
-ast_node_t* new_function(ast_node_t* left, ast_node_t* right) {
+ast_node_t* new_function(char* name, ast_node_t* left, ast_node_t* right) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
     new_node->type = FUNCT_N;
+    new_node->function.name = name;
     new_node->function.left = left;
     new_node->function.right = right;
+
+    return new_node;
+}
+
+ast_node_t* new_function_call(ast_node_t* name, ast_node_t* params) {
+    ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
+
+    new_node->type = FUNCTCALL_N;
+    new_node->funct_call.name = name;
+    new_node->funct_call.params = params;
 
     return new_node;
 }

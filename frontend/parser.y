@@ -299,7 +299,9 @@ function_definition : decl_specifiers declarator    {
                                                     compound_statement { 
                                                         //fprintf(stderr, "Exiting function scope\n");
                                                         SYMBOL* sym = $2;
-                                                        fprintf(stderr, "AST Dump for function %s\n", sym->key); 
+                                                        printf("\n---------------------------------------------\n"); 
+                                                        printf("AST Dump for function %s\n", sym->key); 
+                                                        printf("---------------------------------------------\n"); 
                                                         print_ast_tree($4, 0);
                                                         in_function = 0;
                                                     }
@@ -317,6 +319,7 @@ compound_statement  : '{'   {
                       '}'   {
                                 SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
                                 fprintf(stderr, "Entering %s scope: <%s>:%d\n", get_scope_name(st->scope), file_name, line_num);
+                                $$ = new_list(NULL);
                             }
                     | '{'   {
                                 if(in_function != 1) {
@@ -329,6 +332,7 @@ compound_statement  : '{'   {
                       decl_or_stmt_list '}'   {
                                 SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
                                 fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line); 
+                                $$ = $3;
                             }
                     ;                    
 
@@ -336,8 +340,8 @@ decl_or_stmt_list   : decl_or_stmt                      { $$ = new_list($1); }
                     | decl_or_stmt_list decl_or_stmt    { $$ = append_item($2, $1); }
                     ;
 
-decl_or_stmt    : declaration { /*fprintf(stderr, "reducing a declaration\n");*/ }
-                | statement { print_ast_tree($1, 0); /**fprintf(stderr, "reducing a statement\n");*/ }
+decl_or_stmt    : declaration { $$ = $1; }
+                | statement { $$ = $1; }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = new_list($1); }
@@ -574,9 +578,9 @@ array_declarator    : direct_declarator '[' ']'             {
 
 function_declarator : direct_declarator '(' ')'                     {   
                                                                         fprintf(stderr, "function declarator detected\n"); 
-                                                                        ast_node_t* temp = new_function(NULL, NULL); 
 
                                                                         SYMBOL* sym = $1;
+                                                                        ast_node_t* temp = new_function(sym->key, NULL, NULL); 
 
                                                                         if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
                                                                         
@@ -587,8 +591,8 @@ function_declarator : direct_declarator '(' ')'                     {
                                                                         $$ = sym;
                                                                     }
                     | direct_declarator '(' identifier_list ')'     { 
-                                                                        ast_node_t* temp = new_function($1->node, $3); 
                                                                         SYMBOL* sym = $1;
+                                                                        ast_node_t* temp = new_function(sym->key, sym->node, $3); 
 
                                                                         if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
 
@@ -598,8 +602,8 @@ function_declarator : direct_declarator '(' ')'                     {
                                                                         $$ = sym;
                                                                     }
                     | direct_declarator '(' parameter_list ')'      {
-                                                                        ast_node_t* temp = new_function(NULL, NULL);
                                                                         SYMBOL* sym = $1;
+                                                                        ast_node_t* temp = new_function(sym->key, NULL, NULL);
 
                                                                         if (sym->type == VAR_SYM) sym->type = FUNCT_SYM;
 
@@ -635,12 +639,12 @@ abstract_declarator : pointer
                     ;
 
 direct_abstract_declarator : '(' abstract_declarator ')'                { $$ = $2; }
-                           | '[' ']'                                    { $$ = new_array(NULL, 0);          }
-                           | '[' NUMBER ']'                             { $$ = new_array(NULL, $2._int);    }
-                           | direct_abstract_declarator '[' ']'         { $$ = new_array($1, 0);            }
-                           | direct_abstract_declarator '[' NUMBER ']'  { $$ = new_array($1, $3._int);      }
-                           | '(' ')'                                    { $$ = new_function(NULL, NULL);    }
-                           | direct_abstract_declarator '(' ')'         { $$ = new_function($1, NULL);      }
+                           | '[' ']'                                    { $$ = new_array(NULL, 0);              }
+                           | '[' NUMBER ']'                             { $$ = new_array(NULL, $2._int);        }
+                           | direct_abstract_declarator '[' ']'         { $$ = new_array($1, 0);                }
+                           | direct_abstract_declarator '[' NUMBER ']'  { $$ = new_array($1, $3._int);          }
+                           | '(' ')'                                    { $$ = new_function(NULL, NULL, NULL);  }
+                           | direct_abstract_declarator '(' ')'         { $$ = new_function(NULL, $1, NULL);    }
                            ;
 
 statement : compound_statement
@@ -706,7 +710,7 @@ do_statement : DO statement WHILE '(' expression ')' ';' { $$ = new_while(DOWHIL
              ;
 
 
-for_statement : FOR '(' ';' ';' ';' ')' statement                                       { $$ = new_for(NULL, NULL, NULL, $7); }
+for_statement : FOR '(' ';' ';' ';' ')' statement                                   { $$ = new_for(NULL, NULL, NULL, $7); }
               | FOR '(' expression ';' expression ';' expression ')' statement      { $$ = new_for($3, $5, $7, $9); }
               | FOR '(' declaration ';' expression ';' expression ')' statement     { $$ = new_for($3, $5, $7, $9); }
               ;
@@ -794,8 +798,8 @@ component_selection_expression : postfix_expression '.' IDENT   {
                                                                 }
                                ;
 
-function_call : postfix_expression '(' expression_list ')' { $$ = new_function($1, $3); }
-              | postfix_expression '(' ')'  { $$ = new_function($1, NULL); }
+function_call : postfix_expression '(' expression_list ')' { $$ = new_function_call($1, $3); }
+              | postfix_expression '(' ')'  { $$ = new_function_call($1, NULL); }
               ;
 
 expression_list : assignment_expression  { $$ = new_list($1); }

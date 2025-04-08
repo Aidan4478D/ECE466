@@ -1,0 +1,76 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: i, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: y, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: ARRAY of size 5 of INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f' CALL
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: a
+			TYPE: INT
+		PARAMETER #2
+			IDENT: b
+			TYPE: DOUBLE
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	FOR
+		INIT:
+			ASSIGNMENT OP (=)
+				IDENT: a
+				BINARY OP (+)
+					IDENT: b
+					NUM (numtype=int)	2	SIGNED
+		COND:
+			COMPARISON OP (<)
+				IDENT: i
+				IDENT: a
+		INCR:
+			UNARY OP (++)
+				IDENT: i
+		BODY:
+			LIST:
+			LIST ELEMENT #1:
+				ASSIGNMENT OP (=)
+					UNARY OP (*)
+						BINARY OP (+)
+							IDENT: y
+							IDENT: i
+					TERNARY OP, IF:
+						UNARY OP (*)
+							BINARY OP (+)
+								IDENT: y
+								BINARY OP (-)
+									IDENT: i
+									NUM (numtype=int)	1	SIGNED
+					THEN:
+						IDENT: a
+					ELSE:
+						BINARY OP (+)
+							IDENT: b
+							IDENT: i

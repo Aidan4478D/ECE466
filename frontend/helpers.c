@@ -260,7 +260,7 @@ void print_full_type(ast_node_t* node, int indent) {
     switch (node->type) {
         case FUNCT_N:
             for (int i = 0; i < indent; i++) printf("\t");
-            printf("FUNCTION CALL\n");
+            printf("FUNCTION '%s' CALL\n", node->function.name);
             if (node->function.left) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
                 printf("RETURN TYPE: ");
@@ -365,8 +365,10 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case TERNOP_N:
             printf("TERNARY OP, IF:\n");
             print_ast_tree(node->ternop.left, indent + 1);
+            for (int i = 0; i < indent; i++) printf("\t");
             printf("THEN:\n");
             print_ast_tree(node->ternop.center, indent + 1);
+            for (int i = 0; i < indent; i++) printf("\t");
             printf("ELSE:\n");
             print_ast_tree(node->ternop.right, indent + 1);
             break;
@@ -385,7 +387,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
             break;
         }
         case FUNCT_N:
-            printf("FUNCTION CALL\n");
+            printf("FUNCTION '%s'\n", node->function.name);
             if (node->function.left) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
                 printf("RETURN TYPE: ");
@@ -394,6 +396,23 @@ void print_ast_tree(ast_node_t *node, int indent) {
             }
             if (node->function.right) {
                 ast_node_t* param_list = node->function.right;
+                int param_count = 1;
+                while (param_list) {
+                    for (int i = 0; i < indent + 1; i++) printf("\t");
+                    printf("PARAMETER #%d\n", param_count++);
+                    print_ast_tree(param_list->list.head, indent + 2);
+                    param_list = param_list->list.next;
+                }
+            }
+            break;
+        case FUNCTCALL_N:
+            printf("FUNCTION CALL\n");
+            if (node->funct_call.name) {
+                for (int i = 0; i < indent + 1; i++) printf("\t");
+                print_type(node->funct_call.name);
+            }
+            if (node->funct_call.params) {
+                ast_node_t* param_list = node->funct_call.params;
                 int param_count = 1;
                 while (param_list) {
                     for (int i = 0; i < indent + 1; i++) printf("\t");
