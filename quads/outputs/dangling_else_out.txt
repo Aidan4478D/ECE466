@@ -1,0 +1,88 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: y, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: z, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: x
+			TYPE: INT
+		DECLARATOR #2
+			IDENT: y
+			TYPE: INT
+		DECLARATOR #3
+			IDENT: z
+			TYPE: INT
+
+
+LIST ELEMENT #2:
+	IF
+		COND:
+			COMPARISON OP (>)
+				IDENT: x
+				IDENT: y
+		THEN:
+			LIST:
+			LIST ELEMENT #1:
+				IF
+					COND:
+						COMPARISON OP (<)
+							IDENT: y
+							IDENT: z
+					THEN:
+						LIST:
+						LIST ELEMENT #1:
+							RETURN
+								NUM (numtype=int)	0	SIGNED
+
+					ELSE:
+						LIST:
+						LIST ELEMENT #1:
+							RETURN
+								NUM (numtype=int)	1	SIGNED
+
+
+
+LIST ELEMENT #3:
+	RETURN
+		NUM (numtype=int)	2	SIGNED
+
