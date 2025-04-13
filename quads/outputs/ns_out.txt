@@ -1,0 +1,9 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: e, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = EXTERN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+

@@ -371,3 +371,88 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
             return decl;
     }
 }
+
+int compare_types(ast_node_t* type1, ast_node_t* type2) {
+    if (type1 == NULL && type2 == NULL) return 1;  // Both null, types are equal
+    if (type1 == NULL || type2 == NULL) return 0;  // One null, types differ
+    if (type1->type != type2->type) return 0;      // Different node types, not equal
+
+    switch (type1->type) {
+        case LIST_N:
+            // Recursively compare list heads and tails
+            return compare_types(type1->list.head, type2->list.head) &&
+                   compare_types(type1->list.next, type2->list.next);
+        case DECLSPEC_N:
+            // Compare the declaration type (e.g., INT_DT, UNSIGNED_DT)
+            return type1->decl_spec.decl_type == type2->decl_spec.decl_type;
+        case POINTER_N:
+            // Compare the types pointed to
+            return compare_types(type1->pointer.next, type2->pointer.next);
+        case ARRAY_N:
+            // Compare array sizes and element types
+            if (type1->array.size != type2->array.size) return 0;
+            return compare_types(type1->array.element_type, type2->array.element_type);
+        case FUNCT_N:
+            // Compare return type and parameter list
+            return compare_types(type1->function.left, type2->function.left) &&
+                   compare_types(type1->function.right, type2->function.right);
+        case STRUCT_N:
+        case UNION_N:
+            // Compare struct/union symbols (same symbol means same type)
+            return type1->struct_union.sym == type2->struct_union.sym;
+        case PARAM_N:
+            // Compare parameter types (ignore identifiers)
+            return compare_types(type1->parameter.type, type2->parameter.type);
+        default:
+            return 0;
+    }
+}
+
+void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec) {
+    int stg_class_set = 0;
+    ast_node_t* current_spec = spec;
+    ast_node_t* type_specs = NULL;
+
+    while (current_spec) {
+        ast_node_t* spec_item = current_spec->list.head;
+
+        if (spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.stg_class) {
+            if (stg_class_set) {
+                fprintf(stderr, "multiple storage class specifiers in declaration\n");
+                exit(1);
+            }
+            //fprintf(stderr, "current spec type is: %s\n", get_node_type(spec_item));
+            sym->stg_class = spec_item->decl_spec.stg_class;
+            stg_class_set = 1;
+            //fprintf(stderr, "Set storage class for %s to: %s\n", sym->key, get_storage_class(sym->stg_class));
+        }                                                                    
+        if ((spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.decl_type) || spec_item->type == STRUCT_N || spec_item->type == UNION_N) {
+            if(!type_specs) type_specs = new_list(spec_item);
+            else append_item(type_specs, spec_item);
+            //fprintf(stderr, "type spec is of type %s: ", get_node_type(spec_item->type)); 
+        }
+        current_spec = current_spec->list.next;
+    }
+
+    // just keep this as a list of AST nodes for now, it's kinda sketch when printed but it works
+    if(type_specs) sym->node = combine_nodes(type_specs, sym->node);
+
+    SYMBOL* found_sym = st_lookup_single(cur_scope, sym->key, sym->name_space);
+    int stg_class_match = 0, type_names_match = 0;
+
+    // all these redeclaration rules that I forgot to do in assignment 4
+    if(found_sym) {
+        stg_class_match = found_sym->stg_class == sym->stg_class ? 1 : 0; 
+        type_names_match = compare_types(found_sym->node, sym->node);
+    }
+
+    if(!found_sym) {
+        st_install(cur_scope, sym);
+        print_symbol(cur_scope, sym);
+    }
+    else if(found_sym && stg_class_match && type_names_match) fprintf(stderr, "Redefinition of %s %s in %s originally defined <%s>:%d but that's okay! Continuing program...\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), found_sym->file_name, found_sym->line_num); 
+    else {
+        fprintf(stderr, "%s '%s' already defined in your %s <%s>:%d namespace!\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), cur_scope->start_file, cur_scope->start_line); 
+        exit(1);
+    }
+}

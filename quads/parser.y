@@ -174,7 +174,6 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                             SYMTABLE *cur_scope = (SYMTABLE*) stack_peek(scope_stack); 
                                                             ast_node_t *spec = $1; //dec specs
 
-                                                            
                                                             //fprintf(stderr, "current scope is: %s\n", get_scope_name(cur_scope->scope));
                                                             if (!cur_scope) {
                                                                 fprintf(stderr, "Error: No current scope available\n");
@@ -182,44 +181,10 @@ declaration : decl_specifiers ';'   { $$ = $1; }
                                                             }
 
                                                             while (sym != NULL) {
-
-                                                                // set storage class if provided in decl_specifiers
-                                                                int stg_class_set = 0;
-                                                                ast_node_t* current_spec = spec;
-                                                                ast_node_t* type_specs = NULL;
-
-                                                                while (current_spec) {
-                                                                    ast_node_t* spec_item = current_spec->list.head;
-
-                                                                    if (spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.stg_class) {
-                                                                        if (stg_class_set) {
-                                                                            fprintf(stderr, "multiple storage class specifiers in declaration\n");
-                                                                            exit(1);
-                                                                        }
-                                                                        //fprintf(stderr, "current spec type is: %s\n", get_node_type(spec_item));
-                                                                        sym->stg_class = spec_item->decl_spec.stg_class;
-                                                                        stg_class_set = 1;
-                                                                        //fprintf(stderr, "Set storage class for %s to: %s\n", sym->key, get_storage_class(sym->stg_class));
-                                                                    }                                                                    
-                                                                    if ((spec_item && spec_item->type == DECLSPEC_N && spec_item->decl_spec.decl_type) || spec_item->type == STRUCT_N || spec_item->type == UNION_N) {
-                                                                        if(!type_specs) type_specs = new_list(spec_item);
-                                                                        else append_item(type_specs, spec_item);
-                                                                        //fprintf(stderr, "type spec is of type %s: ", get_node_type(spec_item->type)); 
-                                                                    }
-                                                                    current_spec = current_spec->list.next;
-                                                                }
-
-                                                                // just keep this as a list of AST nodes for now, it's kinda sketch when printed but it works
-                                                                if(type_specs) sym->node = combine_nodes(type_specs, sym->node);
-
-                                                                if(!st_lookup_single(cur_scope, sym->key, sym->name_space)) {
-                                                                    st_install(cur_scope, sym);
-                                                                    print_symbol(cur_scope, sym);
-                                                                }
-                                                                else fprintf(stderr, "%s '%s' already defined in your %s <%s>:%d namespace!\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), cur_scope->start_file, cur_scope->start_line); 
-                                                                
+                                                                process_declaration(cur_scope, sym, spec);                                                               
                                                                 sym = sym->next;
                                                             }
+                                                            //fprintf(stderr, "making decl node\n"); 
                                                             $$ = new_decl(spec, $2);
                                                         }
                                                         ;
@@ -238,14 +203,15 @@ init_declarator : declarator
 
 function_definition : decl_specifiers declarator    {
                                                         SYMBOL* sym = $2;
+                                                        ast_node_t *spec = $1; //dec specs
 
                                                         if (sym->type == FUNCT_SYM) {
+
+                                                            SYMTABLE* global = (SYMTABLE*) stack_peek(scope_stack);
                                                             sym->node = combine_nodes($1, sym->node);
     
                                                             //install function into global scope
-                                                            SYMTABLE* global = (SYMTABLE*) stack_peek(scope_stack);
-                                                            st_install(global, sym);
-                                                            //fprintf(stderr, "Installing symbol '%s' into scope: %s\n", sym->key, get_scope_name(global->scope));
+                                                            process_declaration(global, sym, spec);                                                               
                                                             
                                                             // function scope for function body
                                                             SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
@@ -353,9 +319,9 @@ decl_or_stmt    : declaration { $$ = $1; }
                 ;
 
 decl_specifiers : stg_class_specifier                   { $$ = new_list($1); }
-                | stg_class_specifier decl_specifiers   { $$ = append_item($1, $2); }
+                | stg_class_specifier decl_specifiers   { $$ = append_item($2, $1); }
                 | type_specifier                        { $$ = new_list($1); }
-                | type_specifier decl_specifiers        { $$ = append_item($1, $2); }
+                | type_specifier decl_specifiers        { $$ = append_item($2, $1); }
                 ;
 
 stg_class_specifier : EXTERN    { $$ = new_decl_spec(0, EXTERN_SC); }
@@ -531,7 +497,7 @@ declarator  : pointer_declarator  { $$ = $1; }
 
 direct_declarator   : simple_declarator     { 
                                                 SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
-                                                $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, (st->scope == FILE_SCOPE ? EXTERN_SC : AUTO_SC), NULL, file_name, line_num); 
+                                                $$ = st_new_symbol($1.string_literal, NULL, GENERAL_NS, VAR_SYM, (st->scope == FILE_SCOPE ? UNKNOWN_SC : AUTO_SC), NULL, file_name, line_num); 
                                             }
                     | '(' declarator ')'    { $$ = $2; }
                     | function_declarator

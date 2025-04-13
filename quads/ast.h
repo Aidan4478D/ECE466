@@ -11,6 +11,9 @@ extern char* file_name;
 struct symbol;
 typedef struct symbol SYMBOL;
 
+struct sym_table;
+typedef struct sym_table SYMTABLE;
+
 enum num_type {
     INT_T=1024, //set to 1024 to guarentee no collision
     LONG_T,
@@ -289,6 +292,7 @@ struct ast_node {
     };
 };
 
+// assignment 2
 ast_node_t* new_ident(char* str); 
 ast_node_t* new_string(STRTYPE str);
 ast_node_t* new_number(NUMTYPE num);
@@ -302,6 +306,7 @@ ast_node_t* new_list(ast_node_t* head);
 ast_node_t* new_pointer(ast_node_t* next);
 ast_node_t* append_item(ast_node_t* head, ast_node_t* entry);
 
+// assignment 3
 ast_node_t* new_decl_spec(DECLTYPE decl_type, STGCLASS stgclass);
 ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl);
 ast_node_t* new_array(ast_node_t* element_type, int size);
@@ -310,6 +315,7 @@ ast_node_t* new_struct_union(int token, SYMBOL* sym);
 ast_node_t* attach_ident(ast_node_t* node, char* ident);
 ast_node_t* extract_ident(ast_node_t* node);
 
+// assignment 4 additions
 ast_node_t* new_if(ast_node_t* condition, ast_node_t* then_statement, ast_node_t* else_statement);
 ast_node_t* new_for(ast_node_t* init, ast_node_t* condition, ast_node_t* increment, ast_node_t* body);
 ast_node_t* new_while(NODETYPE type, ast_node_t* condition, ast_node_t* body); 
@@ -321,5 +327,8 @@ ast_node_t* new_return(ast_node_t* exp);
 ast_node_t* new_continue_break(NODETYPE type);
 ast_node_t* new_decl(ast_node_t* specifiers, SYMBOL* declarators);
 
+// assignment 5
+int compare_types(ast_node_t* type1, ast_node_t* type2);
+void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec);
 #endif 
 
