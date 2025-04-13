@@ -40,25 +40,28 @@ int st_install(SYMTABLE* st, SYMBOL* sym) {
     }
     sym->scope = st;  // associate symbol with its scope
 
+    // use composite key: "namespace:key"
+    char composite_key[1024];
+    snprintf(composite_key, sizeof(composite_key), "%d:%s", sym->name_space, sym->key);
     
     bool found = false;
-    SYMBOL* existing_sym = (SYMBOL*) ht_get_pointer(st->ht, sym->key, &found);
+    SYMBOL* existing_sym = (SYMBOL*) ht_get_pointer(st->ht, composite_key, &found);
     
     //might have to have 3 different hash tables if I don't want to restructure hash table
     if (found && existing_sym) {
         //fprintf(stderr, "trying to insert symbol %s sym ns: %d, existing ns: %d\n", sym->key, sym->name_space, existing_sym->name_space);
         if (existing_sym->name_space == sym->name_space) {
-            fprintf(stderr, "symbol %s already exists in namespace %s\n", sym->key, get_name_space(sym->name_space));
+            /*fprintf(stderr, "symbol %s already exists in namespace %s\n", sym->key, get_name_space(sym->name_space));*/
             return -1;
         }
     }
 
-    switch(ht_insert(st->ht, sym->key, sym)) {
+    switch(ht_insert(st->ht, composite_key, sym)) {
         case 0: 
-            /*fprintf(stderr, "Inserted key %s into hash table successfully\n", sym->key); */
+            /*fprintf(stderr, "Inserted key %s into hash table successfully\n", composite_key); */
             return 0;
         case 1: 
-            /*fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", sym->key); */
+            /*fprintf(stderr, "Error inserting into hash table: key %s already exists.\n", composite_key); */
             return -1;
         case 2: 
             /*fprintf(stderr, "Error inserting into hash table: rehashing failed\n"); */
@@ -76,9 +79,12 @@ SYMBOL* st_lookup(SYMTABLE* st, char* key, NAMESPACE ns) {
     SYMBOL* sym = NULL;
     bool found = false;
 
-    for (SYMTABLE* current = st; current != NULL; current = current->outer) {
+    char composite_key[1024];
+    snprintf(composite_key, sizeof(composite_key), "%d:%s", ns, key);
 
-        sym = (SYMBOL*) ht_get_pointer(current->ht, key, &found);
+    for (SYMTABLE* current = st; current != NULL; current = current->outer) {
+        
+        sym = (SYMBOL*) ht_get_pointer(current->ht, composite_key, &found);
 
         if (found && sym && sym->name_space == ns) return sym;
 
@@ -93,7 +99,10 @@ SYMBOL* st_lookup_single(SYMTABLE* st, char* key, NAMESPACE ns) {
     SYMBOL* sym = NULL;
     bool found = false;
 
-    sym = (SYMBOL*) ht_get_pointer(st->ht, key, &found);
+    char composite_key[1024];
+    snprintf(composite_key, sizeof(composite_key), "%d:%s", ns, key);
+
+    sym = (SYMBOL*) ht_get_pointer(st->ht, composite_key, &found);
 
     if (found && sym && sym->name_space == ns) return sym;
 

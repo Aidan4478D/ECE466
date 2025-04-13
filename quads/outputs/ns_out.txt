@@ -7,3 +7,39 @@ AST Tree for your symbol:
 TYPE: INT
 ---------------------------------------------
 
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:4
+symbol: b, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:7
+symbol: a, scope: FILE_SCOPE, namespace = TAG, type = STRUCT, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+---------------------------------------------
+
+---------------------------------------------
+[in struct a starting at <stdin>:7]
+<stdin>:7
+symbol: m, scope: BLOCK_SCOPE, namespace = MEMBER, type = MEMBER, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:7
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: STRUCT a (complete) defined at <stdin>:7
+
+---------------------------------------------
+
