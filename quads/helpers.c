@@ -332,19 +332,21 @@ void print_full_type(ast_node_t* node, int indent) {
         case SWITCH_N:
             printf("SWITCH\n");
             for (int i = 0; i < indent + 1; i++) printf("\t");
-            printf("EXPR:\n");
+            printf("EXPRESSION:\n");
             print_ast_tree(node->switch_node.expression, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("\t");
+            printf("STATEMENT: (is a list, I just got rid of the words \"list\" and \"list element\" to look nice)\n");
             if (node->switch_node.statement) {
-                ast_node_t* stmt_list = node->switch_node.statement;
-                int case_count = 1;
-                while (stmt_list) {
-                    //printf("%s #%d:\n", stmt_list->list.head->type == CASE_N ? "CASE" : "DEFAULT", case_count++);
-                    print_ast_tree(stmt_list->list.head, indent + 2);
-                    stmt_list = stmt_list->list.next;
+                if (node->switch_node.statement->type == LIST_N) {
+                    ast_node_t* stmt_list = node->switch_node.statement;
+                    while (stmt_list) {
+                        print_ast_tree(stmt_list->list.head, indent + 2);
+                        stmt_list = stmt_list->list.next;
+                    }
                 }
+                else print_ast_tree(node->switch_node.statement, indent + 2);
             }
             break;
-
         case DECLSPEC_N:
             for (int i = 0; i < indent; i++) printf("\t");
             printf("%s\n", get_decl_spec(node->decl_spec.decl_type));
@@ -560,7 +562,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
             print_ast_tree(node->while_node.condition, indent + 2);
             break;
         case FOR_N:
-            printf("FOR\n");
+            printf("FOR%s\n", !node->for_node.init && !node->for_node.condition && !node->for_node.increment ? "(ever)" : "");
             if (node->for_node.init) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
                 printf("INIT:\n");

@@ -23,12 +23,6 @@ stack_t* struct_union_stack;
 int in_function = 0; 
 int global_scope_updated = 0;
 
-//int yydebug = 1;
-
-// are break and continue their own ast nodes
-// can you just implement if & else with a ternary operator
-// are case and default installed within the sym table as well?
-
 /* Although this is great, it does not include: 
     - Function specifiers (inline)
     - Typdef support
@@ -706,7 +700,7 @@ do_statement : DO statement WHILE '(' expression ')' ';' { $$ = new_while(DOWHIL
              ;
 
 
-for_statement : FOR '(' ';' ';' ';' ')' statement                                   { $$ = new_for(NULL, NULL, NULL, $7); }
+for_statement : FOR '(' ';' ';' ')' statement                                       { $$ = new_for(NULL, NULL, NULL, $6); }
               | FOR '(' expression ';' expression ';' expression ')' statement      { $$ = new_for($3, $5, $7, $9); }
               | FOR '(' declaration ';' expression ';' expression ')' statement     { $$ = new_for($3, $5, $7, $9); }
               ;
