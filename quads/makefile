@@ -3,8 +3,8 @@ CFLAGS = -Wall
 
 all: parser clean_turn
 
-parser: y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o
-	$(CC) $(CFLAGS) -o p y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o -lfl
+parser: y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o quads.o
+	$(CC) $(CFLAGS) -o p y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o quads.o -lfl
 
 y.tab.c y.tab.h: parser.y
 	yacc -d parser.y
@@ -32,6 +32,9 @@ hash.o: hash.c hash.h
 
 stack.o: stack.c stack.h symtable.h
 	$(CC) $(CFLAGS) -c stack.c
+
+quads.o: quads.c quads.h
+	$(CC) $(CFLAGS) -c quads.c
 
 
 clean_turn:

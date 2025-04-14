@@ -36,6 +36,12 @@ int global_scope_updated = 0;
     - can enter things like "int double signed char x;" and it would work
     - void (*g(double d))(int, char); mixes up the parameter lists
 */
+
+/* fix:
+    - weird abstract types (casts & sizeof)
+    - out of order parameters for function pointers
+    - functions returning functions are weird af
+*/
 %}
 
 
