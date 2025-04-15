@@ -3,6 +3,7 @@
 
 #include "ast.h"
 #include "symtable.h"
+#include "helpers/linklist.h"
 
 enum opcode {
     LOAD_OC,
@@ -54,10 +55,16 @@ typedef struct quad {
 
 typedef struct basic_block {
     char* name;
-    //list of quads
-    struct basic_block *next;
+    list_t* quad_list; //list of quads 
+    //struct basic_block *next;
 } BASICBLOCK;
 
+// input = compound statement list
+BASICBLOCK* create_quads(ast_node_t* list);
+
+void init_bb(BASICBLOCK* bb);
+
+QNODE* create_statement(ast_node_t* node);
 
 
 
