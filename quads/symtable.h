@@ -1,7 +1,7 @@
 #ifndef _SYMTABLE_H
 #define _SYMTABLE_H
 
-#include "hash.h"
+#include "helpers/hash.h"
 #include "ast.h"
 
 // not doing prototypes

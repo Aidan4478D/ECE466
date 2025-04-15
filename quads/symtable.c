@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include "symtable.h"
-#include "hash.h"
-#include "helpers.h"
+#include "helpers/hash.h"
+#include "helpers/printing.h"
 
 // create a symbol table for a given scope which can be pushed onto the sym table stack
 SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer) {

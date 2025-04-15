@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers.h"
-#include "stack.h"
+#include "helpers/printing.h"
+#include "helpers/stack.h"
 #include "symtable.h"
 
 #define YYDEBUG 1

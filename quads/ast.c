@@ -1,6 +1,6 @@
 #include "ast.h"
 #include "y.tab.h"
-#include "helpers.h"
+#include "helpers/printing.h"
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -3,8 +3,8 @@ CFLAGS = -Wall
 
 all: parser clean_turn
 
-parser: y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o quads.o
-	$(CC) $(CFLAGS) -o p y.tab.o lex.yy.o ast.o helpers.o symtable.o hash.o stack.o quads.o -lfl
+parser: y.tab.o lex.yy.o ast.o printing.o symtable.o hash.o stack.o quads.o linklist.o
+	$(CC) $(CFLAGS) -o p y.tab.o lex.yy.o ast.o printing.o symtable.o hash.o stack.o quads.o linklist.o -lfl
 
 y.tab.c y.tab.h: parser.y
 	yacc -d parser.y
@@ -21,20 +21,25 @@ lex.yy.o: lex.yy.c y.tab.h ast.h
 ast.o: ast.c ast.h symtable.h
 	$(CC) $(CFLAGS) -c ast.c
 
-helpers.o: helpers.c helpers.h
-	$(CC) $(CFLAGS) -c helpers.c
 
 symtable.o: ast.o symtable.c symtable.h ast.h
 	$(CC) $(CFLAGS) -c symtable.c
 
-hash.o: hash.c hash.h
-	$(CC) $(CFLAGS) -c hash.c
-
-stack.o: stack.c stack.h symtable.h
-	$(CC) $(CFLAGS) -c stack.c
-
 quads.o: quads.c quads.h
 	$(CC) $(CFLAGS) -c quads.c
+
+
+linklist.o: helpers/linklist.c helpers/linklist.h
+	$(CC) $(CFLAGS) -c helpers/linklist.c
+
+hash.o: helpers/hash.c helpers/hash.h
+	$(CC) $(CFLAGS) -c helpers/hash.c
+
+stack.o: helpers/stack.c helpers/stack.h symtable.h
+	$(CC) $(CFLAGS) -c helpers/stack.c
+
+printing.o: helpers/printing.c helpers/printing.h
+	$(CC) $(CFLAGS) -c helpers/printing.c
 
 
 clean_turn:

@@ -8,7 +8,7 @@ Things to fix:
 
 #include "ast.h"
 #include "y.tab.h"
-#include "stack.h"
+#include "helpers/stack.h"
 #include "symtable.h"
 
 #include <stdlib.h>

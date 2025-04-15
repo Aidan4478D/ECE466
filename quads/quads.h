@@ -2,6 +2,7 @@
 #define _QUADS_H
 
 #include "ast.h"
+#include "symtable.h"
 
 enum opcode {
     LOAD_OC,
@@ -39,16 +40,25 @@ enum opcode {
     RETURN_OC
 };
 
+typedef struct quad_node {
+    SYMBOL* sym;
+    ast_node_t *ast_node;
+} QNODE; 
+
+
 typedef struct quad {
     enum opcode oc;
-    ast_node_t *destination, *src1, *src2;
+    QNODE *destination, *src1, *src2;
 } QUAD;
+
 
 typedef struct basic_block {
     char* name;
     //list of quads
     struct basic_block *next;
 } BASICBLOCK;
+
+
 
 
 #endif
