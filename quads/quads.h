@@ -41,6 +41,11 @@ typedef enum opcode {
     RETURN_OC
 } OPCODE;
 
+typedef enum modes {
+    DIRECT_MODE,
+    INDIRECT_MODE
+} MODE;
+
 // not sure the other types but I'm sure this will expand
 typedef enum quad_types {
     TEMP_Q,

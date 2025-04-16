@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "quads.h"
 #include "helpers/printing.h"
 
@@ -72,11 +74,62 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             if(!target) target = new_temporary();
             emit(get_opcode(node), left, right, target); 
             return target;
+        case POINTER_N:
+            QNODE* addr = create_rvalue(node->pointer.next, NULL);
+            if(!target) target = new_temporary();
+            emit(LOAD_OC, addr, NULL, target);
+            return target;
         default:
             fprintf(stderr, "invalid r-value type: %s\n", get_node_type(node->type));
-            break;
+            return NULL;
+    }
+    return NULL;
+}
+
+QNODE* create_lvalue(ast_node_t* node, int* mode) {
+
+    switch(node->type) {
+        case IDENT_N:
+            *mode = DIRECT_MODE;
+            
+            QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
+            qnode->type = VAR_Q;
+            qnode->ast_node = node;
+
+            return qnode;
+        case NUMBER_N: return NULL;
+        case UNOP_N:
+            // pointer dereference
+            if(node->unop.op == '*') {
+                *mode = INDIRECT_MODE;
+                return create_rvalue(node->unop.node, NULL); 
+            }
+        default:
+            fprintf(stderr, "invalid r-value type: %s\n", get_node_type(node->type));
+            return NULL;
     }
 }
+
+
+QNODE* create_assignment(ast_node_t* node) {
+
+    if(node->type == ASSIGNOP_N) {
+        int destmode;
+        QNODE* dst = create_lvalue(node->genop.left, &destmode);
+
+        if(destmode == DIRECT_MODE) {
+            QNODE* tmp = create_rvalue(node->genop.right, dst);
+            // will get emitted in create rvalue
+        }
+        else {
+            QNODE* t1 = create_rvalue(node->genop.right, NULL);
+            emit(STORE_OC, t1, dst, NULL); 
+        }
+    }
+    fprintf(stderr, "Create assignemnt called with node type: %s\n", get_node_type(node->type));
+    return NULL;
+}
+
 
 // create new node of type TEMPORARY
 QNODE* new_temporary() {
@@ -120,6 +173,6 @@ void init_bb(BASICBLOCK* bb) {
     list_t* linklist = (list_t*) malloc(sizeof(list_t));
     list_init(linklist); 
 
-    bb->name = name;
+    bb->name = strdup(name);
     bb->quad_list = linklist;
 }
