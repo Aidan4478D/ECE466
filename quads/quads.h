@@ -5,7 +5,7 @@
 #include "symtable.h"
 #include "helpers/linklist.h"
 
-enum opcode {
+typedef enum opcode {
     LOAD_OC,
     STORE_OC,
     LEA_OC,
@@ -39,16 +39,24 @@ enum opcode {
 
     FNCALL_OC,
     RETURN_OC
-};
+} OPCODE;
+
+// not sure the other types but I'm sure this will expand
+typedef enum quad_types {
+    TEMP_Q,
+    VAR_Q
+} QTYPE;
 
 typedef struct quad_node {
+    QTYPE type;
+    int tmp_id; // for tmp nodes
     SYMBOL* sym;
-    ast_node_t *ast_node;
+    ast_node_t* ast_node;
 } QNODE; 
 
 
 typedef struct quad {
-    enum opcode oc;
+    OPCODE oc;
     QNODE *destination, *src1, *src2;
 } QUAD;
 
@@ -65,7 +73,10 @@ BASICBLOCK* create_quads(ast_node_t* list);
 void init_bb(BASICBLOCK* bb);
 
 QNODE* create_statement(ast_node_t* node);
+QNODE* create_rvalue(ast_node_t* node, QNODE* target); 
+QNODE* new_temporary();
 
-
+// create a bew qyad wutg guveb 4 args abd append it to list of quads
+QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination); 
 
 #endif

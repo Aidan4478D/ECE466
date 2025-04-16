@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../ast.h"
+#include "../quads.h"
+#include "../y.tab.h"
+
 #include "hash.h"
 #include "printing.h"
 #include "stack.h"
-#include "../ast.h"
-
-#include "../y.tab.h"
 
 void print_current_scope(stack_t* scope_stack) {
     SYMTABLE *st = (SYMTABLE*) stack_peek(scope_stack);
@@ -67,6 +68,20 @@ void print_symbol(SYMTABLE *st, SYMBOL* sym) {
     } 
     else fprintf(stderr, "Symbol %s not found in %s symbol table!\n", sym->key, get_scope_name(st->scope));
     
+}
+
+int get_opcode(ast_node_t* node) {
+	switch(node->genop.op) {
+		case '+': return ADD_OC;
+		case '-': return SUB_OC;
+		case '*': return MUL_OC;
+		case '/': return DIV_OC;
+		case '%': return MOD_OC;
+		default:
+			fprintf(stderr, "binop %d not supprted yet \n", node->genop.op);
+
+	}
+	return -1;
 }
 
 char* get_operator_string(int op) {

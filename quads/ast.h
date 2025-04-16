@@ -111,7 +111,10 @@ typedef enum node_type {
     RETURN_N,
     CASE_N,
     DEFAULT_N,
-    DECL_N
+    DECL_N,
+
+    // assignment 5
+    TEMP_N
 } NODETYPE;
 
 // assignment 2 stuff
@@ -148,7 +151,6 @@ typedef struct ast_node_ternop {
 
 // general operator
 // - binary op
-// - assign op
 // - comparison op
 // - logical op
 typedef struct ast_node_genop {
