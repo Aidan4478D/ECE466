@@ -8,14 +8,90 @@ int bb_count = 0;
 int tmp_count = 0;
 BASICBLOCK* cur_bb;
 
-BASICBLOCK* create_quads(ast_node_t* list) {
+BASICBLOCK* create_quads(ast_node_t* listnode) {
 
     // create linked list for quads
-    BASICBLOCK* bb = (BASICBLOCK*) malloc(sizeof(BASICBLOCK));
-    init_bb(bb); 
+    BASICBLOCK* bb = new_bb();
+    cur_bb = bb;
+
+    while(listnode) {
+        ast_node_t* node = listnode->list.head;
+        if(node) create_statement(node);
+        listnode = listnode->list.next;
+    }
+    print_all(bb);
+    funct_count++; 
         
     return bb;
 }
+
+void print_all(BASICBLOCK* bb) {
+
+    BASICBLOCK* cur = bb;
+    while(cur) {
+        printf(".BB%d.%d \n", cur->funct_num, cur->bb_num);
+        print_bb(cur);
+        cur = cur->next;
+    }
+}
+
+
+// print all quads in a basic block
+void print_bb(BASICBLOCK* bb) {
+    if (!bb || !bb->quad_list) {
+        printf("Empty basic block\n");
+        return;
+    }
+    list_t* list = bb->quad_list;
+    list_node_t* current = list->head;
+    while (current != NULL) {
+        QUAD* quad = (QUAD*)current->data;
+        print_quad(quad);
+        current = current->next;
+    }
+}
+
+// Print a single quad
+void print_quad(QUAD* quad) {
+    if (!quad) {
+        printf("NULL_QUAD\n");
+        return;
+    }
+    printf("%d ", quad->oc);
+    if (quad->src1) {
+        print_qnode(quad->src1);
+        if (quad->src2 || quad->destination) printf(", ");
+    }
+    if (quad->src2) {
+        print_qnode(quad->src2);
+        if (quad->destination) printf(", ");
+    }
+    if (quad->destination) {
+        print_qnode(quad->destination);
+    }
+    printf("\n");
+}
+
+
+// print a QNODE (temporary or variable)
+void print_qnode(QNODE* node) {
+    if (!node) {
+        printf("NULL");
+        return;
+    }
+    if (node->type == TEMP_Q) {
+        printf("t%d", node->tmp_id);
+    } else if (node->type == VAR_Q) {
+        if (node->ast_node && node->ast_node->type == IDENT_N) {
+            printf("%s", node->ast_node->ident.name);
+        } else {
+            printf("VAR_UNKNOWN");
+        }
+    } else {
+        printf("UNKNOWN_QNODE");
+    }
+}
+
 
 
 QNODE* create_statement(ast_node_t* node) {
@@ -25,28 +101,41 @@ QNODE* create_statement(ast_node_t* node) {
     // assign what the quad node should be here
     switch(node->type) {
         case BINOP_N: //binop within genop
+            fprintf(stderr, "BINARY OP detected!\n"); 
             break;
         case UNOP_N:
+            fprintf(stderr, "UNARY OP detected!\n"); 
             break;
         case ASSIGNOP_N:
+            fprintf(stderr, "ASSIGN OP detected!\n"); 
             break;
+            return create_assignment(node);
         case FUNCT_N:
+            fprintf(stderr, "FUNCT detected!\n"); 
             break;
         case FUNCTCALL_N:
+            fprintf(stderr, "FUNCT CALL detected!\n"); 
             break;
         case IF_N:
+            fprintf(stderr, "IF detected!\n"); 
             break;
         case WHILE_N:
+            fprintf(stderr, "WHILE detected!\n"); 
             break;
         case DOWHILE_N:
+            fprintf(stderr, "DO WHILE detected!\n"); 
             break;
         case FOR_N:
+            fprintf(stderr, "FOR detected!\n"); 
             break;
         case BREAK_N:
+            fprintf(stderr, "BREAK detected!\n"); 
             break;
         case CONTINUE_N:
+            fprintf(stderr, "CONTINUE detected!\n"); 
             break;
         case RETURN_N:
+            fprintf(stderr, "RETURN detected!\n"); 
             break;
         default:
             fprintf(stderr, "invalid statement type: node_type = %s\n", get_node_type(node->type));
@@ -131,6 +220,46 @@ QNODE* create_assignment(ast_node_t* node) {
 }
 
 
+void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf) {
+
+    /*switch(expr->type) {*/
+        /*case IF_N: */
+        /*case WHILE_N:*/
+        /*case DOWHILE_N:*/
+        
+    /*}*/
+}
+
+
+void create_if(ast_node_t* node) {
+
+    BASICBLOCK* Bt = new_bb();
+    BASICBLOCK* Bf = new_bb();
+    BASICBLOCK* Bn;
+
+    if(node->if_node.else_statement) Bn = new_bb();
+    else Bn = Bf;
+
+    create_condexpr(node->if_node.condition, Bt, Bf);
+    cur_bb = Bt;
+
+    create_statement(node->if_node.then_statement);
+    link_bb(cur_bb, ALWAYS_MODE, Bn, NULL);
+
+    if(node->if_node.else_statement) {
+        cur_bb = Bf;
+        create_statement(node->if_node.else_statement);
+        link_bb(cur_bb, ALWAYS_MODE, Bn, NULL);
+    }
+    cur_bb = Bn;
+}
+
+void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf) {
+
+
+}
+
+
 // create new node of type TEMPORARY
 QNODE* new_temporary() {
  
@@ -160,7 +289,9 @@ QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination) {
 
 
 
-void init_bb(BASICBLOCK* bb) {
+BASICBLOCK* new_bb() {
+    
+    BASICBLOCK* bb = (BASICBLOCK*) malloc(sizeof(BASICBLOCK));
 
     if(!bb) {
         fprintf(stderr, "basic block not correctly initialized\n"); 
@@ -175,4 +306,6 @@ void init_bb(BASICBLOCK* bb) {
 
     bb->name = strdup(name);
     bb->quad_list = linklist;
+
+    return bb;
 }

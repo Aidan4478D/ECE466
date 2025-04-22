@@ -43,7 +43,8 @@ typedef enum opcode {
 
 typedef enum modes {
     DIRECT_MODE,
-    INDIRECT_MODE
+    INDIRECT_MODE,
+    ALWAYS_MODE,
 } MODE;
 
 // not sure the other types but I'm sure this will expand
@@ -69,19 +70,33 @@ typedef struct quad {
 typedef struct basic_block {
     char* name;
     list_t* quad_list; //list of quads 
-    //struct basic_block *next;
+    int bb_num;
+    int funct_num;
+    struct basic_block *next;
 } BASICBLOCK;
 
 // input = compound statement list
 BASICBLOCK* create_quads(ast_node_t* list);
-
-void init_bb(BASICBLOCK* bb);
+BASICBLOCK* new_bb();
 
 QNODE* create_statement(ast_node_t* node);
+QNODE* create_assignment(ast_node_t* node);
 QNODE* create_rvalue(ast_node_t* node, QNODE* target); 
+
 QNODE* new_temporary();
+
+//  goal of gen_condexpr is to evaluate the expression and branch to either the true target or the false target
+void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf); 
+void create_if(ast_node_t* node);
+void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 
 // create a bew qyad wutg guveb 4 args abd append it to list of quads
 QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination); 
+
+void print_all(BASICBLOCK* bb);
+void print_bb(BASICBLOCK* bb);
+void print_quad(QUAD* quad);
+void print_qnode(QNODE* node);
+
 
 #endif

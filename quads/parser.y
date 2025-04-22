@@ -5,6 +5,7 @@
 #include "helpers/printing.h"
 #include "helpers/stack.h"
 #include "symtable.h"
+#include "quads.h"
 
 #define YYDEBUG 1
 
@@ -275,6 +276,7 @@ function_definition : decl_specifiers declarator    {
                                                         printf("AST Dump for function %s\n", sym->key); 
                                                         printf("---------------------------------------------\n"); 
                                                         print_ast_tree($4, 0);
+                                                        create_quads($4);
                                                         in_function = 0;
                                                     }
                     ;
