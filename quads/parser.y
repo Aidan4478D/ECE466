@@ -272,10 +272,17 @@ function_definition : decl_specifiers declarator    {
                                                     compound_statement { 
                                                         //fprintf(stderr, "Exiting function scope\n");
                                                         SYMBOL* sym = $2;
+
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("AST Dump for function %s\n", sym->key); 
                                                         printf("---------------------------------------------\n"); 
+                                                        fprintf(stderr, "=========== AST DUMP =============\n");
                                                         print_ast_tree($4, 0);
+
+                                                        printf("\n---------------------------------------------\n"); 
+                                                        printf("QUAD generation for function %s\n", sym->key); 
+                                                        printf("---------------------------------------------\n"); 
+                                                        fprintf(stderr, "=========== GEN QUADS ============\n");
                                                         create_quads($4);
                                                         in_function = 0;
 

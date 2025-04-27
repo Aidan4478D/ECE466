@@ -82,17 +82,53 @@ void print_qnode(QNODE* qnode) {
         printf("NULL");
         return;
     }
-    if (qnode->type == TEMP_Q) {
-        printf("T%d", qnode->tmp_id);
-    } 
-    else if (qnode->type == VAR_Q) {
-        if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
-            fprintf(stderr, "qnode %s: %s\n", qnode->ast_node->ident.name, get_scope_name(qnode->scope)); 
-            printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
-        } 
-        else printf("VAR_UNKNOWN");
-    } 
-    else printf("UNKNOWN_QNODE");
+    switch(qnode->type) {
+        case TEMP_Q:
+            printf("T%d", qnode->tmp_id);
+            break;
+        case IMM_Q: {
+            if(qnode->ast_node->type == NUMBER_N) {
+                ast_node_t* node = qnode->ast_node;
+                switch (node->number.num_meta.type) {
+                    case INT_T:     
+                        if(node->number.num_meta.sign == SIGNED_T) printf("%lld{S}", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == UNSIGNED_T) printf("%llu{U}", node->number.num_meta._int);
+                        break;
+                    case LONG_T:
+                        if(node->number.num_meta.sign == SIGNED_T) printf("%lld{S}", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == UNSIGNED_T) printf("%llu{U}", node->number.num_meta._int);
+                        break;
+                    case LONGLONG_T:
+                        if(node->number.num_meta.sign == SIGNED_T) printf("%lld{S}", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == UNSIGNED_T) printf("%llu{U}", node->number.num_meta._int);
+                        break;
+                    case FLOAT_T:
+                        if(node->number.num_meta.sign == SIGNED_T) printf("%f\n", node->number.num_meta._float);
+                        break;
+                    case DOUBLE_T:
+                        if(node->number.num_meta.sign == SIGNED_T) printf("%Lf\n", node->number.num_meta._double);
+                        break;
+                    case LONGDOUBLE_T:
+                        if(node->number.num_meta.sign == SIGNED_T) printf("%Lf\n", node->number.num_meta._double);
+                        break;
+                    default:
+                        printf("UNKNOWN NUM TYPE %d\n", node->number.num_meta.type);
+                        break;
+                }
+
+            }
+            break;
+        }
+        case VAR_Q:
+            if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
+                fprintf(stderr, "qnode %s: %s\n", qnode->ast_node->ident.name, get_scope_name(qnode->scope)); 
+                printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
+            } 
+            else printf("VAR_UNKNOWN");
+            break;
+
+        default: printf("UNKNOWN_QNODE");
+    }
 }
 
 
@@ -124,7 +160,8 @@ QUAD* create_statement(ast_node_t* node) {
             fprintf(stderr, "FUNCT CALL detected!\n"); 
             break;
         case IF_N:
-            fprintf(stderr, "IF detected!\n"); 
+            fprintf(stderr, "IF detected!\n");
+            create_if(node);
             break;
         case WHILE_N:
             fprintf(stderr, "WHILE detected!\n"); 
@@ -142,7 +179,14 @@ QUAD* create_statement(ast_node_t* node) {
             fprintf(stderr, "CONTINUE detected!\n"); 
             break;
         case RETURN_N:
-            fprintf(stderr, "RETURN detected!\n"); 
+            fprintf(stderr, "RETURN detected!\n");
+
+            if (node->return_node.expression) {
+                QNODE* ret_val = create_rvalue(node->return_node.expression, NULL);
+                emit(RETURN_OC, ret_val, NULL, NULL);
+            } 
+            else emit(RETURN_OC, NULL, NULL, NULL);
+            
             break;
         case DECL_N:
             // don't generate quads for declarations
@@ -163,11 +207,17 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
     switch(node->type) {
         case DECLSPEC_N:
             break;
-        case NUMBER_N:
-            break;
+        case NUMBER_N: { // new immediate value
+            QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
+
+            qnode->type = IMM_Q;
+            qnode->ast_node = node;
+            
+            return qnode;
+        }
         case STRING_N:
             break;
-        case IDENT_N:
+        case IDENT_N: {
             QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
             SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
             SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
@@ -183,6 +233,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             qnode->type = VAR_Q;
             qnode->ast_node = node;
             return qnode;
+        }
         case BINOP_N:
             fprintf(stderr, "creating bin op for r value\n"); 
             left = create_rvalue(node->genop.left, NULL);
@@ -201,6 +252,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
     }
     return NULL;
 }
+
 
 QNODE* create_lvalue(ast_node_t* node, int* mode) {
 

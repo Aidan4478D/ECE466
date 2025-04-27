@@ -36,15 +36,6 @@ AST Tree for your symbol:
 TYPE: INT
 ---------------------------------------------
 
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:5
-symbol: c, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: INT
----------------------------------------------
-
 
 ---------------------------------------------
 AST Dump for function f
@@ -59,66 +50,42 @@ LIST ELEMENT #1:
 
 
 LIST ELEMENT #2:
-	DECLARATION
-		SPECIFIERS: INT 
-		DECLARATOR #1
-			IDENT: c
-			TYPE: INT
-
+	ASSIGNMENT OP (=)
+		IDENT: a
+		NUM (numtype=int)	3	SIGNED
 
 LIST ELEMENT #3:
 	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (+)
-			NUM (numtype=int)	2	SIGNED
-			NUM (numtype=int)	1	SIGNED
+		IDENT: b
+		NUM (numtype=int)	2	SIGNED
 
 LIST ELEMENT #4:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (+)
-			IDENT: a
-			NUM (numtype=int)	3	SIGNED
+	IF
+		COND:
+			COMPARISON OP (<)
+				IDENT: a
+				IDENT: b
+		THEN:
+			LIST:
+			LIST ELEMENT #1:
+				ASSIGNMENT OP (=)
+					IDENT: a
+					NUM (numtype=int)	5	SIGNED
+
+		ELSE:
+			LIST:
+			LIST ELEMENT #1:
+				ASSIGNMENT OP (=)
+					IDENT: b
+					NUM (numtype=int)	5	SIGNED
+
 
 LIST ELEMENT #5:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (+)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #6:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (*)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #7:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (-)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #8:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (%)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #9:
 	RETURN
+		IDENT: a
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
-	c{lvar} = ADD 	2{S}, 1{S}
-	c{lvar} = ADD 	a{global}, 3{S}
-	c{lvar} = ADD 	a{global}, b{lvar}
-	c{lvar} = MUL 	a{global}, b{lvar}
-	c{lvar} = SUB 	a{global}, b{lvar}
-	c{lvar} = MOD 	a{global}, b{lvar}
