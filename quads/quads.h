@@ -2,8 +2,8 @@
 #define _QUADS_H
 
 #include "ast.h"
-#include "symtable.h"
 #include "helpers/linklist.h"
+#include "symtable.h"
 
 typedef enum opcode {
     LOAD_OC,
@@ -50,12 +50,15 @@ typedef enum modes {
 // not sure the other types but I'm sure this will expand
 typedef enum quad_types {
     TEMP_Q,
-    VAR_Q
+    VAR_Q,
+    IMM_Q,
 } QTYPE;
 
 typedef struct quad_node {
     QTYPE type;
     int tmp_id; // for tmp nodes
+
+    SCOPETYPE scope;
     SYMBOL* sym;
     ast_node_t* ast_node;
 } QNODE; 

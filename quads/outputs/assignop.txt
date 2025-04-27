@@ -98,7 +98,7 @@ LIST ELEMENT #7:
 	RETURN
 
 .BB0.0 
-	ADD c, a, b
-	MUL c, a, b
-	SUB c, a, b
-	MOD c, a, b
+	c{lvar} = ADD 	a{global}, b{lvar}
+	c{lvar} = MUL 	a{global}, b{lvar}
+	c{lvar} = SUB 	a{global}, b{lvar}
+	c{lvar} = MOD 	a{global}, b{lvar}

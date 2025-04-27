@@ -1,8 +1,13 @@
 #ifndef _SYMTABLE_H
 #define _SYMTABLE_H
 
-#include "helpers/hash.h"
 #include "ast.h"
+
+#include "helpers/hash.h"
+
+#include "helpers/stack.h"
+extern stack_t* scope_stack;
+
 
 // not doing prototypes
 typedef enum scope_types {

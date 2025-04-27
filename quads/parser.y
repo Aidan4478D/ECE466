@@ -278,6 +278,10 @@ function_definition : decl_specifiers declarator    {
                                                         print_ast_tree($4, 0);
                                                         create_quads($4);
                                                         in_function = 0;
+
+                                                        
+                                                        SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
+                                                        fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line);
                                                     }
                     ;
 
@@ -291,11 +295,7 @@ compound_statement  : '{'   {
                                 }
                                 in_function = 0;
                             } 
-                      '}'   {
-                                SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
-                                fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line);
-                                $$ = new_list(NULL);
-                            }
+                      '}'   { $$ = new_list(NULL); }
                     | '{'   {
                                 if(in_function != 1) {
                                     SYMTABLE* current = (SYMTABLE*) stack_peek(scope_stack);
@@ -305,11 +305,7 @@ compound_statement  : '{'   {
                                 } 
                                 in_function = 0;
                             }
-                      decl_or_stmt_list '}'   {
-                                SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
-                                fprintf(stderr, "Exiting %s scope started at: <%s>:%d\n", get_scope_name(st->scope), st->start_file, st->start_line); 
-                                $$ = $3;
-                            }
+                      decl_or_stmt_list '}'   { $$ = $3; }
                     ;                 
 
 decl_or_stmt_list   : decl_or_stmt                      { $$ = new_list($1); }

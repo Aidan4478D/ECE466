@@ -25,7 +25,7 @@ ast.o: ast.c ast.h symtable.h
 symtable.o: ast.o symtable.c symtable.h ast.h
 	$(CC) $(CFLAGS) -c symtable.c
 
-quads.o: quads.c quads.h
+quads.o: quads.c quads.h symtable.h
 	$(CC) $(CFLAGS) -c quads.c
 
 

@@ -2,6 +2,7 @@
 
 #include "quads.h"
 #include "helpers/printing.h"
+#include "symtable.h"
 
 int funct_count = 0;
 int bb_count = 0;
@@ -58,11 +59,12 @@ void print_quad(QUAD* quad) {
         printf("NULL_QUAD\n");
         return;
     }
-    printf("\t%s ", print_opcode(quad->oc));
     if (quad->destination) {
+        printf("\t");
         print_qnode(quad->destination);
-        if (quad->src1 || quad->src2) printf(", ");
+        if (quad->src1 || quad->src2) printf(" = ");
     }
+    printf("%s \t", print_opcode(quad->oc));
     if (quad->src1) {
         print_qnode(quad->src1);
         if (quad->src2) printf(", ");
@@ -75,17 +77,18 @@ void print_quad(QUAD* quad) {
 
 
 // print a QNODE (temporary or variable)
-void print_qnode(QNODE* node) {
-    if (!node) {
+void print_qnode(QNODE* qnode) {
+    if (!qnode) {
         printf("NULL");
         return;
     }
-    if (node->type == TEMP_Q) {
-        printf("T%d", node->tmp_id);
+    if (qnode->type == TEMP_Q) {
+        printf("T%d", qnode->tmp_id);
     } 
-    else if (node->type == VAR_Q) {
-        if (node->ast_node && node->ast_node->type == IDENT_N) {
-            printf("%s", node->ast_node->ident.name);
+    else if (qnode->type == VAR_Q) {
+        if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
+            fprintf(stderr, "qnode %s: %s\n", qnode->ast_node->ident.name, get_scope_name(qnode->scope)); 
+            printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
         } 
         else printf("VAR_UNKNOWN");
     } 
@@ -164,8 +167,19 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             break;
         case STRING_N:
             break;
-        case IDENT_N: 
+        case IDENT_N:
             QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
+            SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
+            SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
+
+            fprintf(stderr, "cur scope is %s for sym %s\n", get_scope_name(st->scope), node->ident.name); 
+
+            if(sym) {
+                qnode->sym = sym;
+                qnode->scope = sym->scope->scope; //symbol's st's scope
+            }
+            else fprintf(stderr, "Undefined variable %s\n", node->ident.name); 
+            
             qnode->type = VAR_Q;
             qnode->ast_node = node;
             return qnode;
@@ -193,10 +207,19 @@ QNODE* create_lvalue(ast_node_t* node, int* mode) {
     switch(node->type) {
         case IDENT_N:
             *mode = DIRECT_MODE;
-            
+
             QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
             qnode->type = VAR_Q;
             qnode->ast_node = node;
+            
+            SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
+            SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
+
+            if (sym) {
+                qnode->sym = sym;
+                qnode->scope = sym->scope->scope;  // Set to the symbol's scope
+            } 
+            else fprintf(stderr, "Undefined variable %s\n", node->ident.name);
 
             return qnode;
         case NUMBER_N: return NULL;
@@ -228,7 +251,7 @@ QNODE* create_assignment(ast_node_t* node) {
             emit(STORE_OC, t1, dst, NULL); 
         }
     }
-    fprintf(stderr, "Create assignemnt called with node type: %s\n", get_node_type(node->type));
+    /*fprintf(stderr, "Create assignemnt called with node type: %s\n", get_node_type(node->type));*/
     return NULL;
 }
 
@@ -280,6 +303,8 @@ QNODE* new_temporary() {
     
     node->type = TEMP_Q;
     node->tmp_id = tmp_count++;
+
+    node->scope = -1;
     node->sym = NULL;
     node->ast_node = NULL;
     
