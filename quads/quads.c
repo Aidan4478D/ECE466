@@ -33,6 +33,7 @@ void print_all(BASICBLOCK* bb) {
         print_bb(cur);
         cur = cur->next;
     }
+    fprintf(stderr, "Finished printing all BBs\n"); 
 }
 
 
@@ -45,7 +46,7 @@ void print_bb(BASICBLOCK* bb) {
     list_t* list = bb->quad_list;
     list_node_t* current = list->head;
     while (current != NULL) {
-        QUAD* quad = (QUAD*)current->data;
+        QUAD* quad = (QUAD*) current->data;
         print_quad(quad);
         current = current->next;
     }
@@ -57,17 +58,17 @@ void print_quad(QUAD* quad) {
         printf("NULL_QUAD\n");
         return;
     }
-    printf("%d ", quad->oc);
+    printf("\t%s ", print_opcode(quad->oc));
+    if (quad->destination) {
+        print_qnode(quad->destination);
+        if (quad->src1 || quad->src2) printf(", ");
+    }
     if (quad->src1) {
         print_qnode(quad->src1);
-        if (quad->src2 || quad->destination) printf(", ");
+        if (quad->src2) printf(", ");
     }
     if (quad->src2) {
         print_qnode(quad->src2);
-        if (quad->destination) printf(", ");
-    }
-    if (quad->destination) {
-        print_qnode(quad->destination);
     }
     printf("\n");
 }
@@ -80,35 +81,38 @@ void print_qnode(QNODE* node) {
         return;
     }
     if (node->type == TEMP_Q) {
-        printf("t%d", node->tmp_id);
-    } else if (node->type == VAR_Q) {
+        printf("T%d", node->tmp_id);
+    } 
+    else if (node->type == VAR_Q) {
         if (node->ast_node && node->ast_node->type == IDENT_N) {
             printf("%s", node->ast_node->ident.name);
-        } else {
-            printf("VAR_UNKNOWN");
-        }
-    } else {
-        printf("UNKNOWN_QNODE");
-    }
+        } 
+        else printf("VAR_UNKNOWN");
+    } 
+    else printf("UNKNOWN_QNODE");
 }
 
 
 
-QNODE* create_statement(ast_node_t* node) {
+QUAD* create_statement(ast_node_t* node) {
 
-    QNODE* quad_node = (QNODE*) malloc(sizeof(QNODE));
+    QUAD* quad_node = (QNODE*) malloc(sizeof(QNODE));
 
     // assign what the quad node should be here
     switch(node->type) {
+
         case BINOP_N: //binop within genop
-            fprintf(stderr, "BINARY OP detected!\n"); 
-            break;
+            fprintf(stderr, "BINARY OP detected!\n");
+            // this should be handled in gen assignment
+            
+            //*QNODE left = create_rvalue(node->left, NULL);
+            //*QNODE right = create_rvalue(node->right, NULL);
+            // return emit(get_binop_opcode(node->genop.op), node->genop.left, node->genop.right, NULL);
         case UNOP_N:
             fprintf(stderr, "UNARY OP detected!\n"); 
             break;
         case ASSIGNOP_N:
             fprintf(stderr, "ASSIGN OP detected!\n"); 
-            break;
             return create_assignment(node);
         case FUNCT_N:
             fprintf(stderr, "FUNCT detected!\n"); 
@@ -137,8 +141,11 @@ QNODE* create_statement(ast_node_t* node) {
         case RETURN_N:
             fprintf(stderr, "RETURN detected!\n"); 
             break;
+        case DECL_N:
+            // don't generate quads for declarations
+            return NULL;
         default:
-            fprintf(stderr, "invalid statement type: node_type = %s\n", get_node_type(node->type));
+            fprintf(stderr, "invalid statement type: node_type = %s (%d)\n", get_node_type(node->type), node->type);
             break;
     }
 
@@ -157,11 +164,17 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             break;
         case STRING_N:
             break;
+        case IDENT_N: 
+            QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
+            qnode->type = VAR_Q;
+            qnode->ast_node = node;
+            return qnode;
         case BINOP_N:
+            fprintf(stderr, "creating bin op for r value\n"); 
             left = create_rvalue(node->genop.left, NULL);
             right = create_rvalue(node->genop.right, NULL);
             if(!target) target = new_temporary();
-            emit(get_opcode(node), left, right, target); 
+            emit(get_binop_opcode(node), left, right, target); 
             return target;
         case POINTER_N:
             QNODE* addr = create_rvalue(node->pointer.next, NULL);

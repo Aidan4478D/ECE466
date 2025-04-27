@@ -1,0 +1,104 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:4
+symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:5
+symbol: c, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: b
+			TYPE: INT
+
+
+LIST ELEMENT #2:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: c
+			TYPE: INT
+
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (+)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (*)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #5:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (-)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #6:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (%)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #7:
+	RETURN
+
+.BB0.0 
+	ADD c, a, b
+	MUL c, a, b
+	SUB c, a, b
+	MOD c, a, b

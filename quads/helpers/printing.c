@@ -70,18 +70,53 @@ void print_symbol(SYMTABLE *st, SYMBOL* sym) {
     
 }
 
-int get_opcode(ast_node_t* node) {
+int get_binop_opcode(ast_node_t* node) {
 	switch(node->genop.op) {
 		case '+': return ADD_OC;
 		case '-': return SUB_OC;
 		case '*': return MUL_OC;
 		case '/': return DIV_OC;
 		case '%': return MOD_OC;
-		default:
-			fprintf(stderr, "binop %d not supprted yet \n", node->genop.op);
+		default: fprintf(stderr, "binop %d not supprted yet \n", node->genop.op);
 
 	}
 	return -1;
+}
+
+char* print_opcode(int op) {
+    switch(op) {
+        case LOAD_OC:      return "LOAD";
+        case STORE_OC:     return "STORE";
+        case LEA_OC:       return "LEA";
+        case MOV_OC:       return "MOV";
+        case BR_OC:        return "BR";
+        case CMP_OC:       return "CMP";
+        case BRGT_OC:      return "BRGT";
+        case BRLT_OC:      return "BRLT";
+        case BRGE_OC:      return "BRGE";
+        case BRLE_OC:      return "BRLE";
+        case BREQ_OC:      return "BREQ";
+        case BRNE_OC:      return "BRNE";
+        case ADD_OC:       return "ADD";
+        case SUB_OC:       return "SUB";
+        case MUL_OC:       return "MUL";
+        case DIV_OC:       return "DIV";
+        case MOD_OC:       return "MOD";
+        case AND_OC:       return "AND";
+        case OR_OC:        return "OR";
+        case XOR_OC:       return "XOR";
+        case NOT_OC:       return "NOT";
+        case ANDAND_OC:    return "ANDAND";
+        case OROR_OC:      return "OROR";
+        case LOGNOT_OC:    return "LOGNOT";
+        case SL_OC:        return "SL";
+        case SR_OC:        return "SR";
+        case FNCALL_OC:    return "FNCALL";
+        case RETURN_OC:    return "RETURN";
+		default: fprintf(stderr, "opcode %d not found\n", op);
+    }
+
+    return NULL;
 }
 
 char* get_operator_string(int op) {

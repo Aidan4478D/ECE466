@@ -79,7 +79,6 @@ typedef struct basic_block {
 BASICBLOCK* create_quads(ast_node_t* list);
 BASICBLOCK* new_bb();
 
-QNODE* create_statement(ast_node_t* node);
 QNODE* create_assignment(ast_node_t* node);
 QNODE* create_rvalue(ast_node_t* node, QNODE* target); 
 
@@ -90,8 +89,9 @@ void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf);
 void create_if(ast_node_t* node);
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 
-// create a bew qyad wutg guveb 4 args abd append it to list of quads
+// create a new quad with 4 args and append it to list of quads
 QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination); 
+QUAD* create_statement(ast_node_t* node);
 
 void print_all(BASICBLOCK* bb);
 void print_bb(BASICBLOCK* bb);
