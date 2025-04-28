@@ -8,12 +8,14 @@ int funct_count = 0;
 int bb_count = 0;
 int tmp_count = 0;
 BASICBLOCK* cur_bb;
+static BASICBLOCK* last_bb = NULL;
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
 
     // create linked list for quads
     BASICBLOCK* bb = new_bb();
     cur_bb = bb;
+    last_bb = bb;
 
     while(listnode) {
         ast_node_t* node = listnode->list.head;
@@ -64,7 +66,7 @@ void print_quad(QUAD* quad) {
         print_qnode(quad->destination);
         if (quad->src1 || quad->src2) printf(" = ");
     }
-    printf("%s \t", print_opcode(quad->oc));
+    printf("\t%s ", print_opcode(quad->oc));
     if (quad->src1) {
         print_qnode(quad->src1);
         if (quad->src2) printf(", ");
@@ -127,6 +129,10 @@ void print_qnode(QNODE* qnode) {
             else printf("VAR_UNKNOWN");
             break;
 
+        case BB_Q:
+            printf(qnode->bb->name);
+            break;
+
         default: printf("UNKNOWN_QNODE");
     }
 }
@@ -139,7 +145,16 @@ QUAD* create_statement(ast_node_t* node) {
 
     // assign what the quad node should be here
     switch(node->type) {
-
+        
+        case LIST_N: {
+            fprintf(stderr, "LIST detected!\n");
+            ast_node_t* current = node;
+            while (current) {
+                create_statement(current->list.head);
+                current = current->list.next;
+            }
+            return NULL;
+        }
         case BINOP_N: //binop within genop
             fprintf(stderr, "BINARY OP detected!\n");
             // this should be handled in gen assignment
@@ -222,7 +237,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
             SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
 
-            fprintf(stderr, "cur scope is %s for sym %s\n", get_scope_name(st->scope), node->ident.name); 
+            /*fprintf(stderr, "cur scope is %s for sym %s\n", get_scope_name(st->scope), node->ident.name); */
 
             if(sym) {
                 qnode->sym = sym;
@@ -296,7 +311,7 @@ QNODE* create_assignment(ast_node_t* node) {
 
         if(destmode == DIRECT_MODE) {
             QNODE* tmp = create_rvalue(node->genop.right, dst);
-            // will get emitted in create rvalue
+            emit(MOV_OC, tmp, NULL, dst);
         }
         else {
             QNODE* t1 = create_rvalue(node->genop.right, NULL);
@@ -309,13 +324,20 @@ QNODE* create_assignment(ast_node_t* node) {
 
 
 void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf) {
+    
+    if (expr->type == COMPOP_N) {
+        QNODE* left = create_rvalue(expr->genop.left, NULL);
+        QNODE* right = create_rvalue(expr->genop.right, NULL);
 
-    /*switch(expr->type) {*/
-        /*case IF_N: */
-        /*case WHILE_N:*/
-        /*case DOWHILE_N:*/
-        
-    /*}*/
+        emit(CMP_OC, left, right, NULL);
+
+        OPCODE branch_oc = get_branch_opcode(expr->genop.op);
+        emit(branch_oc, new_bb_qnode(Bt), new_bb_qnode(Bf), NULL); // Conditional branch with two targets
+    } 
+    else {
+        fprintf(stderr, "Unsupported condition type: %s\n", get_node_type(expr->type));
+        // Handle complex conditions (e.g., &&, ||) later if needed
+    }
 }
 
 
@@ -323,10 +345,7 @@ void create_if(ast_node_t* node) {
 
     BASICBLOCK* Bt = new_bb();
     BASICBLOCK* Bf = new_bb();
-    BASICBLOCK* Bn;
-
-    if(node->if_node.else_statement) Bn = new_bb();
-    else Bn = Bf;
+    BASICBLOCK* Bn = node->if_node.else_statement ? new_bb() : Bf;
 
     create_condexpr(node->if_node.condition, Bt, Bf);
     cur_bb = Bt;
@@ -344,7 +363,12 @@ void create_if(ast_node_t* node) {
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf) {
 
-
+    if (mode == ALWAYS_MODE) {
+        emit(BR_OC, NULL, new_bb_qnode(Bt), NULL); // Unconditional jump to Bt (Bn in context)
+    } 
+    else {
+        fprintf(stderr, "Unsupported link mode: %d\n", mode);
+    }
 }
 
 
@@ -359,9 +383,27 @@ QNODE* new_temporary() {
     node->scope = -1;
     node->sym = NULL;
     node->ast_node = NULL;
+    node->bb = NULL;
     
     return node;
 }
+
+
+QNODE* new_bb_qnode(BASICBLOCK* bb) {
+
+    QNODE* node = (QNODE*) malloc(sizeof(QNODE));
+
+    node->type = BB_Q;
+    node->bb = bb;
+
+    node->tmp_id = -1;
+    node->sym = NULL;
+    node->ast_node = NULL;
+    node->scope = -1;
+
+    return node;
+}
+
 
 QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination) {
 
@@ -389,13 +431,23 @@ BASICBLOCK* new_bb() {
     }
 
     char name[64];
-    sprintf(name, ".BB.%d.%d", funct_count, bb_count++);
+    sprintf(name, ".BB.%d.%d", funct_count, bb_count);
 
     list_t* linklist = (list_t*) malloc(sizeof(list_t));
     list_init(linklist); 
 
     bb->name = strdup(name);
     bb->quad_list = linklist;
+    bb->bb_num = bb_count++;
+    bb->funct_num = funct_count;
+
+    bb->next = NULL; // Initialize next to NULL
+
+    // if previous BB link it
+    if (last_bb) {
+        last_bb->next = bb;
+    }
+    last_bb = bb;
 
     return bb;
 }

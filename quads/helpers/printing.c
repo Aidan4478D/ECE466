@@ -83,6 +83,21 @@ int get_binop_opcode(ast_node_t* node) {
 	return -1;
 }
 
+int get_branch_opcode(int op) {
+    switch (op) {
+        case '<':   return BRLT_OC;
+        case '>':   return BRGT_OC;
+        case LTEQ:  return BRLE_OC;
+        case GTEQ:  return BRGE_OC;
+        case EQEQ:  return BREQ_OC;
+        case NOTEQ: return BRNE_OC;
+
+        default: // set to branch opcode on default
+            fprintf(stderr, "Unknown comparison operator: %d\n", op);
+            return BR_OC;
+    }
+}
+
 char* print_opcode(int op) {
     switch(op) {
         case LOAD_OC:      return "LOAD";

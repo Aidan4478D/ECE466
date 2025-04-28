@@ -18,5 +18,6 @@ void print_type(ast_node_t *node);
 
 char* print_opcode(int op);
 int get_binop_opcode(ast_node_t* node);
+int get_branch_opcode(int op);
 
 #endif //_HELPERS_H

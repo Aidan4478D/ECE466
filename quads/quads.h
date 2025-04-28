@@ -49,10 +49,13 @@ typedef enum modes {
 
 // not sure the other types but I'm sure this will expand
 typedef enum quad_types {
-    TEMP_Q,
-    VAR_Q,
-    IMM_Q,
+    TEMP_Q, // temporaty
+    VAR_Q,  // variable
+    IMM_Q,  // immediate
+    BB_Q    // basic block
 } QTYPE;
+
+struct basic_block;
 
 typedef struct quad_node {
     QTYPE type;
@@ -61,6 +64,9 @@ typedef struct quad_node {
     SCOPETYPE scope;
     SYMBOL* sym;
     ast_node_t* ast_node;
+    
+    struct basic_block* bb; // for block nodes
+    
 } QNODE; 
 
 
@@ -75,7 +81,7 @@ typedef struct basic_block {
     list_t* quad_list; //list of quads 
     int bb_num;
     int funct_num;
-    struct basic_block *next;
+    struct basic_block* next;
 } BASICBLOCK;
 
 // input = compound statement list
@@ -86,6 +92,7 @@ QNODE* create_assignment(ast_node_t* node);
 QNODE* create_rvalue(ast_node_t* node, QNODE* target); 
 
 QNODE* new_temporary();
+QNODE* new_bb_qnode();
 
 //  goal of gen_condexpr is to evaluate the expression and branch to either the true target or the false target
 void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf); 
