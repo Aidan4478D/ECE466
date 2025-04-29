@@ -139,7 +139,7 @@ typedef struct ast_node_number {
 
 
 typedef struct ast_node_unop {
-    int op; 
+    int op;
     ast_node_t* node;
 } ast_node_unop_t; 
 

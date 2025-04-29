@@ -88,15 +88,19 @@ typedef struct basic_block {
 BASICBLOCK* create_quads(ast_node_t* list);
 BASICBLOCK* new_bb();
 
-QNODE* create_assignment(ast_node_t* node);
 QNODE* create_rvalue(ast_node_t* node, QNODE* target); 
+QNODE* get_address(ast_node_t* node);
 
 QNODE* new_temporary();
 QNODE* new_bb_qnode();
+QNODE* new_immediate();
+QNODE* new_variable();
 
 //  goal of gen_condexpr is to evaluate the expression and branch to either the true target or the false target
 void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf); 
+void create_assignment(ast_node_t* node);
 void create_if(ast_node_t* node);
+
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 
 // create a new quad with 4 args and append it to list of quads
@@ -108,5 +112,6 @@ void print_bb(BASICBLOCK* bb);
 void print_quad(QUAD* quad);
 void print_qnode(QNODE* node);
 
+int get_element_size(ast_node_t* node);
 
 #endif
