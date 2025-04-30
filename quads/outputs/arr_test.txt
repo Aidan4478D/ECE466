@@ -99,7 +99,7 @@ LIST ELEMENT #5:
 	ASSIGNMENT OP (=)
 		IDENT: b
 		BINARY OP (+)
-			IDENT: b
+			IDENT: x
 			NUM (numtype=int)	5	SIGNED
 
 
@@ -108,15 +108,14 @@ QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
 	T0 = 	LEA a{global}
-	T1 = 	MUL 3{S},4{S}
+	T1 = 	MUL $3,$4
 	T2 = 	ADD T0,T1
 	x{lvar} = 	LOAD  [T2]
-	x{lvar} = 	MOV x{lvar}
 	T3 = 	LEA a{global}
-	T4 = 	MUL 5{S},4{S}
+	T4 = 	MUL $5,$4
 	T5 = 	ADD T3,T4
 	T6 = 	LOAD  [T5]
 	p{lvar} = 	LEA T6
-	p{lvar} = 	MOV p{lvar}
-	T7 = 	ADD b{lvar},5{S}
+	T7 = 	ADD x{lvar},$5
 	b{lvar} = 	MOV T7
+	RETURN

@@ -19,12 +19,16 @@ BASICBLOCK* create_quads(ast_node_t* listnode) {
     cur_bb = bb;
     last_bb = bb;
 
+    int ret_found = 0;
+
     while(listnode) {
         ast_node_t* node = listnode->list.head;
+        if(node->type == RETURN_N) ret_found = 1;
         if(node) create_statement(node);
         listnode = listnode->list.next;
     }
     print_all(bb);
+    if(!ret_found) printf("\tRETURN\n"); 
     funct_count++; 
         
     return bb;
@@ -77,11 +81,9 @@ void print_quad(QUAD* quad) {
     else {
         if (quad->src1) {
             print_qnode(quad->src1);
-            if (quad->src2) printf(",");
+            if (quad->src2) printf(", ");
         }
-        if (quad->src2) {
-            print_qnode(quad->src2);
-        }
+        if (quad->src2) print_qnode(quad->src2);
     }
     printf("\n");
 }
@@ -102,31 +104,30 @@ void print_qnode(QNODE* qnode) {
                 ast_node_t* node = qnode->ast_node;
                 switch (node->number.num_meta.type) {
                     case INT_T:     
-                        if(node->number.num_meta.sign == SIGNED_T) printf("%lld{S}", node->number.num_meta._int);
-                        if(node->number.num_meta.sign == UNSIGNED_T) printf("%llu{U}", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == SIGNED_T) printf("$%lld", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == UNSIGNED_T) printf("$%llu", node->number.num_meta._int);
                         break;
                     case LONG_T:
-                        if(node->number.num_meta.sign == SIGNED_T) printf("%lld{S}", node->number.num_meta._int);
-                        if(node->number.num_meta.sign == UNSIGNED_T) printf("%llu{U}", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == SIGNED_T) printf("$%lld", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == UNSIGNED_T) printf("$%llu", node->number.num_meta._int);
                         break;
                     case LONGLONG_T:
-                        if(node->number.num_meta.sign == SIGNED_T) printf("%lld{S}", node->number.num_meta._int);
-                        if(node->number.num_meta.sign == UNSIGNED_T) printf("%llu{U}", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == SIGNED_T) printf("$%lld", node->number.num_meta._int);
+                        if(node->number.num_meta.sign == UNSIGNED_T) printf("$%llu", node->number.num_meta._int);
                         break;
                     case FLOAT_T:
-                        if(node->number.num_meta.sign == SIGNED_T) printf("%f\n", node->number.num_meta._float);
+                        if(node->number.num_meta.sign == SIGNED_T) printf("$%f\n", node->number.num_meta._float);
                         break;
                     case DOUBLE_T:
-                        if(node->number.num_meta.sign == SIGNED_T) printf("%Lf\n", node->number.num_meta._double);
+                        if(node->number.num_meta.sign == SIGNED_T) printf("$%Lf\n", node->number.num_meta._double);
                         break;
                     case LONGDOUBLE_T:
-                        if(node->number.num_meta.sign == SIGNED_T) printf("%Lf\n", node->number.num_meta._double);
+                        if(node->number.num_meta.sign == SIGNED_T) printf("$%Lf\n", node->number.num_meta._double);
                         break;
                     default:
                         printf("UNKNOWN NUM TYPE %d\n", node->number.num_meta.type);
                         break;
                 }
-
             }
             break;
         }
@@ -420,7 +421,7 @@ void create_assignment(ast_node_t* node) {
 
         if(destmode == DIRECT_MODE) {
             QNODE* tmp = create_rvalue(node->genop.right, dst);
-            emit(MOV_OC, tmp, NULL, dst);
+            if(tmp != dst) emit(MOV_OC, tmp, NULL, dst);
         }
         else if (node->genop.left->type == UNOP_N || node->genop.left->unop.op == '*') {
             QNODE* t1 = create_rvalue(node->genop.left->unop.node, NULL);
