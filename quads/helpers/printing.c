@@ -126,7 +126,8 @@ char* print_opcode(int op) {
         case LOGNOT_OC:    return "LOGNOT";
         case SL_OC:        return "SL";
         case SR_OC:        return "SR";
-        case FNCALL_OC:    return "FNCALL";
+        case CALL_OC:      return "CALL";
+        case ARG_OC:       return "ARG";
         case RETURN_OC:    return "RETURN";
 		default: fprintf(stderr, "opcode %d not found\n", op);
     }
@@ -327,21 +328,21 @@ void print_full_type(ast_node_t* node, int indent) {
         case FUNCT_N:
             for (int i = 0; i < indent; i++) printf("\t");
             printf("FUNCTION '%s'\n", node->function.name);
-            if (node->function.left) {
+            if (node->function.return_type) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
                 printf("RETURN TYPE: ");
-                if (node->function.left->type == POINTER_N && node->function.left->pointer.next && node->function.left->pointer.next->type == FUNCT_N) {
+                if (node->function.return_type->type == POINTER_N && node->function.return_type->pointer.next && node->function.return_type->pointer.next->type == FUNCT_N) {
                     printf("POINTER to\n");
-                    print_full_type(node->function.left->pointer.next, indent + 2);
+                    print_full_type(node->function.return_type->pointer.next, indent + 2);
                 } else {
-                    print_type(node->function.left);
+                    print_type(node->function.return_type);
                     printf("\n");
                 }
             }
-            if (node->function.right) {
+            if (node->function.params) {
                 for (int i = 0; i < indent + 1; i++) printf("\t");
                 printf("PARAMETERS:\n");
-                ast_node_t* param_list = node->function.right;
+                ast_node_t* param_list = node->function.params;
                 int param_count = 1;
                 while (param_list) {
                     for (int i = 0; i < indent + 2; i++) printf("\t");

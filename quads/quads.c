@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "quads.h"
 #include "helpers/printing.h"
@@ -27,8 +28,8 @@ BASICBLOCK* create_quads(ast_node_t* listnode) {
         if(node) create_statement(node);
         listnode = listnode->list.next;
     }
+    if(!ret_found) emit(RETURN_OC, NULL, NULL, NULL);
     print_all(bb);
-    if(!ret_found) printf("\tRETURN\n"); 
     funct_count++; 
         
     return bb;
@@ -97,7 +98,7 @@ void print_qnode(QNODE* qnode) {
     }
     switch(qnode->type) {
         case TEMP_Q:
-            printf("T%d", qnode->tmp_id);
+            printf("%T%d", qnode->tmp_id);
             break;
         case IMM_Q: {
             if(qnode->ast_node->type == NUMBER_N) {
@@ -131,16 +132,24 @@ void print_qnode(QNODE* qnode) {
             }
             break;
         }
-        case VAR_Q:
+        case VAR_Q: 
             if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
-                /*fprintf(stderr, "qnode %s: %s\n", qnode->ast_node->ident.name, get_scope_name(qnode->scope)); */
-                printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
+                if (qnode->sym && qnode->sym->type == FUNCT_SYM) {
+                    printf("$%s", qnode->ast_node->ident.name); // Prefix functions with $
+                } 
+                else {
+                    printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
+                }
             } 
             else printf("VAR_UNKNOWN");
             break;
 
         case BB_Q:
             printf("%s", qnode->bb->name);
+            break;
+
+        case DESC_Q:
+            printf("%s", qnode->descriptor);
             break;
 
         default: printf("UNKNOWN_QNODE");
@@ -183,7 +192,8 @@ QUAD* create_statement(ast_node_t* node) {
             fprintf(stderr, "FUNCT detected!\n"); 
             break;
         case FUNCTCALL_N:
-            fprintf(stderr, "FUNCT CALL detected!\n"); 
+            fprintf(stderr, "FUNCT CALL detected!\n");
+            create_rvalue(node, NULL);
             break;
         case IF_N:
             fprintf(stderr, "IF detected!\n");
@@ -291,12 +301,38 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             }
             break;
 
-        case POINTER_N:
+        case POINTER_N: {
             fprintf(stderr, "POINTER DETECTED!\n");
             QNODE* addr = create_rvalue(node->pointer.next, NULL);
             if(!target) target = new_temporary();
             emit(LOAD_OC, addr, NULL, target);
             return target;
+        }
+
+        case FUNCTCALL_N: {
+            if (!target) target = new_temporary();
+
+            SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
+            SYMBOL* sym = st_lookup(st, node->funct_call.name->ident.name, GENERAL_NS);
+            if (!sym || sym->type != FUNCT_SYM) {
+                fprintf(stderr, "Undefined function %s\n", node->funct_call.name->ident.name);
+                exit(1);
+            }
+            QNODE* func_qnode = new_variable(node->funct_call.name, sym);
+
+            // emit arg quads and count arguments
+            int num_args = 0;
+            if (node->funct_call.params) num_args = emit_args(node->funct_call.params, 0);
+
+            // put num_args into string so can use it as descriptor
+            char descriptor[20];
+            sprintf(descriptor, "%d", num_args);
+
+            QNODE* args_qnode = new_descriptor(descriptor);
+            emit(CALL_OC, func_qnode, args_qnode, target);
+
+            return target;
+        }
 
         default:
             fprintf(stderr, "invalid r-value type: %s\n", get_node_type(node->type));
@@ -347,26 +383,25 @@ QNODE* get_address(ast_node_t* node) {
             }
             break;
 
-        case BINOP_N:
-            {
-                ast_node_t* base_node = node->genop.left;
-                ast_node_t* index_node = node->genop.right;
+        case BINOP_N: {
+            ast_node_t* base_node = node->genop.left;
+            ast_node_t* index_node = node->genop.right;
 
-                QNODE* base_qnode = get_address(base_node);
-                QNODE* index_qnode = create_rvalue(index_node, NULL);
+            QNODE* base_qnode = get_address(base_node);
+            QNODE* index_qnode = create_rvalue(index_node, NULL);
 
-                int element_size = get_element_size(base_node);
-                QNODE* size_qnode = new_immediate(element_size);
+            int element_size = get_element_size(base_node);
+            QNODE* size_qnode = new_immediate(element_size);
 
-                QNODE* offset_qnode = new_temporary();
-                emit(MUL_OC, index_qnode, size_qnode, offset_qnode);
+            QNODE* offset_qnode = new_temporary();
+            emit(MUL_OC, index_qnode, size_qnode, offset_qnode);
 
-                address_qnode = new_temporary();
-                emit(ADD_OC, base_qnode, offset_qnode, address_qnode);
+            address_qnode = new_temporary();
+            emit(ADD_OC, base_qnode, offset_qnode, address_qnode);
 
-                return address_qnode;
-            }
-            break;
+            return address_qnode;
+        }
+        break;
 
         default:
             fprintf(stderr, "Unsupported node type (%s) in get_address\n", get_node_type(node->type));
@@ -433,6 +468,18 @@ void create_assignment(ast_node_t* node) {
 }
 
 
+/*typedef struct ast_node_function {*/
+    /*char* name;*/
+    /*ast_node_t* return_type;  //function types: return type*/
+    /*ast_node_t* params; //function types: params*/
+/*} ast_node_function_t;*/
+
+/*typedef struct ast_node_function_call {*/
+    /*ast_node_t* name;*/
+    /*ast_node_t* params;*/
+/*} ast_node_function_call_t;*/
+
+
 void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf) {
     
     if (expr->type == COMPOP_N) {
@@ -458,19 +505,19 @@ void create_if(ast_node_t* node) {
     cur_bb = Bt;
 
     create_statement(node->if_node.then_statement);
-    link_bb(cur_bb, ALWAYS_MODE, Bn, NULL);
+    link_bb(cur_bb, ALWAYS, Bn, NULL);
 
     if(node->if_node.else_statement) {
         cur_bb = Bf;
         create_statement(node->if_node.else_statement);
-        link_bb(cur_bb, ALWAYS_MODE, Bn, NULL);
+        link_bb(cur_bb, ALWAYS, Bn, NULL);
     }
     cur_bb = Bn;
 }
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf) {
 
-    if (mode == ALWAYS_MODE) {
+    if (mode == ALWAYS) {
         emit(BR_OC, NULL, new_bb_qnode(Bt), NULL); // Unconditional jump to Bt (Bn in context)
     } 
     else {
@@ -572,6 +619,16 @@ QNODE* new_variable(ast_node_t* node, SYMBOL* sym) {
     return qnode;
 }
 
+QNODE* new_descriptor(char* name) {
+
+    QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
+
+    qnode->type = DESC_Q;
+    qnode->descriptor = strdup(name);
+
+    return qnode;
+}
+
 QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination) {
 
     QUAD* quad = (QUAD*) malloc(sizeof(QUAD));
@@ -587,3 +644,20 @@ QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination) {
 }
 
 
+int emit_args(ast_node_t* param_list, int pos) {
+    // recursive arg print
+    if (param_list == NULL) return 0;
+    int count = emit_args(param_list->list.next, pos + 1);
+
+    ast_node_t* param_node = param_list->list.head;
+
+    QNODE* value = create_rvalue(param_node, NULL);
+
+    char descriptor[20];
+    sprintf(descriptor, "%d", pos);
+    QNODE* position = new_descriptor(descriptor);
+
+    emit(ARG_OC, position, value, NULL);
+
+    return count + 1;
+}

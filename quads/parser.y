@@ -220,10 +220,10 @@ function_definition : decl_specifiers declarator    {
 
 
                                                             // prototype scope
-                                                            if (sym->type == FUNCT_SYM && sym->node->type == FUNCT_N && sym->node->function.right) {
+                                                            if (sym->type == FUNCT_SYM && sym->node->type == FUNCT_N && sym->node->function.params) {
                                                                 SYMTABLE* proto_scope = st_create(PROTO_SCOPE, funct_scope);
                                                                 stack_push(scope_stack, proto_scope);
-                                                                ast_node_t* param_list = sym->node->function.right;
+                                                                ast_node_t* param_list = sym->node->function.params;
 
                                                                 // add parameters to proto scope
                                                                 int cnt = 1;
@@ -563,7 +563,7 @@ function_declarator : direct_declarator '(' ')'                     {
 
                                                                         if(sym->type == VAR_SYM) sym->type = FUNCT_SYM;
                                                                         
-                                                                        temp->function.left = sym->node;
+                                                                        temp->function.return_type = sym->node;
                                                                         sym->node = temp;
                                                                         
                                                                         //print_ast_tree(sym->node, 0); 
@@ -586,8 +586,8 @@ function_declarator : direct_declarator '(' ')'                     {
 
                                                                         if (sym->type == VAR_SYM) sym->type = FUNCT_SYM;
 
-                                                                        temp->function.left = sym->node;
-                                                                        temp->function.right = $3;
+                                                                        temp->function.return_type = sym->node;
+                                                                        temp->function.params = $3;
                                                                         sym->node = temp;
 
                                                                         //print_ast_tree(sym->node, 0); 

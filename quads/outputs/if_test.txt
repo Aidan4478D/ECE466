@@ -91,8 +91,8 @@ QUAD generation for function f
 .BB0.0 
 	a{global} = 	MOV $3
 	b{lvar} = 	MOV $2
-	CMP a{global},b{lvar}
-	BRLT .BB.0.1,.BB.0.2
+	CMP a{global}, b{lvar}
+	BRLT .BB.0.1, .BB.0.2
 .BB0.1 
 	a{global} = 	MOV $5
 	BR .BB.0.3

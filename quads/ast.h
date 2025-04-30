@@ -163,8 +163,8 @@ typedef struct ast_node_genop {
 
 typedef struct ast_node_function {
     char* name;
-    ast_node_t* left;  //function types: return type
-    ast_node_t* right; //function types: params
+    ast_node_t* return_type;  //function types: return type
+    ast_node_t* params; //function types: params
 } ast_node_function_t;
 
 typedef struct ast_node_function_call {

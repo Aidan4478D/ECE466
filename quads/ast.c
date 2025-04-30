@@ -68,13 +68,13 @@ ast_node_t* new_ternop(ast_node_t* left, ast_node_t* center, ast_node_t* right) 
 }
 
 
-ast_node_t* new_function(char* name, ast_node_t* left, ast_node_t* right) {
+ast_node_t* new_function(char* name, ast_node_t* return_type, ast_node_t* params) {
     ast_node_t* new_node = (ast_node_t*) malloc(sizeof(ast_node_t)); 
 
     new_node->type = FUNCT_N;
     new_node->function.name = name;
-    new_node->function.left = left;
-    new_node->function.right = right;
+    new_node->function.return_type = return_type;
+    new_node->function.params = params;
 
     return new_node;
 }
@@ -353,8 +353,8 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
                 ast_node_t* ptr_node = new_pointer(decl);
                 return ptr_node;
             } 
-            else if (!decl->function.left || decl->function.left->type == IDENT_N) decl->function.left = base;
-            else decl->function.left = combine_nodes(base, decl->function.left);
+            else if (!decl->function.return_type || decl->function.return_type->type == IDENT_N) decl->function.return_type = base;
+            else decl->function.return_type = combine_nodes(base, decl->function.return_type);
 
             return decl;
 
@@ -372,36 +372,28 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
     }
 }
 
+
 int compare_types(ast_node_t* type1, ast_node_t* type2) {
-    if (type1 == NULL && type2 == NULL) return 1;  // Both null, types are equal
-    if (type1 == NULL || type2 == NULL) return 0;  // One null, types differ
-    if (type1->type != type2->type) return 0;      // Different node types, not equal
+    if (type1 == NULL && type2 == NULL) return 1;
+    if (type1 == NULL || type2 == NULL) return 0;
+    if (type1->type != type2->type) return 0;
 
     switch (type1->type) {
         case LIST_N:
-            // Recursively compare list heads and tails
-            return compare_types(type1->list.head, type2->list.head) &&
-                   compare_types(type1->list.next, type2->list.next);
+            return compare_types(type1->list.head, type2->list.head) && compare_types(type1->list.next, type2->list.next);
         case DECLSPEC_N:
-            // Compare the declaration type (e.g., INT_DT, UNSIGNED_DT)
             return type1->decl_spec.decl_type == type2->decl_spec.decl_type;
         case POINTER_N:
-            // Compare the types pointed to
             return compare_types(type1->pointer.next, type2->pointer.next);
         case ARRAY_N:
-            // Compare array sizes and element types
             if (type1->array.size != type2->array.size) return 0;
             return compare_types(type1->array.element_type, type2->array.element_type);
         case FUNCT_N:
-            // Compare return type and parameter list
-            return compare_types(type1->function.left, type2->function.left) &&
-                   compare_types(type1->function.right, type2->function.right);
+            return compare_types(type1->function.return_type, type2->function.return_type) && compare_types(type1->function.params, type2->function.params);
         case STRUCT_N:
         case UNION_N:
-            // Compare struct/union symbols (same symbol means same type)
             return type1->struct_union.sym == type2->struct_union.sym;
         case PARAM_N:
-            // Compare parameter types (ignore identifiers)
             return compare_types(type1->parameter.type, type2->parameter.type);
         default:
             return 0;

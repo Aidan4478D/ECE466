@@ -5,6 +5,8 @@
 #include "helpers/linklist.h"
 #include "symtable.h"
 
+#define ALWAYS 3
+
 typedef enum opcode {
     LOAD_OC,
     STORE_OC,
@@ -37,14 +39,14 @@ typedef enum opcode {
     SL_OC,
     SR_OC,
 
-    FNCALL_OC,
+    CALL_OC,
+    ARG_OC,
     RETURN_OC
 } OPCODE;
 
 typedef enum modes {
     DIRECT_MODE,
     INDIRECT_MODE,
-    ALWAYS_MODE,
 } MODE;
 
 // not sure the other types but I'm sure this will expand
@@ -52,7 +54,8 @@ typedef enum quad_types {
     TEMP_Q, // temporaty
     VAR_Q,  // variable
     IMM_Q,  // immediate
-    BB_Q    // basic block
+    BB_Q,   // basic block
+    DESC_Q  // descriptor (for arg numbers)
 } QTYPE;
 
 struct basic_block;
@@ -67,6 +70,7 @@ typedef struct quad_node {
     
     struct basic_block* bb; // for block nodes
     
+    char* descriptor;
 } QNODE; 
 
 
@@ -95,16 +99,19 @@ QNODE* new_temporary();
 QNODE* new_bb_qnode();
 QNODE* new_immediate();
 QNODE* new_variable();
+QNODE* new_descriptor();
 
 //  goal of gen_condexpr is to evaluate the expression and branch to either the true target or the false target
 void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 void create_assignment(ast_node_t* node);
 void create_if(ast_node_t* node);
+QNODE* create_fncall(ast_node_t* node);
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 
 // create a new quad with 4 args and append it to list of quads
 QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination); 
+int emit_args(ast_node_t* param_list, int pos);
 QUAD* create_statement(ast_node_t* node);
 
 void print_all(BASICBLOCK* bb);
