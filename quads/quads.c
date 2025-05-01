@@ -98,7 +98,7 @@ void print_qnode(QNODE* qnode) {
     }
     switch(qnode->type) {
         case TEMP_Q:
-            printf("%T%d", qnode->tmp_id);
+            printf("%%T%d", qnode->tmp_id);
             break;
         case IMM_Q: {
             if(qnode->ast_node->type == NUMBER_N) {
@@ -344,15 +344,29 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
 
 int get_element_size(ast_node_t* node) {
     // Look up node->ident.name in symbol table to get type
-    SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
-    SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
-    if (!sym) {
-        fprintf(stderr, "Undefined variable %s in get_address\n", node->ident.name);
-        exit(-1);
-    }
+    if(node->type == IDENT_N) {
+        SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
+        SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
+        if (!sym) {
+            fprintf(stderr, "Undefined variable %s in get_address\n", node->ident.name);
+            exit(-1);
+        }
 
-    fprintf(stderr, "Assuming element size is 4 for array/pointer access\n");
-    return 4; // Size of int
+        ast_node_t* type_node = sym->node;
+        if(type_node->type == POINTER_N || type_node->type == ARRAY_N) get_pointed_to_type(type_node);
+
+        if (!type_node) {
+            fprintf(stderr, "type for variable %s does not exist!\n", node->ident.name);
+            exit(1);
+        }
+        
+        return get_type_size(type_node);
+    }
+    else {
+        return 0;
+        fprintf(stderr, "Element size node is not an ident node! It is: %s\n", get_node_type(node->type));
+
+    }
 }
 
 
@@ -418,30 +432,33 @@ QNODE* create_lvalue(ast_node_t* node, int* mode) {
     switch(node->type) {
         case IDENT_N:
             *mode = DIRECT_MODE;
-
-            QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
-            qnode->type = VAR_Q;
-            qnode->ast_node = node;
             
             SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
             SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
 
-            if (sym) {
-                qnode->sym = sym;
-                qnode->scope = sym->scope->scope;  // Set to the symbol's scope
-            } 
-            else fprintf(stderr, "Undefined variable %s\n", node->ident.name);
+            if (!sym) {
+                fprintf(stderr, "Undefined variable %s\n", node->ident.name);
+                exit(-1);
+            }
 
-            return qnode;
+            return new_variable(node, sym);
+
         case NUMBER_N: return NULL;
         case UNOP_N:
             // pointer dereference
-            fprintf(stderr, "pointer deref detected!\n");
             if(node->unop.op == '*') {
+                fprintf(stderr, "pointer deref detected in L-val!\n");
+                QNODE* base = create_rvalue(node->unop.node, NULL);
+                while (node->unop.node->type == UNOP_N && node->unop.node->unop.op == '*') {
+                    QNODE* addr = new_temporary();
+                    emit(LOAD_OC, base, NULL, addr);
+                    *mode = INDIRECT_MODE;
+                    return addr;
+                }
                 *mode = INDIRECT_MODE;
-                return create_rvalue(node->unop.node, NULL); 
+                return base;
             }
-        default:
+            break;        default:
             fprintf(stderr, "invalid r-value type: %s\n", get_node_type(node->type));
             return NULL;
     }
@@ -451,16 +468,19 @@ QNODE* create_lvalue(ast_node_t* node, int* mode) {
 void create_assignment(ast_node_t* node) {
 
     if(node->type == ASSIGNOP_N) {
-        int destmode;
+        int destmode = -1;
         QNODE* dst = create_lvalue(node->genop.left, &destmode);
-
-        if(destmode == DIRECT_MODE) {
-            QNODE* tmp = create_rvalue(node->genop.right, dst);
-            if(tmp != dst) emit(MOV_OC, tmp, NULL, dst);
+        if(!dst) {
+            fprintf(stderr, "error creating l-val for assignment\n");
+            return;
         }
-        else if (node->genop.left->type == UNOP_N || node->genop.left->unop.op == '*') {
-            QNODE* t1 = create_rvalue(node->genop.left->unop.node, NULL);
-            emit(STORE_OC, t1, dst, NULL); 
+        
+        QNODE* src = create_rvalue(node->genop.right, NULL);
+        if(destmode == DIRECT_MODE) {
+            emit(MOV_OC, src, NULL, dst);
+        }
+        else if (destmode == INDIRECT_MODE) {
+            emit(STORE_OC, src, dst, NULL); 
         }
         else fprintf(stderr, "unsporrted LHS type in assignment: %s\na", get_node_type(node->genop.left->type));
     }

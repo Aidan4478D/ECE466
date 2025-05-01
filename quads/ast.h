@@ -333,5 +333,7 @@ ast_node_t* new_decl(ast_node_t* specifiers, SYMBOL* declarators);
 // assignment 5
 int compare_types(ast_node_t* type1, ast_node_t* type2);
 void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec);
+ast_node_t* get_pointed_to_type(ast_node_t* node);
+int get_type_size(ast_node_t* type_node);
 #endif 
 

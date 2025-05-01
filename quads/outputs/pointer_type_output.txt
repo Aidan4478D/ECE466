@@ -1,0 +1,98 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to CHAR
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:5
+symbol: k, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to POINTER to POINTER to POINTER to INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: k
+			TYPE: POINTER to POINTER to POINTER to POINTER to INT
+
+
+LIST ELEMENT #2:
+	ASSIGNMENT OP (=)
+		UNARY OP (*)
+			UNARY OP (*)
+				UNARY OP (*)
+					UNARY OP (*)
+						IDENT: k
+		NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: k
+		BINARY OP (+)
+			IDENT: k
+			NUM (numtype=int)	4	SIGNED
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
+		IDENT: a
+		BINARY OP (+)
+			IDENT: a
+			NUM (numtype=int)	5	SIGNED
+
+LIST ELEMENT #5:
+	RETURN
+		BINARY OP (+)
+			IDENT: k
+			NUM (numtype=int)	6	SIGNED
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	%T0 = 	LOAD  [k{lvar}]
+	%T1 = 	LOAD  [%T0]
+	%T2 = 	LOAD  [%T1]
+	%T3 = 	LOAD  [%T2]
+	STORE $1, %T3
+	%T4 = 	LEA k{lvar}
+	%T5 = 	MUL $4, $8
+	%T6 = 	ADD %T4, %T5
+	k{lvar} = 	MOV %T6
+	%T7 = 	ADD a{global}, $5
+	a{global} = 	MOV %T7
+	%T8 = 	ADD k{lvar}, $6
+	RETURN %T8
