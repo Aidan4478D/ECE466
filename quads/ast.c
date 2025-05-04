@@ -427,7 +427,10 @@ void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec) {
     }
 
     // just keep this as a list of AST nodes for now, it's kinda sketch when printed but it works
-    if(type_specs) sym->node = combine_nodes(type_specs, sym->node);
+    if (type_specs) {
+        ast_node_t* base_type = type_specs->list.head;
+        sym->node = combine_nodes(base_type, sym->node);
+    }
 
     SYMBOL* found_sym = st_lookup_single(cur_scope, sym->key, sym->name_space);
     int stg_class_match = 0, type_names_match = 0;
@@ -482,8 +485,7 @@ int get_type_size(ast_node_t* type_node) {
                 case DOUBLE_DT:  return 8;
                 case VOID_DT:    return 0;
                 default:
-                    fprintf(stderr, "Error: Unknown decl_type %d in get_type_size\n",
-                            type_node->decl_spec.decl_type);
+                    fprintf(stderr, "Error: Unknown decl_type %d in get_type_size\n", type_node->decl_spec.decl_type);
                     exit(1);
             }
         case ARRAY_N:
@@ -492,11 +494,8 @@ int get_type_size(ast_node_t* type_node) {
                 exit(1);
             }
             return type_node->array.size * get_type_size(type_node->array.element_type);
-        case POINTER_N:
-            return 8;
         default:
-            fprintf(stderr, "Error: Unsupported type %s in get_type_size\n",
-                    get_node_type(type_node->type));
+            fprintf(stderr, "Error: Unsupported type %s in get_type_size\n", get_node_type(type_node->type));
             exit(1);
     }
 }

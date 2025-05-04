@@ -272,15 +272,33 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
         }
         case BINOP_N: {
             // check if it's pointer arithmetic
-            if(is_pointer_arith) {
-                is_pointer_arith = 0;
-                return get_address(node);
-            }
+            QNODE* left = create_rvalue(node->genop.left, NULL);
+            QNODE* right = create_rvalue(node->genop.right, NULL);
+            
+            // assumes pointer is the left operand
+            if (node->genop.op == '+' && left->sym && (left->sym->node->type == POINTER_N || left->sym->node->type == ARRAY_N)) {
+                ast_node_t* pointed_to_type = get_pointed_to_type(left->sym->node);
+
+                if (!pointed_to_type) {
+                    fprintf(stderr, "Error: Invalid pointer type for %s\n", left->sym->key);
+                    exit(1);
+                }
+
+                int element_size = get_type_size(pointed_to_type);
+
+                QNODE* size_qnode = new_immediate(element_size);
+                QNODE* offset_qnode = new_temporary();
+                QNODE* result_qnode = new_temporary();
+
+                emit(MUL_OC, right, size_qnode, offset_qnode);
+                emit(ADD_OC, left, offset_qnode, result_qnode);
+
+                return result_qnode;
+            } 
             else {
-                QNODE* left = create_rvalue(node->genop.left, NULL);
-                QNODE* right = create_rvalue(node->genop.right, NULL);
                 QNODE* result_qnode = new_temporary();
                 emit(get_binop_opcode(node), left, right, result_qnode);
+
                 return result_qnode;
             }
         }
@@ -370,62 +388,6 @@ int get_element_size(ast_node_t* node) {
 }
 
 
-QNODE* get_address(ast_node_t* node) {
-    QNODE *address_qnode;
-
-    switch(node->type) {
-        case IDENT_N:
-            address_qnode = new_temporary();
-    
-            // get symbol
-            SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
-            SYMBOL* sym = st_lookup(st, node->ident.name, GENERAL_NS);
-            if (!sym) {
-                fprintf(stderr, "Undefined variable %s in get_address\n", node->ident.name);
-                exit(-1);
-            }
-
-            QNODE* var_qnode = new_variable(node, sym);
-            emit(LEA_OC, var_qnode, NULL, address_qnode);
-
-            return address_qnode;
-
-        case UNOP_N: 
-            if (node->unop.op == '*') {
-                address_qnode = create_rvalue(node->unop.node, NULL);
-                return address_qnode;
-            }
-            break;
-
-        case BINOP_N: {
-            ast_node_t* base_node = node->genop.left;
-            ast_node_t* index_node = node->genop.right;
-
-            QNODE* base_qnode = get_address(base_node);
-            QNODE* index_qnode = create_rvalue(index_node, NULL);
-
-            int element_size = get_element_size(base_node);
-            QNODE* size_qnode = new_immediate(element_size);
-
-            QNODE* offset_qnode = new_temporary();
-            emit(MUL_OC, index_qnode, size_qnode, offset_qnode);
-
-            address_qnode = new_temporary();
-            emit(ADD_OC, base_qnode, offset_qnode, address_qnode);
-
-            return address_qnode;
-        }
-        break;
-
-        default:
-            fprintf(stderr, "Unsupported node type (%s) in get_address\n", get_node_type(node->type));
-            return NULL;
-    }
-    return NULL;
-}
-
-
-
 
 QNODE* create_lvalue(ast_node_t* node, int* mode) {
 
@@ -449,7 +411,7 @@ QNODE* create_lvalue(ast_node_t* node, int* mode) {
             if(node->unop.op == '*') {
                 fprintf(stderr, "pointer deref detected in L-val!\n");
                 QNODE* base = create_rvalue(node->unop.node, NULL);
-                while (node->unop.node->type == UNOP_N && node->unop.node->unop.op == '*') {
+                if(node->unop.node->type == UNOP_N && node->unop.node->unop.op == '*') {
                     QNODE* addr = new_temporary();
                     emit(LOAD_OC, base, NULL, addr);
                     *mode = INDIRECT_MODE;
@@ -458,10 +420,12 @@ QNODE* create_lvalue(ast_node_t* node, int* mode) {
                 *mode = INDIRECT_MODE;
                 return base;
             }
-            break;        default:
+            break;        
+        default:
             fprintf(stderr, "invalid r-value type: %s\n", get_node_type(node->type));
             return NULL;
     }
+    return NULL;
 }
 
 
