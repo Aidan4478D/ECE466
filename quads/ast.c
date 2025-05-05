@@ -471,7 +471,7 @@ ast_node_t* get_pointed_to_type(ast_node_t* node) {
 
 int get_type_size(ast_node_t* type_node) {
     if (!type_node) {
-        fprintf(stderr, "Error: NULL type node in get_type_size\n");
+        fprintf(stderr, "NULL type node in get_type_size\n");
         exit(1);
     }
     switch (type_node->type) {
@@ -485,17 +485,17 @@ int get_type_size(ast_node_t* type_node) {
                 case DOUBLE_DT:  return 8;
                 case VOID_DT:    return 0;
                 default:
-                    fprintf(stderr, "Error: Unknown decl_type %d in get_type_size\n", type_node->decl_spec.decl_type);
+                    fprintf(stderr, "unknown decl_type %d in get_type_size\n", type_node->decl_spec.decl_type);
                     exit(1);
             }
         case ARRAY_N:
             if (type_node->array.size == 0) {
-                fprintf(stderr, "Error: Array size not specified in get_type_size\n");
+                fprintf(stderr, "array size not specified in get_type_size\n");
                 exit(1);
             }
             return type_node->array.size * get_type_size(type_node->array.element_type);
         default:
-            fprintf(stderr, "Error: Unsupported type %s in get_type_size\n", get_node_type(type_node->type));
+            fprintf(stderr, "unsupported type %s in get_type_size\n", get_node_type(type_node->type));
             exit(1);
     }
 }

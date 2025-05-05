@@ -88,6 +88,12 @@ typedef struct basic_block {
     struct basic_block* next;
 } BASICBLOCK;
 
+
+typedef struct loop_info {
+    BASICBLOCK* continue_target;
+    BASICBLOCK* break_target;
+} loop_info_t;
+
 // input = compound statement list
 BASICBLOCK* create_quads(ast_node_t* list);
 BASICBLOCK* new_bb();
@@ -106,6 +112,7 @@ void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf);
 void create_assignment(ast_node_t* node);
 void create_if(ast_node_t* node);
 QNODE* create_fncall(ast_node_t* node);
+void create_for(ast_node_t* node);
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 

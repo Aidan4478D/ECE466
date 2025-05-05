@@ -3,17 +3,24 @@
 
 #include "quads.h"
 #include "helpers/printing.h"
+#include "helpers/stack.h"
 #include "symtable.h"
+#include "y.tab.h"
 
 int funct_count = 0;
 int bb_count = 0;
 int tmp_count = 0;
-BASICBLOCK* cur_bb;
-static BASICBLOCK* last_bb = NULL;
 
-int is_pointer_arith = 0;
+BASICBLOCK* cur_bb;
+BASICBLOCK* last_bb = NULL;
+
+stack_t* loop_stack;
+
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
+    
+    loop_stack = (stack_t*) malloc(sizeof(stack_t));
+    stack_init(loop_stack);
 
     // create linked list for quads
     BASICBLOCK* bb = new_bb();
@@ -183,6 +190,7 @@ QUAD* create_statement(ast_node_t* node) {
             // return emit(get_binop_opcode(node->genop.op), node->genop.left, node->genop.right, NULL);
         case UNOP_N:
             fprintf(stderr, "UNARY OP detected!\n"); 
+            create_rvalue(node, NULL);
             break;
         case ASSIGNOP_N:
             fprintf(stderr, "ASSIGN OP detected!\n"); 
@@ -206,14 +214,29 @@ QUAD* create_statement(ast_node_t* node) {
             fprintf(stderr, "DO WHILE detected!\n"); 
             break;
         case FOR_N:
-            fprintf(stderr, "FOR detected!\n"); 
+            fprintf(stderr, "FOR detected!\n");
+            create_for(node);
             break;
-        case BREAK_N:
+        case BREAK_N: {
             fprintf(stderr, "BREAK detected!\n"); 
+            if (stack_is_empty(loop_stack)) {
+                fprintf(stderr, "Break outside loop\n");
+                exit(1);
+            }
+            loop_info_t* info = (loop_info_t*) stack_peek(loop_stack);
+            emit(BR_OC, NULL, new_bb_qnode(info->break_target), NULL);
             break;
-        case CONTINUE_N:
+        }
+        case CONTINUE_N: {
             fprintf(stderr, "CONTINUE detected!\n"); 
+            if (stack_is_empty(loop_stack)) {
+                fprintf(stderr, "Continue outside loop\n");
+                exit(1);
+            }
+            loop_info_t* info = (loop_info_t*) stack_peek(loop_stack);
+            emit(BR_OC, NULL, new_bb_qnode(info->continue_target), NULL);
             break;
+        }
         case RETURN_N:
             fprintf(stderr, "RETURN detected!\n");
 
@@ -305,7 +328,6 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
         case UNOP_N:
             // pointer deref
             if(node->unop.op == '*') {
-                is_pointer_arith = 1;
                 QNODE* qnode = create_rvalue(node->unop.node, NULL);
                 if(!target) target = new_temporary();
                 emit(LOAD_OC, qnode, NULL, target);
@@ -317,6 +339,13 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 emit(LEA_OC, qnode, NULL, target);
                 return target;
             }
+            if(node->unop.op == PLUSPLUS || node->unop.op == MINMIN) {
+                QNODE* qnode = create_rvalue(node->unop.node, NULL);
+                if(!target) target = new_temporary();
+                emit(node->unop.op == PLUSPLUS ? ADD_OC : SUB_OC, new_immediate(1), NULL, target);
+                return target;
+            }
+
             break;
 
         case POINTER_N: {
@@ -481,22 +510,79 @@ void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf) {
 
 void create_if(ast_node_t* node) {
 
-    BASICBLOCK* Bt = new_bb();
     BASICBLOCK* Bf = new_bb();
     BASICBLOCK* Bn = node->if_node.else_statement ? new_bb() : Bf;
 
-    create_condexpr(node->if_node.condition, Bt, Bf);
-    cur_bb = Bt;
+    if (node->if_node.then_statement->type == CONTINUE_N) {
+        if (stack_is_empty(loop_stack)) {
+            fprintf(stderr, "Continue outside loop\n");
+            exit(1);
+        }
+        loop_info_t* info = (loop_info_t*) stack_peek(loop_stack);
+        create_condexpr(node->if_node.condition, info->continue_target, Bf);
+    } 
+    else if (node->if_node.then_statement->type == BREAK_N) {
+        if (stack_is_empty(loop_stack)) {
+            fprintf(stderr, "Break outside loop\n");
+            exit(1);
+        }
+        loop_info_t* info = (loop_info_t*) stack_peek(loop_stack);
+        create_condexpr(node->if_node.condition, info->break_target, Bf);
+    } 
+    else {
+        BASICBLOCK* Bt = new_bb();
+        create_condexpr(node->if_node.condition, Bt, Bf);
+        cur_bb = Bt;
+        create_statement(node->if_node.then_statement);
+        link_bb(cur_bb, ALWAYS, Bn, NULL);
+    }
 
-    create_statement(node->if_node.then_statement);
-    link_bb(cur_bb, ALWAYS, Bn, NULL);
-
-    if(node->if_node.else_statement) {
+    if (node->if_node.else_statement) {
         cur_bb = Bf;
         create_statement(node->if_node.else_statement);
         link_bb(cur_bb, ALWAYS, Bn, NULL);
+        cur_bb = Bn;
+    } 
+    else {
+        cur_bb = Bf;
     }
-    cur_bb = Bn;
+}
+
+void create_for(ast_node_t* node) {
+
+    BASICBLOCK* B_cond = new_bb();
+    BASICBLOCK* B_body = new_bb();
+    BASICBLOCK* B_inc = new_bb();
+    BASICBLOCK* B_next = new_bb();
+
+    // set up info struct and push onto stack
+    loop_info_t* info = (loop_info_t*) malloc(sizeof(loop_info_t));
+    info->continue_target = B_inc;
+    info->break_target = B_next;
+    stack_push(loop_stack, info);
+
+    fprintf(stderr, "successfully created loop info\n");
+
+    // initialization
+    create_assignment(node->for_node.init);
+    link_bb(cur_bb, ALWAYS, B_cond, NULL);
+
+    // condition
+    cur_bb = B_cond;
+    create_condexpr(node->for_node.condition, B_body, B_next);
+
+    // body
+    cur_bb = B_body;
+    create_statement(node->for_node.body);
+    link_bb(cur_bb, ALWAYS, B_inc, NULL);
+
+    // increment
+    cur_bb = B_inc;
+    create_statement(node->for_node.increment);
+    link_bb(cur_bb, ALWAYS, B_cond, NULL);
+    
+    stack_pop(loop_stack);
+    cur_bb = B_next;
 }
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf) {
