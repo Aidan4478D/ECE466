@@ -114,6 +114,7 @@ void create_assignment(ast_node_t* node);
 void create_if(ast_node_t* node);
 void create_for(ast_node_t* node);
 void create_while(ast_node_t* node);
+void create_dowhile(ast_node_t* node);
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 

@@ -213,7 +213,8 @@ QUAD* create_statement(ast_node_t* node) {
             create_while(node);
             break;
         case DOWHILE_N:
-            fprintf(stderr, "DO WHILE detected!\n"); 
+            fprintf(stderr, "DO WHILE detected!\n");
+            create_dowhile(node);
             break;
         case FOR_N:
             fprintf(stderr, "FOR detected!\n");
@@ -623,6 +624,36 @@ void create_while(ast_node_t* node) {
     /*fprintf(stderr, "linked cur -> inc\n");*/
 
     // body
+    stack_pop(loop_stack);
+    cur_bb = B_next;
+}
+
+
+void create_dowhile(ast_node_t* node) {
+
+    BASICBLOCK* B_body = new_bb();
+    BASICBLOCK* B_cond = new_bb();
+    BASICBLOCK* B_next = new_bb();
+
+    loop_info_t* info = (loop_info_t*) malloc(sizeof(loop_info_t));
+
+    // after continuing in while, evaluate condition again
+    info->continue_target = B_cond; 
+    info->break_target = B_next;
+    stack_push(loop_stack, info);
+    
+    // connect current to body
+    link_bb(cur_bb, ALWAYS, B_body, NULL);
+
+    // body -> continue
+    cur_bb = B_body;
+    create_statement(node->while_node.body);
+    link_bb(cur_bb, ALWAYS, B_cond, NULL);
+
+    // continue -> body & break
+    cur_bb = B_cond;
+    create_condexpr(node->while_node.condition, B_body, B_next);
+    
     stack_pop(loop_stack);
     cur_bb = B_next;
 }
