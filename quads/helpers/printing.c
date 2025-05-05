@@ -117,15 +117,15 @@ char* print_opcode(int op) {
         case MUL_OC:       return "MUL";
         case DIV_OC:       return "DIV";
         case MOD_OC:       return "MOD";
-        case AND_OC:       return "AND";
-        case OR_OC:        return "OR";
-        case XOR_OC:       return "XOR";
-        case NOT_OC:       return "NOT";
-        case ANDAND_OC:    return "ANDAND";
-        case OROR_OC:      return "OROR";
-        case LOGNOT_OC:    return "LOGNOT";
-        case SL_OC:        return "SL";
-        case SR_OC:        return "SR";
+        /*case AND_OC:       return "AND";*/
+        /*case OR_OC:        return "OR";*/
+        /*case XOR_OC:       return "XOR";*/
+        /*case NOT_OC:       return "NOT";*/
+        /*case ANDAND_OC:    return "ANDAND";*/
+        /*case OROR_OC:      return "OROR";*/
+        /*case LOGNOT_OC:    return "LOGNOT";*/
+        /*case SL_OC:        return "SL";*/
+        /*case SR_OC:        return "SR";*/
         case CALL_OC:      return "CALL";
         case ARG_OC:       return "ARG";
         case RETURN_OC:    return "RETURN";
@@ -157,6 +157,7 @@ char* get_operator_string(int op) {
         case SR:       return ">>";
         case PLUSPLUS: return "++";
         case MINMIN:   return "--";
+        case SIZEOF:   return "sizeof";
         default: {
             /* For any other operator (or if op is a simple char) */
             static char buf[3];
@@ -472,12 +473,13 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case UNOP_N: {
             const char *op_str = get_operator_string(node->unop.op);
             printf("UNARY OP (%s)\n", op_str);
-            if (node->unop.op == SIZEOF) {
-                if (node->unop.node->type == DECLSPEC_N || node->unop.node->type == POINTER_N || node->unop.node->type == ARRAY_N) {
-                    printf("sizeof type:\n");
-                } 
-                else printf("sizeof expression:\n");
-            }
+            /*if (node->unop.op == SIZEOF) {*/
+                /*for (int i = 0; i < indent + 1; i++) printf("\t");*/
+                /*if (node->unop.node->type == DECLSPEC_N || node->unop.node->type == POINTER_N || node->unop.node->type == ARRAY_N || node->unop.node->type == IDENT_N) {*/
+                    /*printf("SIZEOF type:\n");*/
+                /*} */
+                /*else printf("SIZEOF expression:\n");*/
+            /*}*/
             print_ast_tree(node->unop.node, indent + 1);
             break;
         }

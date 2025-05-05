@@ -494,6 +494,9 @@ int get_type_size(ast_node_t* type_node) {
                 exit(1);
             }
             return type_node->array.size * get_type_size(type_node->array.element_type);
+        // pointer size 8 in X86-64
+        case POINTER_N:
+            return 8;
         default:
             fprintf(stderr, "unsupported type %s in get_type_size\n", get_node_type(type_node->type));
             exit(1);

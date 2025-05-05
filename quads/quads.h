@@ -28,16 +28,16 @@ typedef enum opcode {
     DIV_OC,
     MOD_OC,
 
-    AND_OC,
-    OR_OC,
-    XOR_OC,
-    NOT_OC,
-    ANDAND_OC,
-    OROR_OC,
-    LOGNOT_OC,
-
-    SL_OC,
-    SR_OC,
+    // not gonna implement
+    //AND_OC,
+    //OR_OC,
+    //XOR_OC,
+    //NOT_OC,
+    //ANDAND_OC,
+    //OROR_OC,
+    //LOGNOT_OC,
+    //SL_OC,
+    //SR_OC,
 
     CALL_OC,
     ARG_OC,

@@ -1,45 +1,36 @@
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
 <stdin>:1
-symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: a, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
 TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
-[in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:3
-symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
-AST Tree for your symbol:
----------------------------------------------
-FUNCTION 'f'
-	RETURN TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:3
-symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
-AST Tree for your symbol:
----------------------------------------------
-FUNCTION 'f'
-	RETURN TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:4
+[in FUNCT_SCOPE scope starting at <stdin>:1]
+<stdin>:6
 symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:5
-symbol: c, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
 TYPE: INT
@@ -54,71 +45,46 @@ LIST ELEMENT #1:
 	DECLARATION
 		SPECIFIERS: INT 
 		DECLARATOR #1
-			IDENT: b
+			IDENT: a
 			TYPE: INT
 
 
 LIST ELEMENT #2:
+	ASSIGNMENT OP (=)
+		IDENT: a
+		NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #3:
 	DECLARATION
 		SPECIFIERS: INT 
 		DECLARATOR #1
-			IDENT: c
+			IDENT: b
 			TYPE: INT
 
 
-LIST ELEMENT #3:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (+)
-			NUM (numtype=int)	2	SIGNED
-			NUM (numtype=int)	1	SIGNED
-
 LIST ELEMENT #4:
 	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (+)
+		IDENT: b
+		UNARY OP (sizeof)
 			IDENT: a
-			NUM (numtype=int)	3	SIGNED
 
 LIST ELEMENT #5:
 	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (+)
-			IDENT: a
-			IDENT: b
+		IDENT: a
+		UNARY OP (sizeof)
+			UNARY OP (*)
+				IDENT: a
 
 LIST ELEMENT #6:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (*)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #7:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (-)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #8:
-	ASSIGNMENT OP (=)
-		IDENT: c
-		BINARY OP (%)
-			IDENT: a
-			IDENT: b
-
-LIST ELEMENT #9:
 	RETURN
+		IDENT: b
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
-	c{lvar} = ADD 	2{S}, 1{S}
-	c{lvar} = ADD 	a{global}, 3{S}
-	c{lvar} = ADD 	a{global}, b{lvar}
-	c{lvar} = MUL 	a{global}, b{lvar}
-	c{lvar} = SUB 	a{global}, b{lvar}
-	c{lvar} = MOD 	a{global}, b{lvar}
+	a{lvar} = 	MOV $3
+	b{lvar} = 	MOV $4
+	a{lvar} = 	MOV $4
+	RETURN b{lvar}

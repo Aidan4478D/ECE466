@@ -16,6 +16,9 @@ BASICBLOCK* last_bb = NULL;
 
 stack_t* loop_stack;
 
+// QUESTIONS:
+// - is size of a pointer 8 even nested
+// - do we have to write out whole sizeof operation (with mults and adds)
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
     
@@ -306,7 +309,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 ast_node_t* pointed_to_type = get_pointed_to_type(left->sym->node);
 
                 if (!pointed_to_type) {
-                    fprintf(stderr, "Error: Invalid pointer type for %s\n", left->sym->key);
+                    fprintf(stderr, "invalid pointer type for %s\n", left->sym->key);
                     exit(1);
                 }
 
@@ -350,6 +353,13 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 emit(node->unop.op == PLUSPLUS ? ADD_OC : SUB_OC, new_immediate(1), qnode, new_val);
                 emit(MOV_OC, new_val, NULL, qnode);
                 return target;
+            }
+            if(node->unop.op == SIZEOF) {
+                // do you want to see the whole calculation? like ADD and MUL quads?
+                int element_size = get_element_size(node->unop.node);
+                QNODE* size_qnode = new_immediate(element_size);
+                
+                return size_qnode;
             }
 
             break;
@@ -408,12 +418,20 @@ int get_element_size(ast_node_t* node) {
         ast_node_t* type_node = sym->node;
         if(type_node->type == POINTER_N || type_node->type == ARRAY_N) get_pointed_to_type(type_node);
 
+
         if (!type_node) {
             fprintf(stderr, "type for variable %s does not exist!\n", node->ident.name);
             exit(1);
         }
         
         return get_type_size(type_node);
+    }
+    if(node->type == UNOP_N) {
+        ast_node_t* unop_node = node->unop.node;
+        while(unop_node->type == UNOP_N) {
+            unop_node = unop_node->unop.node;
+        }
+        return get_element_size(unop_node);
     }
     else {
         return 0;
