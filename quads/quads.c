@@ -19,6 +19,7 @@ stack_t* loop_stack;
 // QUESTIONS:
 // - is size of a pointer 8 even nested
 // - do we have to write out whole sizeof operation (with mults and adds)
+// - can I just assume pointers are in the left operand
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
     
@@ -303,9 +304,26 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             // check if it's pointer arithmetic
             QNODE* left = create_rvalue(node->genop.left, NULL);
             QNODE* right = create_rvalue(node->genop.right, NULL);
+            int is_pointer_arith = 0;
+    
+            // this is kinda sketch and I could probably make it easier by making a function but I don't want to as of right now
+            // so don't have to repeat the logic in case pointer operator is on the right
+            if(left->sym && (left->sym->node->type == POINTER_N || left->sym->node->type == ARRAY_N)) {
+                fprintf(stderr, "pointer arith detected (left)!\n");
+                is_pointer_arith = 1;
+            }
+            else if(right->sym && (right->sym->node->type == POINTER_N || right->sym->node->type == ARRAY_N)) {
+                fprintf(stderr, "pointer arith detected (right)!\n");
+                QNODE* tmp = right;
+                right = left;
+                left = right;
+                is_pointer_arith = 1;
+            }
+            else is_pointer_arith = 0;
+                
             
             // assumes pointer is the left operand
-            if (node->genop.op == '+' && left->sym && (left->sym->node->type == POINTER_N || left->sym->node->type == ARRAY_N)) {
+            if (node->genop.op == '+' && is_pointer_arith) {
                 ast_node_t* pointed_to_type = get_pointed_to_type(left->sym->node);
 
                 if (!pointed_to_type) {
@@ -318,9 +336,11 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 QNODE* size_qnode = new_immediate(element_size);
                 QNODE* offset_qnode = new_temporary();
                 QNODE* result_qnode = new_temporary();
-
+                QNODE* base_qnode = new_temporary();
+                
                 emit(MUL_OC, right, size_qnode, offset_qnode);
-                emit(ADD_OC, left, offset_qnode, result_qnode);
+                emit(LEA_OC, left, NULL, base_qnode);
+                emit(ADD_OC, base_qnode, offset_qnode, result_qnode);
 
                 return result_qnode;
             } 
@@ -340,10 +360,19 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 return target;
             }
             if(node->unop.op == '&') {
-                QNODE* qnode = create_rvalue(node->unop.node, NULL);
-                if(!target) target = new_temporary();
-                emit(LEA_OC, qnode, NULL, target);
-                return target;
+                
+                // &*expr simplifies to expr
+                if (node->unop.node->type == UNOP_N && node->unop.node->unop.op == '*') {
+                    return create_rvalue(node->unop.node->unop.node, target);
+                }
+                else {
+                    fprintf(stderr, "gonna print LEA\n");
+                    QNODE* addr = create_rvalue(node->unop.node, NULL);
+                    
+                    if (!target) target = new_temporary();
+                    emit(LEA_OC, addr, NULL, target);
+                    return target;
+                }
             }
             if(node->unop.op == PLUSPLUS || node->unop.op == MINMIN) {
                 QNODE* qnode = create_rvalue(node->unop.node, NULL);
@@ -426,13 +455,15 @@ int get_element_size(ast_node_t* node) {
         
         return get_type_size(type_node);
     }
-    if(node->type == UNOP_N) {
-        ast_node_t* unop_node = node->unop.node;
-        while(unop_node->type == UNOP_N) {
-            unop_node = unop_node->unop.node;
-        }
-        return get_element_size(unop_node);
-    }
+    // bad
+    /*if(node->type == UNOP_N) {*/
+        /*ast_node_t* unop_node = node->unop.node;*/
+        /*while(unop_node->type == UNOP_N) {*/
+            /*unop_node = unop_node->unop.node;*/
+        /*}*/
+        /*return get_element_size(unop_node);*/
+    /*}*/
+    if(node->type == POINTER_N) return 8; //that was easy
     else {
         return 0;
         fprintf(stderr, "Element size node is not an ident node! It is: %s\n", get_node_type(node->type));

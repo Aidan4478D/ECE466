@@ -284,6 +284,7 @@ function_definition : decl_specifiers declarator    {
                                                         printf("---------------------------------------------\n"); 
                                                         fprintf(stderr, "=========== GEN QUADS ============\n");
                                                         create_quads($4);
+                                                        printf("\n\n\n\n");
                                                         in_function = 0;
 
                                                         

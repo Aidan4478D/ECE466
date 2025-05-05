@@ -99,6 +99,7 @@ BASICBLOCK* create_quads(ast_node_t* list);
 BASICBLOCK* new_bb();
 
 QNODE* create_rvalue(ast_node_t* node, QNODE* target); 
+QNODE* create_lvalue(ast_node_t* node, int* mode);
 QNODE* get_address(ast_node_t* node);
 
 QNODE* new_temporary();

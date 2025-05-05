@@ -4,7 +4,7 @@
 symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
-TYPE: ARRAY of size 10 of INT
+TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
@@ -15,6 +15,10 @@ AST Tree for your symbol:
 ---------------------------------------------
 FUNCTION 'f'
 	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
@@ -25,33 +29,10 @@ AST Tree for your symbol:
 ---------------------------------------------
 FUNCTION 'f'
 	RETURN TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:4
-symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:4
-symbol: p, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: POINTER to INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:8
-symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 
@@ -60,62 +41,66 @@ AST Dump for function f
 ---------------------------------------------
 LIST:
 LIST ELEMENT #1:
-	DECLARATION
-		SPECIFIERS: INT 
-		DECLARATOR #1
-			IDENT: x
-			TYPE: INT
-		DECLARATOR #2
-			IDENT: p
-			TYPE: POINTER to INT
-
-
-LIST ELEMENT #2:
-	ASSIGNMENT OP (=)
-		IDENT: x
-		UNARY OP (*)
-			BINARY OP (+)
-				IDENT: a
-				NUM (numtype=int)	3	SIGNED
-
-LIST ELEMENT #3:
-	ASSIGNMENT OP (=)
-		IDENT: p
-		UNARY OP (&)
-			UNARY OP (*)
-				BINARY OP (+)
-					IDENT: a
-					NUM (numtype=int)	5	SIGNED
-
-LIST ELEMENT #4:
-	DECLARATION
-		SPECIFIERS: INT 
-		DECLARATOR #1
-			IDENT: b
-			TYPE: INT
-
-
-LIST ELEMENT #5:
 	ASSIGNMENT OP (=)
 		IDENT: b
 		BINARY OP (+)
-			IDENT: x
-			NUM (numtype=int)	5	SIGNED
+			IDENT: a
+			NUM (numtype=int)	3	SIGNED
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
-	%T0 = 	MUL $3, $4
-	%T1 = 	ADD a{global}, %T0
-	%T2 = 	LOAD  [%T1]
-	x{lvar} = 	MOV %T2
-	%T3 = 	MUL $5, $4
-	%T4 = 	ADD a{global}, %T3
-	%T5 = 	LOAD  [%T4]
-	%T6 = 	LEA %T5
-	p{lvar} = 	MOV %T6
-	%T7 = 	ADD x{lvar}, $5
-	b{lvar} = 	MOV %T7
+	%T0 = 	ADD a{global}, $3
+	b{lvar} = 	MOV %T0
 	RETURN 
+
+
+
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:6
+symbol: g, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'g'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:6
+symbol: g, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'g'
+	RETURN TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function g
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	ASSIGNMENT OP (=)
+		IDENT: a
+		NUM (numtype=int)	5	SIGNED
+
+LIST ELEMENT #2:
+	RETURN
+		NUM (numtype=int)	1	SIGNED
+
+
+---------------------------------------------
+QUAD generation for function g
+---------------------------------------------
+.BB1.1 
+	a{global} = 	MOV $5
+	RETURN $1
+
+
+
+

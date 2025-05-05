@@ -1,6 +1,15 @@
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
 <stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: ARRAY of size 10 of INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
 symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
@@ -10,7 +19,7 @@ FUNCTION 'f'
 
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:1
+<stdin>:3
 symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
@@ -19,30 +28,30 @@ FUNCTION 'f'
 ---------------------------------------------
 
 ---------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:1]
-<stdin>:3
-symbol: a, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:4
+symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
 TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:1]
+[in FUNCT_SCOPE scope starting at <stdin>:3]
 <stdin>:4
-symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+symbol: p, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
-TYPE: CHAR
+TYPE: POINTER to INT
 ---------------------------------------------
 
 ---------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:1]
-<stdin>:5
-symbol: l, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:8
+symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
-TYPE: DOUBLE
+TYPE: INT
 ---------------------------------------------
 
 
@@ -54,79 +63,73 @@ LIST ELEMENT #1:
 	DECLARATION
 		SPECIFIERS: INT 
 		DECLARATOR #1
-			IDENT: a
+			IDENT: x
 			TYPE: INT
+		DECLARATOR #2
+			IDENT: p
+			TYPE: POINTER to INT
 
 
 LIST ELEMENT #2:
-	DECLARATION
-		SPECIFIERS: CHAR 
-		DECLARATOR #1
-			IDENT: x
-			TYPE: CHAR
-
+	ASSIGNMENT OP (=)
+		IDENT: x
+		UNARY OP (*)
+			BINARY OP (+)
+				IDENT: a
+				NUM (numtype=int)	3	SIGNED
 
 LIST ELEMENT #3:
-	DECLARATION
-		SPECIFIERS: DOUBLE 
-		DECLARATOR #1
-			IDENT: l
-			TYPE: DOUBLE
-
+	ASSIGNMENT OP (=)
+		IDENT: p
+		UNARY OP (&)
+			UNARY OP (*)
+				BINARY OP (+)
+					IDENT: a
+					NUM (numtype=int)	5	SIGNED
 
 LIST ELEMENT #4:
-	ASSIGNMENT OP (=)
-		IDENT: a
-		NUM (numtype=int)	3	SIGNED
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: b
+			TYPE: INT
+
 
 LIST ELEMENT #5:
 	ASSIGNMENT OP (=)
-		IDENT: a
-		UNARY OP (sizeof)
-			IDENT: a
+		IDENT: b
+		BINARY OP (+)
+			IDENT: x
+			NUM (numtype=int)	5	SIGNED
 
 LIST ELEMENT #6:
 	ASSIGNMENT OP (=)
-		IDENT: x
-		UNARY OP (sizeof)
-			IDENT: x
-
-LIST ELEMENT #7:
-	ASSIGNMENT OP (=)
-		IDENT: l
-		UNARY OP (sizeof)
-			IDENT: l
-
-LIST ELEMENT #8:
-	ASSIGNMENT OP (=)
-		IDENT: a
-		UNARY OP (sizeof)
-			POINTER to:
-				LIST:
-				LIST ELEMENT #1:
-					INT
-
-LIST ELEMENT #9:
-	RETURN
+		IDENT: p
 		BINARY OP (+)
-			BINARY OP (+)
-				IDENT: a
+			UNARY OP (*)
 				IDENT: x
-			IDENT: l
+			NUM (numtype=int)	3	SIGNED
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
-	a{lvar} = 	MOV $3
-	a{lvar} = 	MOV $4
-	x{lvar} = 	MOV $1
-	l{lvar} = 	MOV $8
-	a{lvar} = 	MOV $8
-	%T0 = 	ADD a{lvar}, x{lvar}
-	%T1 = 	ADD %T0, l{lvar}
-	RETURN %T1
+	%T0 = 	MUL $3, $4
+	%T2 = 	LEA a{global}
+	%T1 = 	ADD %T2, %T0
+	%T3 = 	LOAD  [%T1]
+	x{lvar} = 	MOV %T3
+	%T4 = 	MUL $5, $4
+	%T6 = 	LEA a{global}
+	%T5 = 	ADD %T6, %T4
+	p{lvar} = 	MOV %T5
+	%T7 = 	ADD x{lvar}, $5
+	b{lvar} = 	MOV %T7
+	%T8 = 	LOAD  [x{lvar}]
+	%T9 = 	ADD %T8, $3
+	p{lvar} = 	MOV %T9
+	RETURN 
 
 
 
