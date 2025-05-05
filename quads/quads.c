@@ -19,6 +19,7 @@ stack_t* loop_stack;
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
     
+    // stack of loop infos
     loop_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(loop_stack);
 
@@ -208,7 +209,8 @@ QUAD* create_statement(ast_node_t* node) {
             create_if(node);
             break;
         case WHILE_N:
-            fprintf(stderr, "WHILE detected!\n"); 
+            fprintf(stderr, "WHILE detected!\n");
+            create_while(node);
             break;
         case DOWHILE_N:
             fprintf(stderr, "DO WHILE detected!\n"); 
@@ -341,8 +343,11 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             }
             if(node->unop.op == PLUSPLUS || node->unop.op == MINMIN) {
                 QNODE* qnode = create_rvalue(node->unop.node, NULL);
-                if(!target) target = new_temporary();
-                emit(node->unop.op == PLUSPLUS ? ADD_OC : SUB_OC, new_immediate(1), NULL, target);
+                // target IS the unop's sym
+                QNODE* new_val = new_temporary();
+
+                emit(node->unop.op == PLUSPLUS ? ADD_OC : SUB_OC, new_immediate(1), qnode, new_val);
+                emit(MOV_OC, new_val, NULL, qnode);
                 return target;
             }
 
@@ -412,7 +417,6 @@ int get_element_size(ast_node_t* node) {
     else {
         return 0;
         fprintf(stderr, "Element size node is not an ident node! It is: %s\n", get_node_type(node->type));
-
     }
 }
 
@@ -500,9 +504,11 @@ void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf) {
         QNODE* right = create_rvalue(expr->genop.right, NULL);
 
         emit(CMP_OC, left, right, NULL);
+        fprintf(stderr, "printed cond expr!\n");
 
         OPCODE branch_oc = get_branch_opcode(expr->genop.op);
         emit(branch_oc, new_bb_qnode(Bt), new_bb_qnode(Bf), NULL);
+        fprintf(stderr, "finished quads for cond expr!\n");
     } 
     else fprintf(stderr, "Unsupported condition type: %s\n", get_node_type(expr->type));
 }
@@ -557,6 +563,8 @@ void create_for(ast_node_t* node) {
 
     // set up info struct and push onto stack
     loop_info_t* info = (loop_info_t*) malloc(sizeof(loop_info_t));
+
+    // after continuing in for, increment->eval cond->go from there
     info->continue_target = B_inc;
     info->break_target = B_next;
     stack_push(loop_stack, info);
@@ -581,6 +589,40 @@ void create_for(ast_node_t* node) {
     create_statement(node->for_node.increment);
     link_bb(cur_bb, ALWAYS, B_cond, NULL);
     
+    stack_pop(loop_stack);
+    cur_bb = B_next;
+}
+
+
+void create_while(ast_node_t* node) {
+
+    BASICBLOCK* B_cond = new_bb();
+    BASICBLOCK* B_body = new_bb();
+    BASICBLOCK* B_next = new_bb();
+
+    loop_info_t* info = (loop_info_t*) malloc(sizeof(loop_info_t));
+
+    // after continuing in while, evaluate condition again
+    info->continue_target = B_cond; 
+    info->break_target = B_next;
+    stack_push(loop_stack, info);
+    
+    // initialization
+    link_bb(cur_bb, ALWAYS, B_cond, NULL);
+    /*fprintf(stderr, "linked cur->cond\n");*/
+
+    cur_bb = B_cond;
+    create_condexpr(node->while_node.condition, B_body, B_next);
+    /*fprintf(stderr, "finished cond expr\n");*/
+
+    // condition
+    cur_bb = B_body;
+    create_statement(node->while_node.body);
+    /*fprintf(stderr, "created statement for body\n");*/
+    link_bb(cur_bb, ALWAYS, B_cond, NULL);
+    /*fprintf(stderr, "linked cur -> inc\n");*/
+
+    // body
     stack_pop(loop_stack);
     cur_bb = B_next;
 }
@@ -619,7 +661,7 @@ BASICBLOCK* new_bb() {
 
     bb->next = NULL; // Initialize next to NULL
 
-    // if previous BB link it
+    // if previous BB link itG
     if (last_bb) {
         last_bb->next = bb;
     }
@@ -707,6 +749,11 @@ QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination) {
     quad->src1 = src1;
     quad->src2 = src2;
     quad->destination = destination;
+
+    if (!cur_bb || !cur_bb->quad_list) {
+        fprintf(stderr, "Invalid cur_bb or quad_list\n");
+        exit(1);
+    }
 
     list_insert_tail(cur_bb->quad_list, quad);
     

@@ -107,12 +107,13 @@ QNODE* new_immediate();
 QNODE* new_variable();
 QNODE* new_descriptor();
 
-//  goal of gen_condexpr is to evaluate the expression and branch to either the true target or the false target
+// function calls handled in create_rvalue
+// goal of gen_condexpr is to evaluate the expression and branch to either the true target or the false target
 void create_condexpr(ast_node_t* expr, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 void create_assignment(ast_node_t* node);
 void create_if(ast_node_t* node);
-QNODE* create_fncall(ast_node_t* node);
 void create_for(ast_node_t* node);
+void create_while(ast_node_t* node);
 
 void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 
