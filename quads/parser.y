@@ -39,7 +39,6 @@ int global_scope_updated = 0;
 */
 
 /* fix:
-    - weird abstract types (casts & sizeof)
     - out of order parameters for function pointers
     - functions returning functions are weird af
 */

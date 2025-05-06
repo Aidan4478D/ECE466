@@ -4,51 +4,62 @@
 symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
-TYPE: ARRAY of size 10 of INT
+TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:3
-symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+<stdin>:2
+symbol: x, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
-FUNCTION 'f'
+FUNCTION 'x'
 	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:3
-symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
-AST Tree for your symbol:
----------------------------------------------
-FUNCTION 'f'
-	RETURN TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
 <stdin>:4
-symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			UNKNOWN NODE TYPE 98
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:4
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			UNKNOWN NODE TYPE 98
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:5]
+<stdin>:6
+symbol: i, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
 TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:4
-symbol: p, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: POINTER to INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:8
-symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+[in FUNCT_SCOPE scope starting at <stdin>:5]
+<stdin>:6
+symbol: j, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
 TYPE: INT
@@ -63,73 +74,75 @@ LIST ELEMENT #1:
 	DECLARATION
 		SPECIFIERS: INT 
 		DECLARATOR #1
-			IDENT: x
+			IDENT: i
 			TYPE: INT
 		DECLARATOR #2
-			IDENT: p
-			TYPE: POINTER to INT
+			IDENT: j
+			TYPE: INT
 
 
 LIST ELEMENT #2:
-	ASSIGNMENT OP (=)
-		IDENT: x
-		UNARY OP (*)
-			BINARY OP (+)
-				IDENT: a
-				NUM (numtype=int)	3	SIGNED
+	FOR
+		INIT:
+			ASSIGNMENT OP (=)
+				IDENT: i
+				NUM (numtype=int)	0	SIGNED
+		COND:
+			COMPARISON OP (<)
+				IDENT: i
+				IDENT: b
+		INCR:
+			UNARY OP (++)
+				IDENT: i
+		BODY:
+			LIST:
+			LIST ELEMENT #1:
+				IF
+					COND:
+						COMPARISON OP (>)
+							IDENT: a
+							NUM (numtype=int)	0	SIGNED
+					THEN:
+						ASSIGNMENT OP (=)
+							IDENT: j
+							FUNCTION CALL
+								IDENT: x
+								PARAMETER #1
+									IDENT: a
 
-LIST ELEMENT #3:
-	ASSIGNMENT OP (=)
-		IDENT: p
-		UNARY OP (&)
-			UNARY OP (*)
-				BINARY OP (+)
-					IDENT: a
-					NUM (numtype=int)	5	SIGNED
+			LIST ELEMENT #2:
+				UNARY OP (++)
+					IDENT: j
 
-LIST ELEMENT #4:
-	DECLARATION
-		SPECIFIERS: INT 
-		DECLARATOR #1
-			IDENT: b
-			TYPE: INT
-
-
-LIST ELEMENT #5:
-	ASSIGNMENT OP (=)
-		IDENT: b
-		BINARY OP (+)
-			IDENT: x
-			NUM (numtype=int)	5	SIGNED
-
-LIST ELEMENT #6:
-	ASSIGNMENT OP (=)
-		IDENT: p
-		BINARY OP (+)
-			NUM (numtype=int)	3	SIGNED
-			UNARY OP (&)
-				IDENT: x
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
-	%T0 = 	MUL $3, $4
-	%T2 = 	LEA a{global}
-	%T1 = 	ADD %T2, %T0
-	%T3 = 	LOAD  [%T1]
-	x{lvar} = 	MOV %T3
-	%T4 = 	MUL $5, $4
-	%T6 = 	LEA a{global}
-	%T5 = 	ADD %T6, %T4
-	p{lvar} = 	MOV %T5
-	%T7 = 	ADD x{lvar}, $5
-	b{lvar} = 	MOV %T7
-	%T8 = 	LEA x{lvar}
-	%T9 = 	ADD $3, %T8
-	p{lvar} = 	MOV %T9
+	i{lvar} = 	MOV $0
+	BR .BB.0.1
+.BB0.1 
+	CMP i{lvar}, b{global}
+	BRLT .BB.0.2, .BB.0.4
+.BB0.2 
+	CMP a{global}, $0
+	BRGT .BB.0.6, .BB.0.5
+.BB0.3 
+	%T2 = 	ADD $1, i{lvar}
+	i{lvar} = 	MOV %T2
+	BR .BB.0.1
+.BB0.4 
 	RETURN 
+.BB0.5 
+	%T1 = 	ADD $1, j{lvar}
+	j{lvar} = 	MOV %T1
+	BR .BB.0.3
+.BB0.6 
+	ARG 0, a{global}
+	%T0 = 	CALL $x, 1
+	j{lvar} = 	MOV %T0
+	BR .BB.0.5
 
 
 
