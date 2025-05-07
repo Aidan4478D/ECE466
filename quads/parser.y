@@ -234,6 +234,7 @@ function_definition : decl_specifiers declarator    {
 
                                                                         if(key) {
                                                                             SYMBOL* param_sym = st_new_symbol(key, param_node, GENERAL_NS, VAR_SYM, AUTO_SC, NULL, file_name, line_num);
+                                                                            param_sym->is_param = 1;
                                                                             st_install(proto_scope, param_sym);
                                                                         }
                                                                         else fprintf(stderr, "No key associated with input parameter #%d\n", cnt++); 

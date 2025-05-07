@@ -117,7 +117,7 @@ void create_for(ast_node_t* node);
 void create_while(ast_node_t* node);
 void create_dowhile(ast_node_t* node);
 
-void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
+void link_bb(BASICBLOCK* cur_bb, int mode, BASICBLOCK* Bt, BASICBLOCK* Bf); 
 
 // create a new quad with 4 args and append it to list of quads
 QUAD* emit(OPCODE oc, QNODE* src1, QNODE* src2, QNODE* destination); 

@@ -1,7 +1,17 @@
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
 <stdin>:1
-symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = EXTERN
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
 FUNCTION 'f'
@@ -85,4 +95,28 @@ LIST ELEMENT #2:
 LIST ELEMENT #3:
 	RETURN
 		NUM (numtype=int)	2	SIGNED
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	CMP x{lvar}, y{lvar}
+	BRGT .BB.0.2, .BB.0.1
+.BB0.1 
+	RETURN $2
+.BB0.2 
+	CMP y{lvar}, z{lvar}
+	BRLT .BB.0.5, .BB.0.3
+.BB0.3 
+	RETURN $1
+	BR .BB.0.4
+.BB0.4 
+	BR .BB.0.1
+.BB0.5 
+	RETURN $0
+	BR .BB.0.4
+
+
+
 

@@ -115,6 +115,7 @@ void print_qnode(QNODE* qnode) {
         case IMM_Q: {
             if(qnode->ast_node->type == NUMBER_N) {
                 ast_node_t* node = qnode->ast_node;
+                // i know i'm not printing sign info but just keeping these just in case i do
                 switch (node->number.num_meta.type) {
                     case INT_T:     
                         if(node->number.num_meta.sign == SIGNED_T) printf("$%lld", node->number.num_meta._int);
@@ -146,13 +147,13 @@ void print_qnode(QNODE* qnode) {
         }
         case VAR_Q: 
             if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
-                // this might be sketchy as variables aren't really immediates
-                // but it gets the job done
+                // this might be sketchy as variables aren't really immediates but it gets the job done
                 if (qnode->sym && qnode->sym->type == FUNCT_SYM) {
                     printf("$%s", qnode->ast_node->ident.name);
                 } 
                 else {
-                    printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
+                    if(qnode->sym && qnode->sym->is_param) printf("%s{%s}", qnode->ast_node->ident.name, "param");
+                    else printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
                 }
             } 
             else printf("VAR_UNKNOWN");
@@ -201,9 +202,6 @@ QUAD* create_statement(ast_node_t* node) {
         case ASSIGNOP_N:
             fprintf(stderr, "ASSIGN OP detected!\n"); 
             create_assignment(node);
-            break;
-        case FUNCT_N:
-            fprintf(stderr, "FUNCT detected!\n"); 
             break;
         case FUNCTCALL_N:
             fprintf(stderr, "FUNCT CALL detected!\n");
@@ -256,12 +254,8 @@ QUAD* create_statement(ast_node_t* node) {
             
             break;
         case DECL_N:
-            // don't generate quads for declarations
+            // don't generate quads for declarations (would be considered an assignop ig?)
             return NULL;
-        case LABEL_N:
-            break;
-        case GOTO_N:
-            break;
         default:
             fprintf(stderr, "invalid statement type: node_type = %s (%d)\n", get_node_type(node->type), node->type);
             break;
@@ -321,13 +315,13 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 /*fprintf(stderr, "pointer arith detected (right)!\n");*/
                 QNODE* tmp = right;
                 right = left;
-                left = right;
+                left = tmp;
                 is_pointer_arith = 1;
             }
             else is_pointer_arith = 0;
                 
             
-            // current logic assumes one operand is pointer, another is a number, not pointer & pointer
+            // assumes pointer is the left operand
             if (node->genop.op == '+' && is_pointer_arith) {
                 ast_node_t* pointed_to_type = get_pointed_to_type(left->sym->node);
 
@@ -395,6 +389,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 
                 return size_qnode;
             }
+
             break;
 
         case POINTER_N: {
@@ -583,9 +578,7 @@ void create_if(ast_node_t* node) {
         link_bb(cur_bb, ALWAYS, Bn, NULL);
         cur_bb = Bn;
     } 
-    else {
-        cur_bb = Bf;
-    }
+    else cur_bb = Bf;
 }
 
 void create_for(ast_node_t* node) {
@@ -603,7 +596,7 @@ void create_for(ast_node_t* node) {
     info->break_target = B_break;
     stack_push(loop_stack, info);
 
-    fprintf(stderr, "successfully created loop info\n");
+    /*fprintf(stderr, "successfully created loop info\n");*/
 
     // initialization
     create_assignment(node->for_node.init);
@@ -691,7 +684,7 @@ void create_dowhile(ast_node_t* node) {
     cur_bb = B_break;
 }
 
-void link_bb(BASICBLOCK* cur_bb, MODE mode, BASICBLOCK* Bt, BASICBLOCK* Bf) {
+void link_bb(BASICBLOCK* cur_bb, int mode, BASICBLOCK* Bt, BASICBLOCK* Bf) {
 
     if (mode == ALWAYS) {
         emit(BR_OC, NULL, new_bb_qnode(Bt), NULL); // Unconditional jump to Bt (Bn in context)

@@ -31,7 +31,8 @@ FUNCTION 'f'
 	RETURN TYPE: INT
 	PARAMETERS:
 		PARAMETER #1
-			UNKNOWN NODE TYPE 98
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
@@ -44,7 +45,8 @@ FUNCTION 'f'
 	RETURN TYPE: INT
 	PARAMETERS:
 		PARAMETER #1
-			UNKNOWN NODE TYPE 98
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
@@ -123,7 +125,7 @@ QUAD generation for function f
 	i{lvar} = 	MOV $0
 	BR .BB.0.1
 .BB0.1 
-	CMP i{lvar}, b{global}
+	CMP i{lvar}, b{param}
 	BRLT .BB.0.2, .BB.0.4
 .BB0.2 
 	CMP a{global}, $0

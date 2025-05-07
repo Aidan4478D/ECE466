@@ -69,6 +69,7 @@ typedef struct symbol {
     int is_complete;  // use for "seen" field in labels as well
     SYMTABLE* mini_st;
     struct symbol* parent_sym; //purely for printing purposes so we can trace where struct/union is defined
+    int is_param; // to keep track for quads
 } SYMBOL;
 
 

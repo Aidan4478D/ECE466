@@ -4,6 +4,7 @@ int f() {
         sum = sum + i;
         if (sum == 3) continue;
         if (sum > 7) break;
+        sym--;
     }
     return sum;
 }

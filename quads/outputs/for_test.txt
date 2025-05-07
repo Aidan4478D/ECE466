@@ -92,6 +92,10 @@ LIST ELEMENT #2:
 					THEN:
 						BREAK
 
+			LIST ELEMENT #4:
+				UNARY OP (--)
+					IDENT: sym
+
 
 LIST ELEMENT #3:
 	RETURN
@@ -113,7 +117,8 @@ QUAD generation for function f
 	CMP sum{lvar}, $3
 	BREQ .BB.0.3, .BB.0.5
 .BB0.3 
-	%T1 = 	ADD $1
+	%T2 = 	ADD $1, i{lvar}
+	i{lvar} = 	MOV %T2
 	BR .BB.0.1
 .BB0.4 
 	RETURN sum{lvar}
@@ -121,4 +126,10 @@ QUAD generation for function f
 	CMP sum{lvar}, $7
 	BRGT .BB.0.4, .BB.0.6
 .BB0.6 
+	%T1 = 	SUB $1, sym{global}
+	sym{global} = 	MOV %T1
 	BR .BB.0.3
+
+
+
+

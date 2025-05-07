@@ -134,6 +134,7 @@ SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, S
         sym->mini_st = st_create(BLOCK_SCOPE, st);
         sym->mini_st->is_struct_scope = true;
     }
+    sym->is_param = 0;
 
     return sym;
 }
