@@ -1,0 +1,131 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:4
+symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:5
+symbol: c, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: b
+			TYPE: INT
+
+
+LIST ELEMENT #2:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: c
+			TYPE: INT
+
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: a
+		NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (+)
+			NUM (numtype=int)	2	SIGNED
+			NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #5:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (+)
+			IDENT: a
+			NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #6:
+	RETURN
+		IDENT: c
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	a{global} = 	MOV $3
+	%T0 = 	ADD $2, $1
+	c{lvar} = 	MOV %T0
+	%T1 = 	ADD a{global}, $3
+	c{lvar} = 	MOV %T1
+	RETURN c{lvar}
+
+---------------------------------------------
+ASM generation for BB .BB.0.0
+---------------------------------------------
+.BB.0.0:
+	pushq %rbp		# associate rbp with symbol .BB.0.0
+	movq %rsp, %rbp		# set up stack frame pointer
+
+	movl $3, %ecx
+	movl %ecx, a{global}
+
+	movl $2, %edx
+	movl $1, %eax
+	addl %edx, %eax
+	movl %eax, %r10
+	movl %r10, %ecx
+	movl %ecx, c{lvar}
+
+
+	movl a{global}, %edx
+	movl $3, %eax
+	addl %edx, %eax
+	movl %eax, %r10
+	movl %r10, %ecx
+	movl %ecx, c{lvar}
+
+
+
+
