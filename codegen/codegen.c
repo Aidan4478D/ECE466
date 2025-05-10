@@ -12,17 +12,22 @@ void generate_asm(BASICBLOCK* bb) {
     while(bb) {
         printf("%s:\n", bb->name);
         printf("\tpushq %%rbp\t\t# associate rbp with symbol %s\n", bb->name); 
-        printf("\tmovq %%rsp, %%rbp\t\t# set up stack frame pointer\n");
+        printf("\tmovq %%rsp, %%rbp\t\t# set up stack frame pointer\n\n");
 
         fprintf(stderr, "printing BB %s\n", bb->name);
 
         // traverse through all quads within basicblock
         while(!list_is_empty(bb->quad_list)) {
             QUAD* quad = (QUAD*) list_remove_head(bb->quad_list);
+            printf("\tQUAD ANALYZED: ");
+            print_quad(quad);
             quad_to_asm(quad);
+            printf("\n");
         }
         list_destroy(bb->quad_list);
         bb = bb->next;
+
+        printf("\tpopq %%rbp\n");
     }
 }
 
@@ -86,6 +91,7 @@ void quad_to_asm(QUAD* quad) {
             fprintf(stderr, "LEA_OC detected!\n");
             break;
         case MOV_OC:
+            // just do this in case two symbols
             printf("\tmovl %s, %%ecx\n", get_qnode_output(src1));
             printf("\tmovl %%ecx, %s\n", get_qnode_output(dest));
             break;
@@ -116,33 +122,46 @@ void quad_to_asm(QUAD* quad) {
             break;
 
 
-        /*  this is a j++
-         * 	%T1 = 	ADD $1, j{lvar}
-         *  j{lvar} = 	MOV %T1
-         *
-         *  %T0 = 	ADD $2, $1
-         *  c{lvar} = 	MOV %T0
-         *  %T1 = 	ADD a{global}, $3
-         *  c{lvar} = 	MOV %T1
-        */
         case ADD_OC:
             fprintf(stderr, "ADD_OC detected!\n");
             printf("\tmovl %s, %%edx\n", get_qnode_output(src1));
             printf("\tmovl %s, %%eax\n", get_qnode_output(src2));
             printf("\taddl %%edx, %%eax\n");
             printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+
             break;
         case SUB_OC:
             fprintf(stderr, "SUB_OC detected!\n");
+            printf("\tmovl %s, %%eax\n", get_qnode_output(src1));
+            printf("\tsubl %s, %%eax\n", get_qnode_output(src2));
+            printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+
             break;
         case MUL_OC:
             fprintf(stderr, "MUL_OC detected!\n");
+            printf("\tmovl %s, %%eax\n", get_qnode_output(src1));
+            printf("\tmovl %s, %%edx\n", get_qnode_output(src2));
+            printf("\timull %%edx, %%eax\n");
+            printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+
             break;
         case DIV_OC:
             fprintf(stderr, "DIV_OC detected!\n");
+            printf("\tmovl %s, %%eax\n", get_qnode_output(src1));
+            printf("\tcltd\n"); // convert signed long to double
+            printf("\tidivl %s\n", get_qnode_output(src2));
+            printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+
             break;
         case MOD_OC:
             fprintf(stderr, "MOD_OC detected!\n");
+
+            printf("\tmovl %s, %%eax\n", get_qnode_output(src1));
+            printf("\tcltd\n"); // convert signed long to double
+            printf("\tidivl %s\n", get_qnode_output(src2));
+            printf("\tmovl %%edx, %s\n", get_qnode_output(dest));
+            printf("\tmovl %s, %%eax\n", get_qnode_output(dest));
+
             break;
 
         case CALL_OC:

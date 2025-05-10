@@ -15,6 +15,10 @@ AST Tree for your symbol:
 ---------------------------------------------
 FUNCTION 'f'
 	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
@@ -25,20 +29,15 @@ AST Tree for your symbol:
 ---------------------------------------------
 FUNCTION 'f'
 	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: b
+			TYPE: INT
 ---------------------------------------------
 
 ---------------------------------------------
 [in FUNCT_SCOPE scope starting at <stdin>:3]
 <stdin>:4
-symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
-AST Tree for your symbol:
----------------------------------------------
-TYPE: INT
----------------------------------------------
-
----------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:5
 symbol: c, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
@@ -54,38 +53,58 @@ LIST ELEMENT #1:
 	DECLARATION
 		SPECIFIERS: INT 
 		DECLARATOR #1
-			IDENT: b
-			TYPE: INT
-
-
-LIST ELEMENT #2:
-	DECLARATION
-		SPECIFIERS: INT 
-		DECLARATOR #1
 			IDENT: c
 			TYPE: INT
 
 
-LIST ELEMENT #3:
+LIST ELEMENT #2:
 	ASSIGNMENT OP (=)
 		IDENT: a
 		NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: b
+		BINARY OP (+)
+			NUM (numtype=int)	2	SIGNED
+			IDENT: a
 
 LIST ELEMENT #4:
 	ASSIGNMENT OP (=)
 		IDENT: c
 		BINARY OP (+)
-			NUM (numtype=int)	2	SIGNED
-			NUM (numtype=int)	1	SIGNED
+			IDENT: a
+			IDENT: b
 
 LIST ELEMENT #5:
 	ASSIGNMENT OP (=)
 		IDENT: c
-		BINARY OP (+)
+		BINARY OP (*)
 			IDENT: a
-			NUM (numtype=int)	3	SIGNED
+			IDENT: b
 
 LIST ELEMENT #6:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (-)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #7:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (/)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #8:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		BINARY OP (%)
+			IDENT: a
+			IDENT: b
+
+LIST ELEMENT #9:
 	RETURN
 		IDENT: c
 
@@ -95,10 +114,18 @@ QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
 	a{global} = 	MOV $3
-	%T0 = 	ADD $2, $1
-	c{lvar} = 	MOV %T0
-	%T1 = 	ADD a{global}, $3
+	%T0 = 	ADD $2, a{global}
+	b{param} = 	MOV %T0
+	%T1 = 	ADD a{global}, b{param}
 	c{lvar} = 	MOV %T1
+	%T2 = 	MUL a{global}, b{param}
+	c{lvar} = 	MOV %T2
+	%T3 = 	SUB a{global}, b{param}
+	c{lvar} = 	MOV %T3
+	%T4 = 	DIV a{global}, b{param}
+	c{lvar} = 	MOV %T4
+	%T5 = 	MOD a{global}, b{param}
+	c{lvar} = 	MOV %T5
 	RETURN c{lvar}
 
 ---------------------------------------------
@@ -108,23 +135,73 @@ ASM generation for BB .BB.0.0
 	pushq %rbp		# associate rbp with symbol .BB.0.0
 	movq %rsp, %rbp		# set up stack frame pointer
 
+	QUAD ANALYZED: 	a{global} = 	MOV $3
 	movl $3, %ecx
 	movl %ecx, a{global}
 
+	QUAD ANALYZED: 	%T0 = 	ADD $2, a{global}
 	movl $2, %edx
-	movl $1, %eax
+	movl a{global}, %eax
 	addl %edx, %eax
 	movl %eax, %r10
+
+	QUAD ANALYZED: 	b{param} = 	MOV %T0
 	movl %r10, %ecx
-	movl %ecx, c{lvar}
+	movl %ecx, b{param}
 
-
+	QUAD ANALYZED: 	%T1 = 	ADD a{global}, b{param}
 	movl a{global}, %edx
-	movl $3, %eax
+	movl b{param}, %eax
 	addl %edx, %eax
 	movl %eax, %r10
+
+	QUAD ANALYZED: 	c{lvar} = 	MOV %T1
 	movl %r10, %ecx
 	movl %ecx, c{lvar}
+
+	QUAD ANALYZED: 	%T2 = 	MUL a{global}, b{param}
+	movl a{global}, %eax
+	movl b{param}, %edx
+	imull %edx, %eax
+	movl %eax, %r10
+
+	QUAD ANALYZED: 	c{lvar} = 	MOV %T2
+	movl %r10, %ecx
+	movl %ecx, c{lvar}
+
+	QUAD ANALYZED: 	%T3 = 	SUB a{global}, b{param}
+	movl a{global}, %eax
+	subl b{param}, %eax
+	movl %eax, %r10
+
+	QUAD ANALYZED: 	c{lvar} = 	MOV %T3
+	movl %r10, %ecx
+	movl %ecx, c{lvar}
+
+	QUAD ANALYZED: 	%T4 = 	DIV a{global}, b{param}
+	movl a{global}, %eax
+	cltd
+	idivl b{param}
+	movl %eax, %r10
+
+	QUAD ANALYZED: 	c{lvar} = 	MOV %T4
+	movl %r10, %ecx
+	movl %ecx, c{lvar}
+
+	QUAD ANALYZED: 	%T5 = 	MOD a{global}, b{param}
+	movl a{global}, %eax
+	cltd
+	idivl b{param}
+	movl %edx, %r10
+	movl %r10, %eax
+
+	QUAD ANALYZED: 	c{lvar} = 	MOV %T5
+	movl %r10, %ecx
+	movl %ecx, c{lvar}
+
+	QUAD ANALYZED: 	RETURN c{lvar}
+
+	popq %rbp
 
 
 

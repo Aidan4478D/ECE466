@@ -1,14 +1,17 @@
 int a;
 
-int f() {
-    int b;
+int f(int b) {
     int c;
 
     a = 3;
+    b = a;
+    b = 2 + a;
 
-    c = 2 + 1;
-
-    c = a + 3;
+    c = a + b;
+    c = a * b;
+    c = a - b;
+    c = a / b;
+    c = a % b;
 
     return c;
 }
