@@ -3,7 +3,6 @@
 
 #include "quads.h"
 #include "symtable.h"
-#include "codegen.h"
 
 #include "helpers/printing.h"
 #include "helpers/stack.h"
@@ -46,12 +45,6 @@ BASICBLOCK* create_quads(ast_node_t* listnode) {
     if(!ret_found) emit(RETURN_OC, NULL, NULL, NULL);
 
     print_all(bb);
-
-    printf("\n---------------------------------------------\n"); 
-    printf("ASM generation for BB %s\n", bb->name); 
-    printf("---------------------------------------------\n"); 
-    fprintf(stderr, "=========== ASM GENERATION ============\n");
-    generate_asm(bb); // generate assembly here
 
     funct_count++; 
 
@@ -308,6 +301,10 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             
             qnode->type = VAR_Q;
             qnode->ast_node = node;
+
+            /*qnode->stack_offset = cur_bb->stack_size;*/
+            /*cur_bb->stack_size -= 8;*/
+
             return qnode;
         }
         case BINOP_N: {
@@ -345,8 +342,8 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
 
                 QNODE* size_qnode = new_immediate(element_size);
                 QNODE* offset_qnode = new_temporary();
-                QNODE* result_qnode = new_temporary();
                 QNODE* base_qnode = new_temporary();
+                QNODE* result_qnode = new_temporary();
                 
                 emit(MUL_OC, right, size_qnode, offset_qnode);
                 emit(LEA_OC, left, NULL, base_qnode);

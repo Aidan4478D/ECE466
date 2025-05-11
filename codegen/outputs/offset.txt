@@ -1,0 +1,152 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:2
+symbol: b, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: CHAR
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:4
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: c
+			TYPE: INT
+		PARAMETER #2
+			IDENT: d
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:4
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: c
+			TYPE: INT
+		PARAMETER #2
+			IDENT: d
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:5
+symbol: e, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:6
+symbol: f, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: e
+			TYPE: INT
+
+
+LIST ELEMENT #2:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: f
+			TYPE: INT
+
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: f
+		NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
+		IDENT: e
+		NUM (numtype=int)	2	SIGNED
+
+LIST ELEMENT #5:
+	ASSIGNMENT OP (=)
+		IDENT: d
+		NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #6:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		NUM (numtype=int)	0	SIGNED
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	f{lvar} = 	MOV $3
+	e{lvar} = 	MOV $2
+	d{param} = 	MOV $1
+	c{param} = 	MOV $0
+	RETURN 
+
+---------------------------------------------
+ASM generation for BB .BB.0.0
+---------------------------------------------
+.BB.0.0:
+	pushq %rbp		# associate rbp with symbol .BB.0.0
+	movq %rsp, %rbp		# set up stack frame pointer
+
+	# QUAD ANALYZED: 	f{lvar} = 	MOV $3
+	movl $3, %ecx
+	movl %ecx, -32(%rbp)
+
+	# QUAD ANALYZED: 	e{lvar} = 	MOV $2
+	movl $2, %ecx
+	movl %ecx, -24(%rbp)
+
+	# QUAD ANALYZED: 	d{param} = 	MOV $1
+	movl $1, %ecx
+	movl %ecx, -16(%rbp)
+
+	# QUAD ANALYZED: 	c{param} = 	MOV $0
+	movl $0, %ecx
+	movl %ecx, -8(%rbp)
+
+	# QUAD ANALYZED: 	RETURN 
+
+	popq %rbp
+
+
+
+

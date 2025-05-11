@@ -6,5 +6,6 @@
 
 void generate_asm(BASICBLOCK* bb);
 void quad_to_asm(QUAD* quad);
+char* get_memory_operand(QNODE *q);
 
 #endif //_CODEGEN_H

@@ -3,6 +3,9 @@
 
 #include <string.h>
 
+// Questions:
+// can I use this like a(%rip) relative mode guy everywhere?
+
 // where BB is the starting bb in the flow
 void generate_asm(BASICBLOCK* bb) {
 
@@ -50,8 +53,11 @@ char* get_qnode_output(QNODE* qnode) {
                     sprintf(buf, "$%s", qnode->ast_node->ident.name);
                 } 
                 else {
-                    if(qnode->sym && qnode->sym->is_param) sprintf(buf, "%s{%s}", qnode->ast_node->ident.name, "param");
-                    else sprintf(buf, "%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
+                    /*if(qnode->sym && qnode->sym->is_param) sprintf(buf, "%s", qnode->ast_node->ident.name, "param");*/
+                    /*else sprintf(buf, "%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));*/
+                    fprintf(stderr, "var: %s, scope: %s, offset: %d\n", qnode->ast_node->ident.name, qnode->sym->is_param ? "param" : qnode->scope == FILE_SCOPE ? "global" : "lvar", qnode->sym->stack_offset);
+                    if(((qnode->sym && qnode->sym->is_param) || qnode->scope) != FILE_SCOPE) return get_memory_operand(qnode);
+                    else if(qnode->scope == FILE_SCOPE) sprintf(buf, "%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
                 }
             } 
             return strdup(buf);
@@ -74,6 +80,25 @@ char* get_qnode_output(QNODE* qnode) {
     }
 }
 
+char *get_memory_operand(QNODE *q) {
+    char buf[128];
+
+    // Only VAR_Q makes sense here
+    if (q->type != VAR_Q) {
+        fprintf(stderr, "get_memory_operand on non-VAR_Q\n");
+        return strdup("ERROR");
+    }
+
+    SYMBOL *sym = q->sym;
+    // globals
+    if (sym->scope->scope == FILE_SCOPE) sprintf(buf, "%s(%%rip)", q->ast_node->ident.name);
+
+    // local vars & params
+    else sprintf(buf, "%d(%%rbp)", sym->stack_offset);
+    
+    return strdup(buf);
+}
+
 
 void quad_to_asm(QUAD* quad) {
     QNODE* dest = quad->destination;
@@ -92,7 +117,8 @@ void quad_to_asm(QUAD* quad) {
             break;
         case MOV_OC:
             // just do this in case two symbols
-            printf("\tmovl %s, %%ecx\n", get_qnode_output(src1));
+            char* out = src1->type == VAR_Q ? get_memory_operand(src1) : get_qnode_output(src1);
+            printf("\tmovl %s, %%ecx\n", out);
             printf("\tmovl %%ecx, %s\n", get_qnode_output(dest));
             break;
 

@@ -47,6 +47,10 @@ typedef struct sym_table {
 
     struct sym_table* outer;
     int is_struct_scope;
+ 
+    // total stack size
+    int stack_size;
+    int current_offset;
 } SYMTABLE;
 
 
@@ -69,7 +73,10 @@ typedef struct symbol {
     int is_complete;  // use for "seen" field in labels as well
     SYMTABLE* mini_st;
     struct symbol* parent_sym; //purely for printing purposes so we can trace where struct/union is defined
-    int is_param; // to keep track for quads
+
+    // keep track for quads & target code gen
+    int is_param;
+    int stack_offset;
 } SYMBOL;
 
 
@@ -83,5 +90,6 @@ SYMBOL* st_lookup(SYMTABLE* st, char* key, NAMESPACE ns);
 // lookup in a specific symbol table
 SYMBOL* st_lookup_single(SYMTABLE* st, char* key, NAMESPACE ns);
 
+SYMTABLE* get_enclosing_funct_scope(SYMTABLE* st);
 #endif
 

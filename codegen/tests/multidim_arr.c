@@ -2,5 +2,8 @@ int f() {
 
     int x[10][20];
 
-    return 1;
+    int a;
+    a = sizeof(x);
+
+    return a;
 }

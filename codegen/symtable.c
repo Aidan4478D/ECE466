@@ -29,6 +29,12 @@ void st_destroy(SYMTABLE* st) {
     free(st); 
 }
 
+SYMTABLE* get_enclosing_funct_scope(SYMTABLE* st) {
+    while (st && st->scope != FUNCT_SCOPE)
+        st = st->outer;
+    return st;
+}
+
 
 // install symbol in the scope's symbol table
 int st_install(SYMTABLE* st, SYMBOL* sym) {

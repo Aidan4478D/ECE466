@@ -27,6 +27,15 @@ AST Tree for your symbol:
 TYPE: ARRAY of size 20 of ARRAY of size 10 of INT
 ---------------------------------------------
 
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:1]
+<stdin>:5
+symbol: a, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
 
 ---------------------------------------------
 AST Dump for function f
@@ -41,15 +50,30 @@ LIST ELEMENT #1:
 
 
 LIST ELEMENT #2:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: a
+			TYPE: INT
+
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: a
+		UNARY OP (sizeof)
+			IDENT: x
+
+LIST ELEMENT #4:
 	RETURN
-		NUM (numtype=int)	1	SIGNED
+		IDENT: a
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
-	RETURN $1
+	a{lvar} = 	MOV $800
+	RETURN a{lvar}
 
 ---------------------------------------------
 ASM generation for BB .BB.0.0
@@ -58,7 +82,11 @@ ASM generation for BB .BB.0.0
 	pushq %rbp		# associate rbp with symbol .BB.0.0
 	movq %rsp, %rbp		# set up stack frame pointer
 
-	# QUAD ANALYZED: 	RETURN $1
+	# QUAD ANALYZED: 	a{lvar} = 	MOV $800
+	movl $800, %ecx
+	movl %ecx, a{lvar}
+
+	# QUAD ANALYZED: 	RETURN a{lvar}
 
 	popq %rbp
 

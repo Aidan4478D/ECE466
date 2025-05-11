@@ -6,6 +6,7 @@
 #include "helpers/stack.h"
 #include "symtable.h"
 #include "quads.h"
+#include "codegen.h"
 
 #define YYDEBUG 1
 
@@ -216,7 +217,7 @@ function_definition : decl_specifiers declarator    {
                                                             // function scope for function body
                                                             SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
                                                             stack_push(scope_stack, funct_scope);
-
+                                                            funct_scope->current_offset = -8;
 
                                                             // prototype scope
                                                             if (sym->type == FUNCT_SYM && sym->node->type == FUNCT_N && sym->node->function.params) {
@@ -226,15 +227,21 @@ function_definition : decl_specifiers declarator    {
 
                                                                 // add parameters to proto scope
                                                                 int cnt = 1;
+                                                                int curr_offset = 0;
                                                                 while (param_list) {
                                                                     ast_node_t* param_node = param_list->list.head;
                                                                     if (param_node->type == PARAM_N) {
 
                                                                         char* key = (param_node->parameter.ident && param_node->parameter.ident->type == IDENT_N) ? param_node->parameter.ident->ident.name : NULL;
-
+                                                                        
                                                                         if(key) {
                                                                             SYMBOL* param_sym = st_new_symbol(key, param_node, GENERAL_NS, VAR_SYM, AUTO_SC, NULL, file_name, line_num);
+
+                                                                            // for code generation
                                                                             param_sym->is_param = 1;
+                                                                            param_sym->stack_offset = funct_scope->current_offset;
+                                                                            funct_scope->current_offset -= 8;
+
                                                                             st_install(proto_scope, param_sym);
                                                                         }
                                                                         else fprintf(stderr, "No key associated with input parameter #%d\n", cnt++); 
@@ -261,7 +268,7 @@ function_definition : decl_specifiers declarator    {
                                                             }
                                                             fprintf(stderr, "\nEntering function scope for '%s'\n", sym->key);
                                                             //print_sym_table(funct_scope);
-                                                            print_symbol(global, sym); 
+                                                            print_symbol(global, sym);
                                                             in_function = 1;
                                                         }
                                                         else {
@@ -272,6 +279,8 @@ function_definition : decl_specifiers declarator    {
                                                     compound_statement { 
                                                         //fprintf(stderr, "Exiting function scope\n");
                                                         SYMBOL* sym = $2;
+                                                        SYMTABLE* funct_scope = (SYMTABLE*) stack_peek(scope_stack);
+                                                        funct_scope->stack_size = -funct_scope->current_offset;
 
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("AST Dump for function %s\n", sym->key); 
@@ -283,7 +292,16 @@ function_definition : decl_specifiers declarator    {
                                                         printf("QUAD generation for function %s\n", sym->key); 
                                                         printf("---------------------------------------------\n"); 
                                                         fprintf(stderr, "=========== GEN QUADS ============\n");
-                                                        create_quads($4);
+                                                        BASICBLOCK* bb = create_quads($4);
+                                                        bb->stack_size = funct_scope->stack_size;
+
+                                                        printf("\n---------------------------------------------\n"); 
+                                                        printf("ASM generation for BB %s\n", bb->name); 
+                                                        printf("---------------------------------------------\n"); 
+                                                        fprintf(stderr, "=========== ASM GENERATION ============\n");
+                                                        generate_asm(bb); // generate assembly here
+
+
                                                         printf("\n\n\n\n");
                                                         in_function = 0;
 

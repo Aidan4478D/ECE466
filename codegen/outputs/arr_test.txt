@@ -1,0 +1,207 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: ARRAY of size 10 of INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:3
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:4
+symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:4
+symbol: p, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:3]
+<stdin>:8
+symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: x
+			TYPE: INT
+		DECLARATOR #2
+			IDENT: p
+			TYPE: POINTER to INT
+
+
+LIST ELEMENT #2:
+	ASSIGNMENT OP (=)
+		IDENT: x
+		UNARY OP (*)
+			BINARY OP (+)
+				IDENT: a
+				NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: p
+		UNARY OP (&)
+			UNARY OP (*)
+				BINARY OP (+)
+					IDENT: a
+					NUM (numtype=int)	5	SIGNED
+
+LIST ELEMENT #4:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: b
+			TYPE: INT
+
+
+LIST ELEMENT #5:
+	ASSIGNMENT OP (=)
+		IDENT: b
+		BINARY OP (+)
+			IDENT: x
+			NUM (numtype=int)	5	SIGNED
+
+LIST ELEMENT #6:
+	ASSIGNMENT OP (=)
+		IDENT: p
+		BINARY OP (+)
+			NUM (numtype=int)	3	SIGNED
+			UNARY OP (&)
+				IDENT: x
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	%T0 = 	MUL $3, $4
+	%T1 = 	LEA a{global}
+	%T2 = 	ADD %T1, %T0
+	%T3 = 	LOAD  [%T2]
+	x{lvar} = 	MOV %T3
+	%T4 = 	MUL $5, $4
+	%T5 = 	LEA a{global}
+	%T6 = 	ADD %T5, %T4
+	p{lvar} = 	MOV %T6
+	%T7 = 	ADD x{lvar}, $5
+	b{lvar} = 	MOV %T7
+	%T8 = 	LEA x{lvar}
+	%T9 = 	ADD $3, %T8
+	p{lvar} = 	MOV %T9
+	RETURN 
+
+---------------------------------------------
+ASM generation for BB .BB.0.0
+---------------------------------------------
+.BB.0.0:
+	pushq %rbp		# associate rbp with symbol .BB.0.0
+	movq %rsp, %rbp		# set up stack frame pointer
+
+	# QUAD ANALYZED: 	%T0 = 	MUL $3, $4
+	movl $3, %eax
+	movl $4, %edx
+	imull %edx, %eax
+	movl %eax, %r10
+
+	# QUAD ANALYZED: 	%T1 = 	LEA a{global}
+
+	# QUAD ANALYZED: 	%T2 = 	ADD %T1, %T0
+	movl %r10, %edx
+	movl %r10, %eax
+	addl %edx, %eax
+	movl %eax, %r10
+
+	# QUAD ANALYZED: 	%T3 = 	LOAD  [%T2]
+
+	# QUAD ANALYZED: 	x{lvar} = 	MOV %T3
+	movl %r10, %ecx
+	movl %ecx, x{lvar}
+
+	# QUAD ANALYZED: 	%T4 = 	MUL $5, $4
+	movl $5, %eax
+	movl $4, %edx
+	imull %edx, %eax
+	movl %eax, %r10
+
+	# QUAD ANALYZED: 	%T5 = 	LEA a{global}
+
+	# QUAD ANALYZED: 	%T6 = 	ADD %T5, %T4
+	movl %r10, %edx
+	movl %r10, %eax
+	addl %edx, %eax
+	movl %eax, %r10
+
+	# QUAD ANALYZED: 	p{lvar} = 	MOV %T6
+	movl %r10, %ecx
+	movl %ecx, p{lvar}
+
+	# QUAD ANALYZED: 	%T7 = 	ADD x{lvar}, $5
+	movl x{lvar}, %edx
+	movl $5, %eax
+	addl %edx, %eax
+	movl %eax, %r10
+
+	# QUAD ANALYZED: 	b{lvar} = 	MOV %T7
+	movl %r10, %ecx
+	movl %ecx, b{lvar}
+
+	# QUAD ANALYZED: 	%T8 = 	LEA x{lvar}
+
+	# QUAD ANALYZED: 	%T9 = 	ADD $3, %T8
+	movl $3, %edx
+	movl %r10, %eax
+	addl %edx, %eax
+	movl %eax, %r10
+
+	# QUAD ANALYZED: 	p{lvar} = 	MOV %T9
+	movl %r10, %ecx
+	movl %ecx, p{lvar}
+
+	# QUAD ANALYZED: 	RETURN 
+
+	popq %rbp
+
+
+
+

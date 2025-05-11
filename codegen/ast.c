@@ -425,6 +425,15 @@ void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec) {
         }
         current_spec = current_spec->list.next;
     }
+    
+    // update stack offset if new local variable
+    if (sym->type == VAR_SYM && cur_scope->scope != FILE_SCOPE) {
+        SYMTABLE* funct_scope = get_enclosing_funct_scope(cur_scope);
+        if (funct_scope) {
+            sym->stack_offset = funct_scope->current_offset;
+            funct_scope->current_offset -= 8; // Assume 8 bytes
+        }
+    }
 
     // just keep this as a list of AST nodes for now, it's kinda sketch when printed but it works
     if (type_specs) {
