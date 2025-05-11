@@ -19,7 +19,7 @@ void generate_asm(BASICBLOCK* bb) {
         // traverse through all quads within basicblock
         while(!list_is_empty(bb->quad_list)) {
             QUAD* quad = (QUAD*) list_remove_head(bb->quad_list);
-            printf("\tQUAD ANALYZED: ");
+            printf("\t# QUAD ANALYZED: ");
             print_quad(quad);
             quad_to_asm(quad);
             printf("\n");

@@ -451,7 +451,7 @@ void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec) {
     }
     else if(found_sym && stg_class_match && type_names_match) fprintf(stderr, "Redefinition of %s %s in %s originally defined <%s>:%d but that's okay! Continuing program...\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), found_sym->file_name, found_sym->line_num); 
     else {
-        fprintf(stderr, "%s '%s' already defined in your %s <%s>:%d scope within %s namespace!\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), cur_scope->start_file, cur_scope->start_line, get_name_space(sym->name_space)); 
+        fprintf(stderr, "%s '%s' already defined in %s <%s>:%d scope within %s namespace!\n", get_symbol_type(sym->type), sym->key, get_scope_name(cur_scope->scope), cur_scope->start_file, cur_scope->start_line, get_name_space(sym->name_space)); 
         exit(1);
     }
 }

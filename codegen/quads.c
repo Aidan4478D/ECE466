@@ -201,9 +201,9 @@ QUAD* create_statement(ast_node_t* node) {
             return NULL;
         }
         case BINOP_N: 
-            // handled within r_value
-            // would be kinda weird to have a binary operator on its own
+            // was proven that there were some "useful" cases to this
             fprintf(stderr, "BINARY OP detected!\n");
+            create_rvalue(node, NULL);
             break;
         case UNOP_N:
             // postinc/postdec stuff
@@ -726,6 +726,8 @@ BASICBLOCK* new_bb() {
     bb->quad_list = linklist;
     bb->bb_num = bb_count++;
     bb->funct_num = funct_count;
+
+    tmp_count = 0;
 
     bb->next = NULL; // Initialize next to NULL
 

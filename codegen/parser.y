@@ -529,11 +529,12 @@ array_declarator    : direct_declarator '[' ']'             {
                                                                 ast_node_t* temp = new_array($1->node, 0);
                                                                 SYMBOL* sym = $1;
 
-                                                                if(sym->node) {
-                                                                    sym->node = combine_nodes(sym->node, temp);
-                                                                    fprintf(stderr, "combining nodes for array\n");
-                                                                }
-                                                                else sym->node = temp;
+                                                                //if(sym->node) {
+                                                                //    sym->node = combine_nodes(sym->node, temp);
+                                                                //    fprintf(stderr, "combining nodes for array\n");
+                                                                //}
+                                                                //else sym->node = temp;
+                                                                sym->node = temp;
 
                                                                 //print_ast_tree(sym->node, 0); 
 
@@ -548,8 +549,9 @@ array_declarator    : direct_declarator '[' ']'             {
                                                                 ast_node_t* temp = new_array($1->node, $3._int); 
                                                                 SYMBOL* sym = $1; 
 
-                                                                if(sym->node) sym->node = combine_nodes(sym->node, temp);
-                                                                else sym->node = temp;
+                                                                //if(sym->node) sym->node = combine_nodes(sym->node, temp);
+                                                                //else sym->node = temp;
+                                                                sym->node = temp;
 
                                                                 $$ = sym;
                                                             }
