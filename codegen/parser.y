@@ -217,7 +217,9 @@ function_definition : decl_specifiers declarator    {
                                                             // function scope for function body
                                                             SYMTABLE* funct_scope = st_create(FUNCT_SCOPE, global);
                                                             stack_push(scope_stack, funct_scope);
-                                                            funct_scope->current_offset = -8;
+                                                            funct_scope->param_offset = 8;
+                                                            funct_scope->lvar_offset = -4;
+                                                            
 
                                                             // prototype scope
                                                             if (sym->type == FUNCT_SYM && sym->node->type == FUNCT_N && sym->node->function.params) {
@@ -239,8 +241,8 @@ function_definition : decl_specifiers declarator    {
 
                                                                             // for code generation
                                                                             param_sym->is_param = 1;
-                                                                            param_sym->stack_offset = funct_scope->current_offset;
-                                                                            funct_scope->current_offset -= 8;
+                                                                            param_sym->stack_offset = funct_scope->param_offset;
+                                                                            funct_scope->param_offset += 4;
 
                                                                             st_install(proto_scope, param_sym);
                                                                         }
@@ -280,7 +282,6 @@ function_definition : decl_specifiers declarator    {
                                                         //fprintf(stderr, "Exiting function scope\n");
                                                         SYMBOL* sym = $2;
                                                         SYMTABLE* funct_scope = (SYMTABLE*) stack_peek(scope_stack);
-                                                        funct_scope->stack_size = -funct_scope->current_offset;
 
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("AST Dump for function %s\n", sym->key); 
@@ -293,7 +294,7 @@ function_definition : decl_specifiers declarator    {
                                                         printf("---------------------------------------------\n"); 
                                                         fprintf(stderr, "=========== GEN QUADS ============\n");
                                                         BASICBLOCK* bb = create_quads($4);
-                                                        bb->stack_size = funct_scope->stack_size;
+                                                        bb->stack_size = -funct_scope->lvar_offset + funct_scope->param_offset;
 
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("ASM generation for BB %s\n", bb->name); 

@@ -49,8 +49,8 @@ typedef struct sym_table {
     int is_struct_scope;
  
     // total stack size
-    int stack_size;
-    int current_offset;
+    int lvar_offset;
+    int param_offset;
 } SYMTABLE;
 
 

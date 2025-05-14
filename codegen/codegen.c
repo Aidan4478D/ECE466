@@ -14,8 +14,8 @@ void generate_asm(BASICBLOCK* bb) {
     // traverse through all basic blocks
     while(bb) {
         printf("%s:\n", bb->name);
-        printf("\tpushq %%rbp\t\t# associate rbp with symbol %s\n", bb->name); 
-        printf("\tmovq %%rsp, %%rbp\t\t# set up stack frame pointer\n\n");
+        printf("\tpushl %%ebp\t\t# associate ebp with symbol %s\n", bb->name); 
+        printf("\tmovl %%esp, %%rbp\t\t# set up stack frame pointer\n\n");
 
         fprintf(stderr, "printing BB %s\n", bb->name);
 
@@ -30,7 +30,7 @@ void generate_asm(BASICBLOCK* bb) {
         list_destroy(bb->quad_list);
         bb = bb->next;
 
-        printf("\tpopq %%rbp\n");
+        /*printf("\tpopq %%rbp\n");*/
     }
 }
 
@@ -192,12 +192,20 @@ void quad_to_asm(QUAD* quad) {
 
         case CALL_OC:
             fprintf(stderr, "CALL_OC detected!\n");
+            
+
             break;
         case ARG_OC:
             fprintf(stderr, "ARG_OC detected!\n");
             break;
         case RETURN_OC:
             fprintf(stderr, "RETURN_OC detected!\n");
+    
+            // put ret value into eax register
+            if(src1) printf("\tmovl %s, %%eax\n", get_qnode_output(src1));
+            printf("\tleave\n");
+            printf("\tret\n");
+
             break;
         
         default:

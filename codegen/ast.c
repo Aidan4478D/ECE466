@@ -430,8 +430,8 @@ void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec) {
     if (sym->type == VAR_SYM && cur_scope->scope != FILE_SCOPE) {
         SYMTABLE* funct_scope = get_enclosing_funct_scope(cur_scope);
         if (funct_scope) {
-            sym->stack_offset = funct_scope->current_offset;
-            funct_scope->current_offset -= 8; // Assume 8 bytes
+            sym->stack_offset = funct_scope->lvar_offset;
+            funct_scope->lvar_offset -= 4; // Assume 8 bytes
         }
     }
 
@@ -489,9 +489,9 @@ int get_type_size(ast_node_t* type_node) {
                 case CHAR_DT:    return 1;
                 case SHORT_DT:   return 2;
                 case INT_DT:     return 4;
-                case LONG_DT:    return 8;
+                case LONG_DT:    return 4; // long long = 8
                 case FLOAT_DT:   return 4;
-                case DOUBLE_DT:  return 8;
+                case DOUBLE_DT:  return 8; // long double = 12
                 case VOID_DT:    return 0;
                 default:
                     fprintf(stderr, "unknown decl_type %d in get_type_size\n", type_node->decl_spec.decl_type);
@@ -503,9 +503,10 @@ int get_type_size(ast_node_t* type_node) {
                 exit(1);
             }
             return type_node->array.size * get_type_size(type_node->array.element_type);
-        // pointer size 8 in X86-64
+
+        // pointer size 4 in X86-32
         case POINTER_N:
-            return 8;
+            return 4;
         default:
             fprintf(stderr, "unsupported type %s in get_type_size\n", get_node_type(type_node->type));
             exit(1);

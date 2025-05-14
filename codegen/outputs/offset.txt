@@ -129,19 +129,19 @@ ASM generation for BB .BB.0.0
 
 	# QUAD ANALYZED: 	f{lvar} = 	MOV $3
 	movl $3, %ecx
-	movl %ecx, -32(%rbp)
+	movl %ecx, -8(%rbp)
 
 	# QUAD ANALYZED: 	e{lvar} = 	MOV $2
 	movl $2, %ecx
-	movl %ecx, -24(%rbp)
+	movl %ecx, -4(%rbp)
 
 	# QUAD ANALYZED: 	d{param} = 	MOV $1
 	movl $1, %ecx
-	movl %ecx, -16(%rbp)
+	movl %ecx, 12(%rbp)
 
 	# QUAD ANALYZED: 	c{param} = 	MOV $0
 	movl $0, %ecx
-	movl %ecx, -8(%rbp)
+	movl %ecx, 8(%rbp)
 
 	# QUAD ANALYZED: 	RETURN 
 
