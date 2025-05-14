@@ -171,7 +171,7 @@ ast_node_t* new_param(ast_node_t* type, ast_node_t* ident) {
     node->type = PARAM_N;
 
     node->parameter.type = type;    // not node->type, this is an ast_node that references a decl spec type (ex. INT)
-    node->parameter.ident = ident;  // if size is NULL, then it's an unsized array
+    node->parameter.ident = ident; //extract_ident(ident);  // if size is NULL, then it's an unsized array
 
     return node;
 }
@@ -367,6 +367,8 @@ ast_node_t* combine_nodes(ast_node_t* base, ast_node_t* decl) {
 
             // Attach the declspec as the base of the type
             else return combine_nodes(decl, base);
+        case IDENT_N:
+            return base;
         default:
             return decl;
     }

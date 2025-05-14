@@ -113,6 +113,27 @@ char* get_qnode_type(int op) {
     }
 }
 
+
+void print_escaped_string(char* str) {
+    for (const char* p = str; *p; p++) {
+        switch (*p) {
+            case '\\': printf("\\\\"); break;
+            case '\n': printf("\\n"); break;
+            case '\t': printf("\\t"); break;
+            case '\b': printf("\\b"); break;
+            case '\r': printf("\\r"); break;
+            case '\f': printf("\\f"); break;
+            case '\v': printf("\\v"); break;
+            case '\a': printf("\\a"); break;
+            case '\?': printf("\\?"); break;
+            case '\'': printf("\\\'"); break;
+            case '\"': printf("\\\""); break;
+            default:   putchar(*p); break;
+        }
+    }
+}
+
+
 char* print_opcode(int op) {
     switch(op) {
         case LOAD_OC:      return "LOAD";
@@ -590,7 +611,7 @@ void print_ast_tree(ast_node_t *node, int indent) {
         case PARAM_N:
             if (node->parameter.ident) {
                 // extract ident in ast.c
-                ast_node_t* ident_node = extract_ident(node->parameter.ident);
+                ast_node_t* ident_node = node->parameter.ident;
                 if (ident_node) printf("IDENT: %s\n", ident_node->ident.name);
             }
             if (node->parameter.type) {

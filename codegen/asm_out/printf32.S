@@ -2,7 +2,7 @@
 	.text
 	.section	.rodata
 .LC0:
-	.string	"value is %d"
+	.string	"value is %d\n"
 	.text
 	.globl	f
 	.type	f, @function
@@ -65,7 +65,7 @@ main:
 	leal	.LC2@GOTOFF(%eax), %eax
 	movl	%eax, -12(%ebp)
 	subl	$12, %esp
-	pushl	$2
+	pushl	$3
 	call	f
 	addl	$16, %esp
 	movl	-4(%ebp), %ecx

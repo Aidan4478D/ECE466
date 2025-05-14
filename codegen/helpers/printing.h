@@ -21,5 +21,6 @@ int get_binop_opcode(ast_node_t* node);
 int get_branch_opcode(int op);
 
 char* get_qnode_type(int op);
+void print_escaped_string(char* str);
 
 #endif //_HELPERS_H

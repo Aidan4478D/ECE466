@@ -239,7 +239,10 @@ function_definition : decl_specifiers declarator    {
                                                                     ast_node_t* param_node = param_list->list.head;
                                                                     if (param_node->type == PARAM_N) {
 
+                                                                        //ast_node_t* ident_node = extract_ident(param_node->parameter.ident);
+                                                                        //char* key = (ident_node && ident_node->type == IDENT_N) ? ident_node->ident.name : NULL;
                                                                         char* key = (param_node->parameter.ident && param_node->parameter.ident->type == IDENT_N) ? param_node->parameter.ident->ident.name : NULL;
+                                                                        fprintf(stderr, "param key is %s\n", key);
                                                                         
                                                                         if(key) {
                                                                             SYMBOL* param_sym = st_new_symbol(key, param_node, GENERAL_NS, VAR_SYM, AUTO_SC, NULL, file_name, line_num);
@@ -248,7 +251,10 @@ function_definition : decl_specifiers declarator    {
                                                                             param_sym->is_param = 1;
                                                                             param_sym->stack_offset = funct_scope->param_offset;
                                                                             funct_scope->param_offset += 4;
-
+                                                                            
+                                                                            // Set the correct type before installation
+                                                                            //param_sym->node = combine_nodes(param_node->parameter.type, param_node->parameter.ident);
+                                                                            fprintf(stderr, "installing %s into proto scope!\n", key); 
                                                                             st_install(proto_scope, param_sym);
                                                                         }
                                                                         else fprintf(stderr, "No key associated with input parameter #%d\n", cnt++); 
@@ -630,7 +636,12 @@ parameter_list : parameter_declaration { $$ = new_list($1); }
                | parameter_list ',' parameter_declaration { $$ = append_item($1, $3); }
                ;
 
-parameter_declaration : decl_specifiers declarator  { $$ = new_param($1, attach_ident($2->node, $2->key)); }
+parameter_declaration : decl_specifiers declarator  { 
+                                                        ast_node_t* combined_type = combine_nodes($1, $2->node);
+                                                        ast_node_t* ident_node = attach_ident(extract_ident($2->node), $2->key);
+                                                        //fprintf(stderr, "ident is %s\n", ident_node->ident.name); 
+                                                        $$ = new_param(combined_type, ident_node); 
+                                                    }
                       | decl_specifiers             { $$ = new_param($1, NULL); }
 
 

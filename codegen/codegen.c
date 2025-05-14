@@ -10,7 +10,7 @@
 // Questions:
 // can I use this like a(%rip) relative mode guy everywhere?
 
-char* temp_registers[] = {"%%ebx", "%%edi", "%%esi"};
+char* temp_registers[] = {"%ebx", "%edi", "%esi"};
 
 // since I already do args in reverse, insert the new args into a list
 list_t* arg_list;
@@ -35,7 +35,9 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     while (!list_is_empty(string_literals)) {
         QNODE* current = list_remove_head(string_literals);
         printf(".LC%d:\n", current->str_label_no);
-        printf("\t.string \"%s\"\n", current->descriptor);
+        printf("\t.string \"");
+        print_escaped_string(current->descriptor);
+        printf("\"\n");
     }
     printf("\t.text\n");
 
@@ -46,7 +48,7 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
         printf("%s:\n", fn_name);
         printf("%s:\n", bb->name);
         printf("\tpushl %%ebp\t\t# associate ebp with symbol %s\n", bb->name); 
-        printf("\tmovl %%esp, %%rbp\t\t# set up stack frame pointer\n\n");
+        printf("\tmovl %%esp, %%ebp\t\t# set up stack frame pointer\n\n");
 
         fprintf(stderr, "printing BB %s\n", bb->name);
 
@@ -61,7 +63,7 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
         list_destroy(bb->quad_list);
         bb = bb->next;
 
-        /*printf("\tpopq %%rbp\n");*/
+        /*printf("\tpopl %%ebp\n");*/
     }
     fflush(stdout);
     dup2(saved_stdout, STDOUT_FILENO);
@@ -215,6 +217,9 @@ void quad_to_asm(QUAD* quad) {
             
             printf("\tcall %s\n", get_qnode_output(src1));
             printf("\taddl $%d, %%esp\n", atoi(get_qnode_output(src2)) * 4);
+
+            if(dest) printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+
             break;
         case ARG_OC:
             fprintf(stderr, "ARG_OC detected!\n");

@@ -172,7 +172,9 @@ void print_qnode(QNODE* qnode) {
 
         // reuses descriptor field for string -- is this bad? who cares
         case STR_Q:
-            printf("\"%s\"", qnode->descriptor); 
+            printf("\""); 
+            print_escaped_string(qnode->descriptor);
+            printf("\"");
             break;
 
         default: printf("UNKNOWN_QNODE");

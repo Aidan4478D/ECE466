@@ -2,35 +2,40 @@
 	.text
 	.section .rodata
 .LC0:
-	.string "value is %d"
+	.string "value is %d, %s\n"
 	.text
 	.globl f
 	.type f, @function
 f:
 .BB.0.0:
 	pushl %ebp		# associate ebp with symbol .BB.0.0
-	movl %esp, %rbp		# set up stack frame pointer
+	movl %esp, %ebp		# set up stack frame pointer
 
-	# QUAD ANALYZED: 	ARG 1, a{param}
+	# QUAD ANALYZED: 	ARG 2, a{param}
+	# pushed arg #2 into arg list
+
+	# QUAD ANALYZED: 	ARG 1, b{param}
 	# pushed arg #1 into arg list
 
-	# QUAD ANALYZED: 	ARG 0, "value is %d"
+	# QUAD ANALYZED: 	ARG 0, "value is %d, %s\n"
 	# pushed arg #0 into arg list
 
-	# QUAD ANALYZED: 	%T0 = 	CALL printf, 2
+	# QUAD ANALYZED: 	%T0 = 	CALL printf, 3
 	pushl 8(%ebp)
+	pushl 12(%ebp)
 	pushl $.LC0
 	call printf
-	addl $8, %esp
+	addl $12, %esp
+	movl %eax, %ebx
 
-	# QUAD ANALYZED: 	%T1 = 	ADD a{param}, $1
-	movl 8(%ebp), %edx
+	# QUAD ANALYZED: 	%T1 = 	ADD b{param}, $1
+	movl 12(%ebp), %edx
 	movl $1, %eax
 	addl %edx, %eax
-	movl %eax, %%edi
+	movl %eax, %edi
 
 	# QUAD ANALYZED: 	RETURN %T1
-	movl %%edi, %eax
+	movl %edi, %eax
 	leave
 	ret
 
@@ -45,7 +50,7 @@ f:
 main:
 .BB.1.0:
 	pushl %ebp		# associate ebp with symbol .BB.1.0
-	movl %esp, %rbp		# set up stack frame pointer
+	movl %esp, %ebp		# set up stack frame pointer
 
 	# QUAD ANALYZED: 	g{lvar} = 	MOV "hello"
 	movl $.LC1, %ecx
@@ -55,16 +60,21 @@ main:
 	movl $.LC2, %ecx
 	movl %ecx, -8(%ebp)
 
-	# QUAD ANALYZED: 	ARG 0, $2
+	# QUAD ANALYZED: 	ARG 1, $3
+	# pushed arg #1 into arg list
+
+	# QUAD ANALYZED: 	ARG 0, i{lvar}
 	# pushed arg #0 into arg list
 
-	# QUAD ANALYZED: 	%T0 = 	CALL f, 1
-	pushl $2
+	# QUAD ANALYZED: 	%T0 = 	CALL f, 2
+	pushl $3
+	pushl -8(%ebp)
 	call f
-	addl $4, %esp
+	addl $8, %esp
+	movl %eax, %ebx
 
 	# QUAD ANALYZED: 	RETURN %T0
-	movl %%ebx, %eax
+	movl %ebx, %eax
 	leave
 	ret
 
