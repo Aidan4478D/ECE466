@@ -6,6 +6,7 @@
 
 extern list_t* string_literals;
 extern FILE* out_file;
+extern int str_label_cnt;
 
 void generate_asm(BASICBLOCK* bb, char* fn_name);
 void quad_to_asm(QUAD* quad);

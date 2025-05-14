@@ -10,7 +10,6 @@
 // Questions:
 // can I use this like a(%rip) relative mode guy everywhere?
 
-int str_label = 0;
 char* temp_registers[] = {"%%ebx", "%%edi", "%%esi"};
 
 // since I already do args in reverse, insert the new args into a list
@@ -32,12 +31,11 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     list_init(arg_list);
 
     printf("\t.section .rodata\n");
-    list_node_t* current = string_literals->head;
 
-    while (current != NULL) {
-        printf(".LC%d:\n", str_label++);
-        printf("\t.string \"%s\"\n", (char*) current->data);
-        current = current->next;
+    while (!list_is_empty(string_literals)) {
+        QNODE* current = list_remove_head(string_literals);
+        printf(".LC%d:\n", current->str_label_no);
+        printf("\t.string \"%s\"\n", current->descriptor);
     }
     printf("\t.text\n");
 
@@ -110,7 +108,7 @@ char* get_qnode_output(QNODE* qnode) {
             return strdup(buf);
 
         case STR_Q:
-            sprintf(buf, "\"%s\"", qnode->descriptor); 
+            sprintf(buf, "$.LC%d", qnode->str_label_no); 
             return strdup(buf);
 
 

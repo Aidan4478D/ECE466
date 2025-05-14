@@ -25,6 +25,7 @@ stack_t* struct_union_stack;
 // this is sketch but a quick fix
 int in_function = 0; 
 int global_scope_updated = 0;
+int str_label_cnt;
 
 FILE* out_file;
 FILE* debug_file;
@@ -1028,6 +1029,7 @@ expression : comma_expression { $$ = $1; }
 int main(void) {
     char *asm_out_name = "file_out.S";
     char *debug_out_name = "file_out.txt";
+    int str_label_cnt = 0;
 
     scope_stack = (stack_t*)malloc(sizeof(stack_t));
     stack_init(scope_stack);

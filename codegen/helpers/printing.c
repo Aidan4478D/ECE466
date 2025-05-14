@@ -105,6 +105,7 @@ char* get_qnode_type(int op) {
         case IMM_Q:     return "IMM";
         case BB_Q:      return "BB";
         case DESC_Q:    return "DESC";
+        case STR_Q:     return "STR";
 
         default: // set to branch opcode on default
             fprintf(stderr, "Unknown qnode type: %d\n", op);

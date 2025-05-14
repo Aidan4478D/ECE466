@@ -7,7 +7,6 @@
 extern int line_num;
 extern char* file_name;
 
-
 // forward declaration of struct symbol (from symtable.h)
 struct symbol;
 typedef struct symbol SYMBOL;

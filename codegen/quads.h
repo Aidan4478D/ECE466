@@ -72,7 +72,7 @@ typedef struct quad_node {
     struct basic_block* bb; // for block nodes
     
     char* descriptor;
-    int label_num; //for strings
+    int str_label_no; //for strings
 } QNODE; 
 
 
@@ -137,5 +137,6 @@ int get_element_size(ast_node_t* node);
 
 // list of string literals for code gen
 extern list_t* string_literals;
+extern int str_label_cnt;
 
 #endif

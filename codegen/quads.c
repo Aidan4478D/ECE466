@@ -23,6 +23,7 @@ list_t* string_literals;
 BASICBLOCK* create_quads(ast_node_t* listnode) {
     
     // stack of loop infos
+    bb_count = 0;
     loop_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(loop_stack);
 
@@ -288,19 +289,16 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             return qnode;
         }
         case STRING_N:
-            // dont create tmp if it's for an arg quad
-            if(!target) {
-                target = (QNODE*) malloc(sizeof(QNODE));
-                target->type = STR_Q;
-                target->descriptor = node->string.str_meta.string_literal;
-            }
-            else {
-                target->type = STR_Q;
-                target->descriptor = node->string.str_meta.string_literal;
-            }
-            list_insert_tail(string_literals, target->descriptor);
+            if(!target) target = (QNODE*) malloc(sizeof(QNODE));
+            target->type = STR_Q;
+            target->descriptor = node->string.str_meta.string_literal;
+            target->str_label_no = str_label_cnt++;
 
-            fprintf(stderr, "detected string, is %s\n", target->descriptor);
+            fprintf(stderr, "string label is %d\n", str_label_cnt); 
+
+            list_insert_tail(string_literals, target);
+
+            //fprintf(stderr, "detected string, is %s\n", target->descriptor);
 
             return target;
         case IDENT_N: {
@@ -486,7 +484,7 @@ int get_element_size(ast_node_t* node) {
         
         return get_type_size(type_node);
     }
-    if(node->type == POINTER_N) return 8; //that was easy
+    if(node->type == POINTER_N) return 4; //that was easy
     else {
         return 0;
         fprintf(stderr, "Element size node is not an ident node! It is: %s\n", get_node_type(node->type));
@@ -821,6 +819,7 @@ QNODE* new_variable(ast_node_t* node, SYMBOL* sym) {
 
     return qnode;
 }
+
 
 QNODE* new_descriptor(char* name) {
 

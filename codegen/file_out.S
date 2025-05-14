@@ -19,7 +19,7 @@ f:
 
 	# QUAD ANALYZED: 	%T0 = 	CALL printf, 2
 	pushl 8(%ebp)
-	pushl "value is %d"
+	pushl $.LC0
 	call printf
 	addl $8, %esp
 
@@ -43,16 +43,16 @@ f:
 	.globl main
 	.type main, @function
 main:
-.BB.1.1:
-	pushl %ebp		# associate ebp with symbol .BB.1.1
+.BB.1.0:
+	pushl %ebp		# associate ebp with symbol .BB.1.0
 	movl %esp, %rbp		# set up stack frame pointer
 
 	# QUAD ANALYZED: 	g{lvar} = 	MOV "hello"
-	movl "hello", %ecx
+	movl $.LC1, %ecx
 	movl %ecx, -4(%ebp)
 
 	# QUAD ANALYZED: 	i{lvar} = 	MOV "hello, 2"
-	movl "hello, 2", %ecx
+	movl $.LC2, %ecx
 	movl %ecx, -8(%ebp)
 
 	# QUAD ANALYZED: 	ARG 0, $2
