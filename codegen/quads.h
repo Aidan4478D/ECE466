@@ -55,7 +55,8 @@ typedef enum quad_types {
     VAR_Q,  // variable
     IMM_Q,  // immediate
     BB_Q,   // basic block
-    DESC_Q  // descriptor (for arg numbers)
+    DESC_Q, // descriptor (for arg numbers)
+    STR_Q   // strings for string literal
 } QTYPE;
 
 struct basic_block;
@@ -71,6 +72,7 @@ typedef struct quad_node {
     struct basic_block* bb; // for block nodes
     
     char* descriptor;
+    int label_num; //for strings
 } QNODE; 
 
 
@@ -132,5 +134,8 @@ void print_quad(QUAD* quad);
 void print_qnode(QNODE* node);
 
 int get_element_size(ast_node_t* node);
+
+// list of string literals for code gen
+extern list_t* string_literals;
 
 #endif

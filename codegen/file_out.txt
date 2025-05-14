@@ -1,0 +1,154 @@
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: a
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:1
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: a
+			TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	FUNCTION CALL
+		IDENT: printf
+		PARAMETER #1
+			STRING value is %d
+		PARAMETER #2
+			IDENT: a
+
+LIST ELEMENT #2:
+	RETURN
+		BINARY OP (+)
+			IDENT: a
+			NUM (numtype=int)	1	SIGNED
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	ARG 1, a{param}
+	ARG 0, "value is %d"
+	%T0 = 	CALL printf, 2
+	%T1 = 	ADD a{param}, $1
+	RETURN %T1
+
+---------------------------------------------
+ASM generation for function: f, BB: .BB.0.0
+---------------------------------------------
+
+
+
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:6
+symbol: main, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'main'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:6
+symbol: main, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'main'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:6]
+<stdin>:7
+symbol: g, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to CHAR
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:6]
+<stdin>:7
+symbol: i, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: POINTER to CHAR
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function main
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: CHAR 
+		DECLARATOR #1
+			IDENT: g
+			TYPE: POINTER to CHAR
+		DECLARATOR #2
+			IDENT: i
+			TYPE: POINTER to CHAR
+
+
+LIST ELEMENT #2:
+	ASSIGNMENT OP (=)
+		IDENT: g
+		STRING hello
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: i
+		STRING hello, 2
+
+LIST ELEMENT #4:
+	RETURN
+		FUNCTION CALL
+			IDENT: f
+			PARAMETER #1
+				NUM (numtype=int)	2	SIGNED
+
+
+---------------------------------------------
+QUAD generation for function main
+---------------------------------------------
+.BB1.1 
+	g{lvar} = 	MOV "hello"
+	i{lvar} = 	MOV "hello, 2"
+	ARG 0, $2
+	%T0 = 	CALL f, 1
+	RETURN %T0
+
+---------------------------------------------
+ASM generation for function: main, BB: .BB.1.1
+---------------------------------------------
+
+
+
+

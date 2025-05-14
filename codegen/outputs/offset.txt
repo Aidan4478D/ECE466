@@ -242,7 +242,7 @@ QUAD generation for function g
 .BB1.1 
 	ARG 1, $2
 	ARG 0, $1
-	%T0 = 	CALL $f, 2
+	%T0 = 	CALL f, 2
 	z{lvar} = 	MOV %T0
 	RETURN z{lvar}
 
@@ -255,10 +255,16 @@ g:
 	movl %esp, %rbp		# set up stack frame pointer
 
 	# QUAD ANALYZED: 	ARG 1, $2
+	# pushed arg #1 into arg list
 
 	# QUAD ANALYZED: 	ARG 0, $1
+	# pushed arg #0 into arg list
 
-	# QUAD ANALYZED: 	%T0 = 	CALL $f, 2
+	# QUAD ANALYZED: 	%T0 = 	CALL f, 2
+	pushl $2
+	pushl $1
+	call f
+	addl $8, %esp
 
 	# QUAD ANALYZED: 	z{lvar} = 	MOV %T0
 	movl %%ebx, %ecx

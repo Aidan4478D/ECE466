@@ -1,20 +1,51 @@
 #include "codegen.h"
 #include "helpers/printing.h"
+#include "helpers/linklist.h"
+
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <string.h>
 
 // Questions:
 // can I use this like a(%rip) relative mode guy everywhere?
 
+int str_label = 0;
 char* temp_registers[] = {"%%ebx", "%%edi", "%%esi"};
-stack_t arg_stack;
+
+// since I already do args in reverse, insert the new args into a list
+list_t* arg_list;
 
 // where BB is the starting bb in the flow
-void generate_asm(BASICBLOCK* bb) {
+void generate_asm(BASICBLOCK* bb, char* fn_name) {
 
-    stack_init(arg_stack);
+    // redirect stdout -> out_file
+    int saved_stdout = dup(STDOUT_FILENO);
+
+    // Redirect stdout to out_file for assembly output
+    if (dup2(fileno(out_file), STDOUT_FILENO) < 0) {
+        perror("Failed to redirect stdout to out_file");
+        exit(1);
+    }
+    
+    arg_list = (list_t*) malloc(sizeof(list_t));
+    list_init(arg_list);
+
+    printf("\t.section .rodata\n");
+    list_node_t* current = string_literals->head;
+
+    while (current != NULL) {
+        printf(".LC%d:\n", str_label++);
+        printf("\t.string \"%s\"\n", (char*) current->data);
+        current = current->next;
+    }
+    printf("\t.text\n");
+
     // traverse through all basic blocks
     while(bb) {
+        printf("\t.globl %s\n", fn_name);
+        printf("\t.type %s, @function\n", fn_name);
+        printf("%s:\n", fn_name);
         printf("%s:\n", bb->name);
         printf("\tpushl %%ebp\t\t# associate ebp with symbol %s\n", bb->name); 
         printf("\tmovl %%esp, %%rbp\t\t# set up stack frame pointer\n\n");
@@ -34,6 +65,9 @@ void generate_asm(BASICBLOCK* bb) {
 
         /*printf("\tpopq %%rbp\n");*/
     }
+    fflush(stdout);
+    dup2(saved_stdout, STDOUT_FILENO);
+    close(saved_stdout);
 }
 
 char* get_qnode_output(QNODE* qnode) {
@@ -74,6 +108,11 @@ char* get_qnode_output(QNODE* qnode) {
         case DESC_Q:
             sprintf(buf, "%s", qnode->descriptor);
             return strdup(buf);
+
+        case STR_Q:
+            sprintf(buf, "\"%s\"", qnode->descriptor); 
+            return strdup(buf);
+
 
         default:
             fprintf(stderr, "node type %d does not exist\n", qnode->type);
@@ -173,11 +212,17 @@ void quad_to_asm(QUAD* quad) {
 
         case CALL_OC:
             fprintf(stderr, "CALL_OC detected!\n");
+            while(!list_is_empty(arg_list))
+                printf("\tpushl %s\n", get_qnode_output(list_remove_head(arg_list)));
+            
+            printf("\tcall %s\n", get_qnode_output(src1));
+            printf("\taddl $%d, %%esp\n", atoi(get_qnode_output(src2)) * 4);
             break;
         case ARG_OC:
-            // src 1: position, src2: value
-            stack_push(src2);
             fprintf(stderr, "ARG_OC detected!\n");
+            // src 1: position, src2: value
+            list_insert_tail(arg_list, src2);
+            printf("\t# pushed arg #%s into arg list\n", get_qnode_output(src1));
             break;
         case RETURN_OC:
             fprintf(stderr, "RETURN_OC detected!\n");

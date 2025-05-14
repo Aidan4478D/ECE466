@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "helpers/printing.h"
 #include "helpers/stack.h"
@@ -24,6 +25,9 @@ stack_t* struct_union_stack;
 // this is sketch but a quick fix
 int in_function = 0; 
 int global_scope_updated = 0;
+
+FILE* out_file;
+FILE* debug_file;
 
 /* Although this is great, it does not include: 
     - Function specifiers (inline)
@@ -302,8 +306,8 @@ function_definition : decl_specifiers declarator    {
                                                         printf("ASM generation for function: %s, BB: %s\n", sym->key, bb->name); 
                                                         printf("---------------------------------------------\n"); 
                                                         fprintf(stderr, "=========== ASM GENERATION ============\n");
-                                                        printf("%s:\n", sym->key);
-                                                        generate_asm(bb); // generate assembly here
+                                                        //printf("%s:\n", sym->key);
+                                                        generate_asm(bb, sym->key); // generate assembly here
 
 
                                                         printf("\n\n\n\n");
@@ -1022,22 +1026,60 @@ expression : comma_expression { $$ = $1; }
 %%
 
 int main(void) {
-    scope_stack = (stack_t*) malloc(sizeof(stack_t));
+    char *asm_out_name = "file_out.S";
+    char *debug_out_name = "file_out.txt";
+
+    scope_stack = (stack_t*)malloc(sizeof(stack_t));
     stack_init(scope_stack);
 
     struct_union_stack = (stack_t*)malloc(sizeof(stack_t));
     stack_init(struct_union_stack);
-    
+
     SYMTABLE* global = st_create(FILE_SCOPE, NULL);
 
-    stack_push(scope_stack, global); 
-    yyparse(); 
+    // assembly output file
+    out_file = fopen(asm_out_name, "w");
+    if (out_file == NULL) {
+        perror("Failed to open assembly output file");
+        return 1;
+    }
+    fprintf(out_file, "\t.file \"%s\"\n", file_name);
+    fprintf(out_file, "\t.text\n");
+    fflush(out_file);
 
+
+    // debug output file
+    debug_file = fopen(debug_out_name, "w");
+    if (debug_file == NULL) {
+        perror("Failed to open debug output file");
+        fclose(out_file);
+        return 1;
+    }
+
+    int original_stdout = dup(STDOUT_FILENO);
+    if (dup2(fileno(debug_file), STDOUT_FILENO) < 0) {
+        perror("Failed to redirect stdout to debug_file");
+        fclose(out_file);
+        fclose(debug_file);
+        return 1;
+    }
+
+    // set stdout to unbuffered mode
+    setbuf(stdout, NULL);
+
+    stack_push(scope_stack, global);
+    yyparse();
+
+    // Restore original stdout
+    dup2(original_stdout, STDOUT_FILENO);
+    close(original_stdout);
+
+    fclose(out_file);
+    fclose(debug_file);
     free(scope_stack);
     free(struct_union_stack);
     return 0;
 }
-
 
 void yyerror(char *s) {
     fprintf(stderr, "syntax error: %s\n", s);

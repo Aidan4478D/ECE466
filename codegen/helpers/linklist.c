@@ -2,6 +2,7 @@
 
 void list_init(list_t *list) {
     list->head = NULL;
+    list->list_size = 0;
 }
 
 bool list_is_empty(list_t *list) {
@@ -17,6 +18,7 @@ void list_insert_head(list_t *list, void *data) {
     new_node->data = data;
     new_node->next = list->head;
     list->head = new_node;
+    list->list_size++;
 }
 
 void list_insert_tail(list_t *list, void *data) {
@@ -37,6 +39,7 @@ void list_insert_tail(list_t *list, void *data) {
         }
         current->next = new_node;
     }
+    list->list_size++;
 }
 
 void *list_remove_head(list_t *list) {
@@ -47,6 +50,7 @@ void *list_remove_head(list_t *list) {
     list_node_t *temp = list->head;
     void *data = temp->data;
     list->head = temp->next;
+    list->list_size--;
     free(temp);
     return data;
 }

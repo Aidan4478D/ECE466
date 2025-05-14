@@ -4,7 +4,10 @@
 #include "quads.h"
 #include "ast.h"
 
-void generate_asm(BASICBLOCK* bb);
+extern list_t* string_literals;
+extern FILE* out_file;
+
+void generate_asm(BASICBLOCK* bb, char* fn_name);
 void quad_to_asm(QUAD* quad);
 char* get_memory_operand(QNODE *q);
 

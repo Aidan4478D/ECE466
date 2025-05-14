@@ -3,6 +3,7 @@
 
 #include "quads.h"
 #include "symtable.h"
+#include "codegen.h"
 
 #include "helpers/printing.h"
 #include "helpers/stack.h"
@@ -17,17 +18,16 @@ BASICBLOCK* cur_bb;
 BASICBLOCK* last_bb = NULL;
 
 stack_t* loop_stack;
-
-// QUESTIONS:
-// - is size of a pointer 8 even nested
-// - do we have to write out whole sizeof operation (with mults and adds)
-// - can I just assume pointers are in the left operand
+list_t* string_literals;
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
     
     // stack of loop infos
     loop_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(loop_stack);
+
+    string_literals = (list_t*) malloc(sizeof(list_t));
+    list_init(string_literals);
 
     // create linked list for quads
     BASICBLOCK* bb = new_bb();
@@ -152,13 +152,11 @@ void print_qnode(QNODE* qnode) {
         case VAR_Q: 
             if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
                 // this might be sketchy as variables aren't really immediates but it gets the job done
-                if (qnode->sym && qnode->sym->type == FUNCT_SYM) {
-                    printf("$%s", qnode->ast_node->ident.name);
-                } 
-                else {
-                    if(qnode->sym && qnode->sym->is_param) printf("%s{%s}", qnode->ast_node->ident.name, "param");
-                    else printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
-                }
+                /*if (qnode->sym && qnode->sym->type == FUNCT_SYM) {*/
+                    /*printf("$%s", qnode->ast_node->ident.name);*/
+                /*} */
+                if(qnode->sym && qnode->sym->is_param) printf("%s{%s}", qnode->ast_node->ident.name, "param");
+                else printf("%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
             } 
             else printf("VAR_UNKNOWN");
             break;
@@ -169,6 +167,11 @@ void print_qnode(QNODE* qnode) {
 
         case DESC_Q:
             printf("%s", qnode->descriptor);
+            break;
+
+        // reuses descriptor field for string -- is this bad? who cares
+        case STR_Q:
+            printf("\"%s\"", qnode->descriptor); 
             break;
 
         default: printf("UNKNOWN_QNODE");
@@ -285,7 +288,21 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
             return qnode;
         }
         case STRING_N:
-            break;
+            // dont create tmp if it's for an arg quad
+            if(!target) {
+                target = (QNODE*) malloc(sizeof(QNODE));
+                target->type = STR_Q;
+                target->descriptor = node->string.str_meta.string_literal;
+            }
+            else {
+                target->type = STR_Q;
+                target->descriptor = node->string.str_meta.string_literal;
+            }
+            list_insert_tail(string_literals, target->descriptor);
+
+            fprintf(stderr, "detected string, is %s\n", target->descriptor);
+
+            return target;
         case IDENT_N: {
             QNODE* qnode = (QNODE*) malloc(sizeof(QNODE));
             SYMTABLE* st = (SYMTABLE*) stack_peek(scope_stack);
@@ -304,7 +321,6 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
 
             /*qnode->stack_offset = cur_bb->stack_size;*/
             /*cur_bb->stack_size -= 8;*/
-
             return qnode;
         }
         case BINOP_N: {
@@ -425,7 +441,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 fprintf(stderr, "Undefined function %s\n", node->funct_call.name->ident.name);
                 //exit(1);
             }
-            QNODE* func_qnode = new_variable(node->funct_call.name, sym);
+            QNODE* func_qnode = new_descriptor(node->funct_call.name->ident.name);
 
             // emit arg quads and count arguments
             int num_args = 0;
