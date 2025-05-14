@@ -306,8 +306,8 @@ function_definition : decl_specifiers declarator    {
                                                         fprintf(stderr, "=========== GEN QUADS ============\n");
                                                         BASICBLOCK* bb = create_quads($4);
 
-                                                        // alight to 8-byte offsets
-                                                        bb->stack_size = (-funct_scope->lvar_offset + 15) & 15;
+                                                        // alight to 16-byte offsets
+                                                        bb->stack_size = (-funct_scope->lvar_offset + 0xF) & 0xF;
 
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("ASM generation for function: %s, BB: %s\n", sym->key, bb->name); 
@@ -1053,7 +1053,7 @@ int main(void) {
     // assembly output file
     out_file = fopen(asm_out_name, "w");
     if (out_file == NULL) {
-        perror("Failed to open assembly output file");
+        fprintf(stderr, "failed to open assembly output file");
         return 1;
     }
     fprintf(out_file, "\t.file \"%s\"\n", file_name);
@@ -1064,14 +1064,14 @@ int main(void) {
     // debug output file
     debug_file = fopen(debug_out_name, "w");
     if (debug_file == NULL) {
-        perror("Failed to open debug output file");
+        fprintf(stderr, "failed to open debug output file");
         fclose(out_file);
         return 1;
     }
 
     int original_stdout = dup(STDOUT_FILENO);
     if (dup2(fileno(debug_file), STDOUT_FILENO) < 0) {
-        perror("Failed to redirect stdout to debug_file");
+        fprintf(stderr, "failed to redirect stdout to debug_file");
         fclose(out_file);
         fclose(debug_file);
         return 1;

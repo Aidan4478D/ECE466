@@ -404,7 +404,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
 
                 emit(node->unop.op == PLUSPLUS ? ADD_OC : SUB_OC, new_immediate(1), qnode, new_val);
                 emit(MOV_OC, new_val, NULL, qnode);
-                return target;
+                return qnode;
             }
             if(node->unop.op == SIZEOF) {
                 // do you want to see the whole calculation? like ADD and MUL quads?

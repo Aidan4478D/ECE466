@@ -11,19 +11,19 @@
 // can I use this like a(%rip) relative mode guy everywhere?
 
 char* temp_registers[] = {"%ebx", "%edi", "%esi"};
-
 // since I already do args in reverse, insert the new args into a list
 list_t* arg_list;
+int headers_pushed = 0;
+
+
 
 // where BB is the starting bb in the flow
 void generate_asm(BASICBLOCK* bb, char* fn_name) {
 
     // redirect stdout -> out_file
     int saved_stdout = dup(STDOUT_FILENO);
-
-    // Redirect stdout to out_file for assembly output
     if (dup2(fileno(out_file), STDOUT_FILENO) < 0) {
-        perror("Failed to redirect stdout to out_file");
+        fprintf(stderr, "failed to redirect stdout to out_file");
         exit(1);
     }
     
@@ -31,7 +31,6 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     list_init(arg_list);
 
     printf("\t.section .rodata\n");
-
     while (!list_is_empty(string_literals)) {
         QNODE* current = list_remove_head(string_literals);
         printf(".LC%d:\n", current->str_label_no);
@@ -42,13 +41,18 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     printf("\t.text\n");
 
     // traverse through all basic blocks
+    printf("\t.globl %s\n", fn_name);
+    printf("\t.type %s, @function\n", fn_name);
+    printf("%s:\n", fn_name);
+
     while(bb) {
-        printf("\t.globl %s\n", fn_name);
-        printf("\t.type %s, @function\n", fn_name);
-        printf("%s:\n", fn_name);
         printf("%s:\n", bb->name);
-        printf("\tpushl %%ebp\t\t# associate ebp with symbol %s\n", bb->name); 
-        printf("\tmovl %%esp, %%ebp\t\t# set up stack frame pointer\n\n");
+        if(!headers_pushed) {
+            printf("\tpushl %%ebp\t\t# associate ebp with symbol %s\n", bb->name); 
+            printf("\tmovl %%esp, %%ebp\t\t# set up stack frame pointer\n\n");
+            if(bb->stack_size) printf("\tsubl $%d, %%esp\n", bb->stack_size);
+            headers_pushed = 1;
+        }
 
         fprintf(stderr, "printing BB %s\n", bb->name);
 
@@ -141,30 +145,50 @@ void quad_to_asm(QUAD* quad) {
             printf("\tmovl %s, %%ecx\n", get_qnode_output(src1));
             printf("\tmovl %%ecx, %s\n", get_qnode_output(dest));
             break;
-
+        
+        // gonna treat everything as a signed jump
         case BR_OC:
             fprintf(stderr, "BR_OC detected!\n");
+            printf("\tjmp %s\n", get_qnode_output(src2));
             break;
         case CMP_OC:
             fprintf(stderr, "CMP_OC detected!\n");
+            if (!src1 || !src2) {
+                fprintf(stderr, "CMP_OC requires two operands\n");
+                exit(-1);
+            }
+            printf("\tmovl %s, %%ecx\n", get_qnode_output(src2));
+            printf("\tcmpl %%ecx, %s\n", get_qnode_output(src1));
             break;
         case BRGT_OC:
             fprintf(stderr, "BRGT_OC detected!\n");
+            printf("\tjg %s\n", get_qnode_output(src1));
+            if(src2) printf("\tjmp %s\n", get_qnode_output(src2));
             break;
         case BRLT_OC:
             fprintf(stderr, "BRLT_OC detected!\n");
+            printf("\tjl %s\n", get_qnode_output(src1));
+            if(src2) printf("\tjmp %s\n", get_qnode_output(src2));
             break;
         case BRGE_OC:
             fprintf(stderr, "BRGE_OC detected!\n");
+            printf("\tjge %s\n", get_qnode_output(src1));
+            if(src2) printf("\tjmp %s\n", get_qnode_output(src2));
             break;
         case BRLE_OC:
             fprintf(stderr, "BRLE_OC detected!\n");
+            printf("\tjle %s\n", get_qnode_output(src1));
+            if(src2) printf("\tjmp %s\n", get_qnode_output(src2));
             break;
         case BREQ_OC:
             fprintf(stderr, "BREQ_OC detected!\n");
+            printf("\tje %s\n", get_qnode_output(src1));
+            if(src2) printf("\tjmp %s\n", get_qnode_output(src2));
             break;
         case BRNE_OC:
             fprintf(stderr, "BRNE_OC detected!\n");
+            printf("\tjne %s\n", get_qnode_output(src1));
+            if(src2) printf("\tjmp %s\n", get_qnode_output(src2));
             break;
 
 

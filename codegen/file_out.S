@@ -2,79 +2,61 @@
 	.text
 	.section .rodata
 .LC0:
-	.string "value is %d, %s\n"
-	.text
-	.globl f
-	.type f, @function
-f:
-.BB.0.0:
-	pushl %ebp		# associate ebp with symbol .BB.0.0
-	movl %esp, %ebp		# set up stack frame pointer
-
-	# QUAD ANALYZED: 	ARG 2, a{param}
-	# pushed arg #2 into arg list
-
-	# QUAD ANALYZED: 	ARG 1, b{param}
-	# pushed arg #1 into arg list
-
-	# QUAD ANALYZED: 	ARG 0, "value is %d, %s\n"
-	# pushed arg #0 into arg list
-
-	# QUAD ANALYZED: 	%T0 = 	CALL printf, 3
-	pushl 8(%ebp)
-	pushl 12(%ebp)
-	pushl $.LC0
-	call printf
-	addl $12, %esp
-	movl %eax, %ebx
-
-	# QUAD ANALYZED: 	%T1 = 	ADD b{param}, $1
-	movl 12(%ebp), %edx
-	movl $1, %eax
-	addl %edx, %eax
-	movl %eax, %edi
-
-	# QUAD ANALYZED: 	RETURN %T1
-	movl %edi, %eax
-	leave
-	ret
-
-	.section .rodata
-.LC1:
-	.string "hello"
-.LC2:
-	.string "hello, 2"
+	.string "hello\n"
 	.text
 	.globl main
 	.type main, @function
 main:
-.BB.1.0:
-	pushl %ebp		# associate ebp with symbol .BB.1.0
+.BB.0.0:
+	pushl %ebp		# associate ebp with symbol .BB.0.0
 	movl %esp, %ebp		# set up stack frame pointer
 
-	# QUAD ANALYZED: 	g{lvar} = 	MOV "hello"
-	movl $.LC1, %ecx
+	subl $15, %esp
+	# QUAD ANALYZED: 	i{lvar} = 	MOV $0
+	movl $0, %ecx
 	movl %ecx, -4(%ebp)
 
-	# QUAD ANALYZED: 	i{lvar} = 	MOV "hello, 2"
-	movl $.LC2, %ecx
-	movl %ecx, -8(%ebp)
+	# QUAD ANALYZED: 	BR .BB.0.1
+	jmp .BB.0.1
 
-	# QUAD ANALYZED: 	ARG 1, $3
-	# pushed arg #1 into arg list
+.BB.0.1:
+	# QUAD ANALYZED: 	CMP i{lvar}, $5
+	movl $5, %ecx
+	cmpl %ecx, -4(%ebp)
 
-	# QUAD ANALYZED: 	ARG 0, i{lvar}
+	# QUAD ANALYZED: 	BRLT .BB.0.2, .BB.0.4
+	jl .BB.0.2
+	jmp .BB.0.4
+
+.BB.0.2:
+	# QUAD ANALYZED: 	ARG 0, "hello\n"
 	# pushed arg #0 into arg list
 
-	# QUAD ANALYZED: 	%T0 = 	CALL f, 2
-	pushl $3
-	pushl -8(%ebp)
-	call f
-	addl $8, %esp
+	# QUAD ANALYZED: 	%T0 = 	CALL printf, 1
+	pushl $.LC0
+	call printf
+	addl $4, %esp
 	movl %eax, %ebx
 
-	# QUAD ANALYZED: 	RETURN %T0
-	movl %ebx, %eax
+	# QUAD ANALYZED: 	BR .BB.0.3
+	jmp .BB.0.3
+
+.BB.0.3:
+	# QUAD ANALYZED: 	%T1 = 	ADD $1, i{lvar}
+	movl $1, %edx
+	movl -4(%ebp), %eax
+	addl %edx, %eax
+	movl %eax, %edi
+
+	# QUAD ANALYZED: 	i{lvar} = 	MOV %T1
+	movl %edi, %ecx
+	movl %ecx, -4(%ebp)
+
+	# QUAD ANALYZED: 	BR .BB.0.1
+	jmp .BB.0.1
+
+.BB.0.4:
+	# QUAD ANALYZED: 	RETURN 
 	leave
 	ret
 
