@@ -91,61 +91,184 @@ LIST ELEMENT #2:
 
 LIST ELEMENT #3:
 	ASSIGNMENT OP (=)
+		IDENT: a
+		UNARY OP (-)
+			NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
 		IDENT: f
 		NUM (numtype=int)	3	SIGNED
 
-LIST ELEMENT #4:
+LIST ELEMENT #5:
 	ASSIGNMENT OP (=)
 		IDENT: e
 		NUM (numtype=int)	2	SIGNED
 
-LIST ELEMENT #5:
+LIST ELEMENT #6:
 	ASSIGNMENT OP (=)
 		IDENT: d
 		NUM (numtype=int)	1	SIGNED
 
-LIST ELEMENT #6:
+LIST ELEMENT #7:
 	ASSIGNMENT OP (=)
 		IDENT: c
 		NUM (numtype=int)	0	SIGNED
+
+LIST ELEMENT #8:
+	ASSIGNMENT OP (=)
+		IDENT: b
+		NUM (numtype=int)	100	SIGNED
 
 
 ---------------------------------------------
 QUAD generation for function f
 ---------------------------------------------
 .BB0.0 
+	%T0 = 	SUB $0, $1
+	a{global} = 	MOV %T0
 	f{lvar} = 	MOV $3
 	e{lvar} = 	MOV $2
 	d{param} = 	MOV $1
 	c{param} = 	MOV $0
+	b{global} = 	MOV $100
 	RETURN 
 
 ---------------------------------------------
-ASM generation for BB .BB.0.0
+ASM generation for function: f, BB: .BB.0.0
 ---------------------------------------------
+f:
 .BB.0.0:
-	pushq %rbp		# associate rbp with symbol .BB.0.0
-	movq %rsp, %rbp		# set up stack frame pointer
+	pushl %ebp		# associate ebp with symbol .BB.0.0
+	movl %esp, %rbp		# set up stack frame pointer
+
+	# QUAD ANALYZED: 	%T0 = 	SUB $0, $1
+	movl $0, %eax
+	subl $1, %eax
+	movl %eax, %%ebx
+
+	# QUAD ANALYZED: 	a{global} = 	MOV %T0
+	movl %%ebx, %ecx
+	movl %ecx, a
 
 	# QUAD ANALYZED: 	f{lvar} = 	MOV $3
 	movl $3, %ecx
-	movl %ecx, -8(%rbp)
+	movl %ecx, -8(%ebp)
 
 	# QUAD ANALYZED: 	e{lvar} = 	MOV $2
 	movl $2, %ecx
-	movl %ecx, -4(%rbp)
+	movl %ecx, -4(%ebp)
 
 	# QUAD ANALYZED: 	d{param} = 	MOV $1
 	movl $1, %ecx
-	movl %ecx, 12(%rbp)
+	movl %ecx, 12(%ebp)
 
 	# QUAD ANALYZED: 	c{param} = 	MOV $0
 	movl $0, %ecx
-	movl %ecx, 8(%rbp)
+	movl %ecx, 8(%ebp)
+
+	# QUAD ANALYZED: 	b{global} = 	MOV $100
+	movl $100, %ecx
+	movl %ecx, b
 
 	# QUAD ANALYZED: 	RETURN 
+	leave
+	ret
 
-	popq %rbp
+
+
+
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:17
+symbol: g, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'g'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:17
+symbol: g, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'g'
+	RETURN TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:17]
+<stdin>:18
+symbol: z, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function g
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: z
+			TYPE: INT
+
+
+LIST ELEMENT #2:
+	ASSIGNMENT OP (=)
+		IDENT: z
+		FUNCTION CALL
+			IDENT: f
+			PARAMETER #1
+				NUM (numtype=int)	1	SIGNED
+			PARAMETER #2
+				NUM (numtype=int)	2	SIGNED
+
+LIST ELEMENT #3:
+	RETURN
+		IDENT: z
+
+
+---------------------------------------------
+QUAD generation for function g
+---------------------------------------------
+.BB1.1 
+	ARG 1, $2
+	ARG 0, $1
+	%T0 = 	CALL $f, 2
+	z{lvar} = 	MOV %T0
+	RETURN z{lvar}
+
+---------------------------------------------
+ASM generation for function: g, BB: .BB.1.1
+---------------------------------------------
+g:
+.BB.1.1:
+	pushl %ebp		# associate ebp with symbol .BB.1.1
+	movl %esp, %rbp		# set up stack frame pointer
+
+	# QUAD ANALYZED: 	ARG 1, $2
+
+	# QUAD ANALYZED: 	ARG 0, $1
+
+	# QUAD ANALYZED: 	%T0 = 	CALL $f, 2
+
+	# QUAD ANALYZED: 	z{lvar} = 	MOV %T0
+	movl %%ebx, %ecx
+	movl %ecx, -4(%ebp)
+
+	# QUAD ANALYZED: 	RETURN z{lvar}
+	movl -4(%ebp), %eax
+	leave
+	ret
+
 
 
 

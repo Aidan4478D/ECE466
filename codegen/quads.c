@@ -397,6 +397,14 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                 
                 return size_qnode;
             }
+            // spent 2 hours doing codegen trying to figure out why my output was seg faulting
+            // and it was because of this. GDB helped with this one....
+            if(node->unop.op == '-') {
+                QNODE* qnode = create_rvalue(node->unop.node, NULL);
+                QNODE* result = new_temporary();
+                emit(SUB_OC, new_immediate(0), qnode, result);
+                return result;
+            }
 
             break;
 

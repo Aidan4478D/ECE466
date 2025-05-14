@@ -71,7 +71,6 @@ typedef struct quad_node {
     struct basic_block* bb; // for block nodes
     
     char* descriptor;
-    int stack_offset; // stack offset if pararm/lvar
 } QNODE; 
 
 

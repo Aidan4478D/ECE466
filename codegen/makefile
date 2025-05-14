@@ -1,4 +1,4 @@
-CC = gcc
+CC = gcc -g -O0
 CFLAGS = -Wall
 
 all: parser clean_turn

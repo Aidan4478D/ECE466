@@ -13,3 +13,9 @@ int f(int c, int d) {
     b = 100;
 
 }
+
+int g() {
+    int z;
+    z=f(1, 2);
+    return z;
+}

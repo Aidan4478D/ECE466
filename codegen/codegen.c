@@ -6,11 +6,13 @@
 // Questions:
 // can I use this like a(%rip) relative mode guy everywhere?
 
+char* temp_registers[] = {"%%ebx", "%%edi", "%%esi"};
+stack_t arg_stack;
+
 // where BB is the starting bb in the flow
 void generate_asm(BASICBLOCK* bb) {
 
-    /*printf("\t.file \"%s\"\n", file_name);*/
-
+    stack_init(arg_stack);
     // traverse through all basic blocks
     while(bb) {
         printf("%s:\n", bb->name);
@@ -42,9 +44,10 @@ char* get_qnode_output(QNODE* qnode) {
 
     switch(qnode->type) {
         case TEMP_Q:
-            // r10 and r11 registers
-            sprintf(buf, "%%r10");
-            return strdup(buf);
+            // rotate the 3 "long term" (now temporary registers heheh) around and they hopefully don't collide
+            // just hope we don't have more than 3 temps in one function!
+            int reg_index = qnode->tmp_id % 3;
+            return strdup(temp_registers[reg_index]);
 
         case VAR_Q:
             if (qnode->ast_node && qnode->ast_node->type == IDENT_N) {
@@ -53,11 +56,9 @@ char* get_qnode_output(QNODE* qnode) {
                     sprintf(buf, "$%s", qnode->ast_node->ident.name);
                 } 
                 else {
-                    /*if(qnode->sym && qnode->sym->is_param) sprintf(buf, "%s", qnode->ast_node->ident.name, "param");*/
-                    /*else sprintf(buf, "%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));*/
                     fprintf(stderr, "var: %s, scope: %s, offset: %d\n", qnode->ast_node->ident.name, qnode->sym->is_param ? "param" : qnode->scope == FILE_SCOPE ? "global" : "lvar", qnode->sym->stack_offset);
-                    if(((qnode->sym && qnode->sym->is_param) || qnode->scope) != FILE_SCOPE) return get_memory_operand(qnode);
-                    else if(qnode->scope == FILE_SCOPE) sprintf(buf, "%s{%s}", qnode->ast_node->ident.name, (qnode->scope == FILE_SCOPE ? "global" : "lvar"));
+                    if(qnode->sym && qnode->scope != FILE_SCOPE) sprintf(buf, "%d(%%ebp)", qnode->sym->stack_offset);
+                    else sprintf(buf,"%s", qnode->ast_node->ident.name);
                 }
             } 
             return strdup(buf);
@@ -80,25 +81,6 @@ char* get_qnode_output(QNODE* qnode) {
     }
 }
 
-char *get_memory_operand(QNODE *q) {
-    char buf[128];
-
-    // Only VAR_Q makes sense here
-    if (q->type != VAR_Q) {
-        fprintf(stderr, "get_memory_operand on non-VAR_Q\n");
-        return strdup("ERROR");
-    }
-
-    SYMBOL *sym = q->sym;
-    // globals
-    if (sym->scope->scope == FILE_SCOPE) sprintf(buf, "%s(%%rip)", q->ast_node->ident.name);
-
-    // local vars & params
-    else sprintf(buf, "%d(%%rbp)", sym->stack_offset);
-    
-    return strdup(buf);
-}
-
 
 void quad_to_asm(QUAD* quad) {
     QNODE* dest = quad->destination;
@@ -117,8 +99,7 @@ void quad_to_asm(QUAD* quad) {
             break;
         case MOV_OC:
             // just do this in case two symbols
-            char* out = src1->type == VAR_Q ? get_memory_operand(src1) : get_qnode_output(src1);
-            printf("\tmovl %s, %%ecx\n", out);
+            printf("\tmovl %s, %%ecx\n", get_qnode_output(src1));
             printf("\tmovl %%ecx, %s\n", get_qnode_output(dest));
             break;
 
@@ -192,10 +173,10 @@ void quad_to_asm(QUAD* quad) {
 
         case CALL_OC:
             fprintf(stderr, "CALL_OC detected!\n");
-            
-
             break;
         case ARG_OC:
+            // src 1: position, src2: value
+            stack_push(src2);
             fprintf(stderr, "ARG_OC detected!\n");
             break;
         case RETURN_OC:

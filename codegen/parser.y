@@ -294,12 +294,15 @@ function_definition : decl_specifiers declarator    {
                                                         printf("---------------------------------------------\n"); 
                                                         fprintf(stderr, "=========== GEN QUADS ============\n");
                                                         BASICBLOCK* bb = create_quads($4);
-                                                        bb->stack_size = -funct_scope->lvar_offset + funct_scope->param_offset;
+
+                                                        // alight to 8-byte offsets
+                                                        bb->stack_size = (-funct_scope->lvar_offset + 15) & 15;
 
                                                         printf("\n---------------------------------------------\n"); 
-                                                        printf("ASM generation for BB %s\n", bb->name); 
+                                                        printf("ASM generation for function: %s, BB: %s\n", sym->key, bb->name); 
                                                         printf("---------------------------------------------\n"); 
                                                         fprintf(stderr, "=========== ASM GENERATION ============\n");
+                                                        printf("%s:\n", sym->key);
                                                         generate_asm(bb); // generate assembly here
 
 
