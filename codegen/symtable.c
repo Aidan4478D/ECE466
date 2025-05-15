@@ -19,6 +19,8 @@ SYMTABLE* st_create(SCOPETYPE scope, SYMTABLE* outer) {
     st->start_file = file_name;
 
     st->is_struct_scope = 0;
+    st->lvar_offset = 0;
+    st->param_offset = 0;
 
     return st;
 }
@@ -141,6 +143,7 @@ SYMBOL* st_new_symbol(char* key, ast_node_t* node, NAMESPACE ns, SYMTYPE type, S
         sym->mini_st->is_struct_scope = true;
     }
     sym->is_param = 0;
+    sym->stack_offset = 0;
 
     return sym;
 }

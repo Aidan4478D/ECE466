@@ -434,7 +434,7 @@ void process_declaration(SYMTABLE *cur_scope, SYMBOL *sym, ast_node_t *spec) {
         if (funct_scope) {
             fprintf(stderr, "assigning lvar offset!\n");
             sym->stack_offset = funct_scope->lvar_offset;
-            funct_scope->lvar_offset -= 4; // Assume 8 bytes
+            funct_scope->lvar_offset -= 4;
         }
     }
 

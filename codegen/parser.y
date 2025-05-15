@@ -5,6 +5,8 @@
 
 #include "helpers/printing.h"
 #include "helpers/stack.h"
+#include "helpers/linklist.h"
+
 #include "symtable.h"
 #include "quads.h"
 #include "codegen.h"
@@ -21,11 +23,11 @@ void print_ast_tree(ast_node_t *node, int indent);
 // create a new stack and initialze it
 stack_t* scope_stack;
 stack_t* struct_union_stack;
+list_t* string_literals;
 
 // this is sketch but a quick fix
 int in_function = 0; 
-int global_scope_updated = 0;
-int str_label_cnt;
+int str_label_cnt = 0;
 
 FILE* out_file;
 FILE* debug_file;
@@ -293,7 +295,8 @@ function_definition : decl_specifiers declarator    {
                                                         //fprintf(stderr, "Exiting function scope\n");
                                                         SYMBOL* sym = $2;
                                                         SYMTABLE* funct_scope = (SYMTABLE*) stack_peek(scope_stack);
-
+                                                        funct_scope = get_enclosing_funct_scope(funct_scope);
+                                                        
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("AST Dump for function %s\n", sym->key); 
                                                         printf("---------------------------------------------\n"); 
@@ -307,7 +310,11 @@ function_definition : decl_specifiers declarator    {
                                                         BASICBLOCK* bb = create_quads($4);
 
                                                         // alight to 16-byte offsets
-                                                        bb->stack_size = (-funct_scope->lvar_offset + 0xF) & 0xF;
+                                                        fprintf(stderr, "scope is %s\n", get_scope_name(funct_scope->scope));
+                                                        fprintf(stderr, "lvar offset is %d\n", funct_scope->lvar_offset);
+                                                        // bb->stack_size = (-funct_scope->lvar_offset + 0xF) & 0xF;
+                                                        bb->stack_size = -funct_scope->lvar_offset;
+                                                        fprintf(stderr, "bb size is %d\n", bb->stack_size);
 
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("ASM generation for function: %s, BB: %s\n", sym->key, bb->name); 
@@ -666,6 +673,7 @@ direct_abstract_declarator : '(' abstract_declarator ')'                { $$ = $
                            | '(' ')'                                    { $$ = new_function(NULL, NULL, NULL);  }
                            | direct_abstract_declarator '(' ')'         { $$ = new_function(NULL, $1, NULL);    }
                            ;
+
 
 statement : compound_statement
           | expression ';' { /* expression statement */ }
@@ -1040,13 +1048,15 @@ expression : comma_expression { $$ = $1; }
 int main(void) {
     char *asm_out_name = "file_out.S";
     char *debug_out_name = "file_out.txt";
-    int str_label_cnt = 0;
 
     scope_stack = (stack_t*)malloc(sizeof(stack_t));
     stack_init(scope_stack);
 
     struct_union_stack = (stack_t*)malloc(sizeof(stack_t));
     stack_init(struct_union_stack);
+
+    string_literals = (list_t*) malloc(sizeof(list_t));
+    list_init(string_literals);
 
     SYMTABLE* global = st_create(FILE_SCOPE, NULL);
 
@@ -1083,7 +1093,22 @@ int main(void) {
     stack_push(scope_stack, global);
     yyparse();
 
+    generate_global_vars(global);
+
     // Restore original stdout
+    dup2(original_stdout, STDOUT_FILENO);
+    close(original_stdout);
+
+    dup2(fileno(out_file), STDOUT_FILENO);
+    printf("\t.section .rodata\n");
+    while (!list_is_empty(string_literals)) {
+        QNODE* current = list_remove_head(string_literals);
+        printf(".LC%d:\n", current->str_label_no);
+        printf("\t.string \"");
+        print_escaped_string(current->descriptor);
+        printf("\"\n");
+    }
+
     dup2(original_stdout, STDOUT_FILENO);
     close(original_stdout);
 

@@ -1,6 +1,166 @@
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
 <stdin>:1
+symbol: a, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:2
+symbol: b, scope: FILE_SCOPE, namespace = GENERAL, type = VARIABLE, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:4
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: c
+			TYPE: INT
+		PARAMETER #2
+			IDENT: d
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:4
+symbol: f, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
+AST Tree for your symbol:
+---------------------------------------------
+FUNCTION 'f'
+	RETURN TYPE: INT
+	PARAMETERS:
+		PARAMETER #1
+			IDENT: c
+			TYPE: INT
+		PARAMETER #2
+			IDENT: d
+			TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:5
+symbol: e, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+---------------------------------------------
+[in FUNCT_SCOPE scope starting at <stdin>:4]
+<stdin>:6
+symbol: f, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+AST Tree for your symbol:
+---------------------------------------------
+TYPE: INT
+---------------------------------------------
+
+
+---------------------------------------------
+AST Dump for function f
+---------------------------------------------
+LIST:
+LIST ELEMENT #1:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: e
+			TYPE: INT
+
+
+LIST ELEMENT #2:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: f
+			TYPE: INT
+
+
+LIST ELEMENT #3:
+	ASSIGNMENT OP (=)
+		IDENT: a
+		NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
+		IDENT: f
+		NUM (numtype=int)	3	SIGNED
+
+LIST ELEMENT #5:
+	ASSIGNMENT OP (=)
+		IDENT: e
+		NUM (numtype=int)	2	SIGNED
+
+LIST ELEMENT #6:
+	ASSIGNMENT OP (=)
+		IDENT: d
+		NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #7:
+	ASSIGNMENT OP (=)
+		IDENT: c
+		NUM (numtype=int)	0	SIGNED
+
+LIST ELEMENT #8:
+	ASSIGNMENT OP (=)
+		IDENT: b
+		NUM (numtype=int)	1	SIGNED
+
+LIST ELEMENT #9:
+	RETURN
+		BINARY OP (+)
+			BINARY OP (+)
+				BINARY OP (+)
+					BINARY OP (+)
+						BINARY OP (+)
+							IDENT: a
+							IDENT: b
+						IDENT: c
+					IDENT: d
+				IDENT: e
+			IDENT: f
+
+
+---------------------------------------------
+QUAD generation for function f
+---------------------------------------------
+.BB0.0 
+	a{global} = 	MOV $1
+	f{lvar} = 	MOV $3
+	e{lvar} = 	MOV $2
+	d{param} = 	MOV $1
+	c{param} = 	MOV $0
+	b{global} = 	MOV $1
+	%T0 = 	ADD a{global}, b{global}
+	%T1 = 	ADD %T0, c{param}
+	%T2 = 	ADD %T1, d{param}
+	%T3 = 	ADD %T2, e{lvar}
+	%T4 = 	ADD %T3, f{lvar}
+	RETURN %T4
+
+---------------------------------------------
+ASM generation for function: f, BB: .BB.0.0
+---------------------------------------------
+
+
+
+
+---------------------------------------------
+[in FILE_SCOPE scope starting at <stdin>:1]
+<stdin>:19
 symbol: main, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
@@ -10,7 +170,7 @@ FUNCTION 'main'
 
 ---------------------------------------------
 [in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:1
+<stdin>:19
 symbol: main, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
 AST Tree for your symbol:
 ---------------------------------------------
@@ -19,9 +179,9 @@ FUNCTION 'main'
 ---------------------------------------------
 
 ---------------------------------------------
-[in FUNCT_SCOPE scope starting at <stdin>:1]
-<stdin>:2
-symbol: i, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
+[in FUNCT_SCOPE scope starting at <stdin>:19]
+<stdin>:21
+symbol: z, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
 TYPE: INT
@@ -36,56 +196,52 @@ LIST ELEMENT #1:
 	DECLARATION
 		SPECIFIERS: INT 
 		DECLARATOR #1
-			IDENT: i
+			IDENT: z
 			TYPE: INT
 
 
 LIST ELEMENT #2:
-	FOR
-		INIT:
-			ASSIGNMENT OP (=)
-				IDENT: i
-				NUM (numtype=int)	0	SIGNED
-		COND:
-			COMPARISON OP (<)
-				IDENT: i
-				NUM (numtype=int)	5	SIGNED
-		INCR:
-			UNARY OP (++)
-				IDENT: i
-		BODY:
-			LIST:
-			LIST ELEMENT #1:
-				FUNCTION CALL
-					IDENT: printf
-					PARAMETER #1
-						STRING hello
+	ASSIGNMENT OP (=)
+		IDENT: z
+		FUNCTION CALL
+			IDENT: f
+			PARAMETER #1
+				NUM (numtype=int)	1	SIGNED
+			PARAMETER #2
+				NUM (numtype=int)	2	SIGNED
 
+LIST ELEMENT #3:
+	FUNCTION CALL
+		IDENT: printf
+		PARAMETER #1
+			STRING a+b=%d
 
+		PARAMETER #2
+			BINARY OP (+)
+				IDENT: a
+				IDENT: b
+
+LIST ELEMENT #4:
+	RETURN
+		IDENT: z
 
 
 ---------------------------------------------
 QUAD generation for function main
 ---------------------------------------------
-.BB0.0 
-	i{lvar} = 	MOV $0
-	BR .BB.0.1
-.BB0.1 
-	CMP i{lvar}, $5
-	BRLT .BB.0.2, .BB.0.4
-.BB0.2 
-	ARG 0, "hello\n"
-	%T0 = 	CALL printf, 1
-	BR .BB.0.3
-.BB0.3 
-	%T1 = 	ADD $1, i{lvar}
-	i{lvar} = 	MOV %T1
-	BR .BB.0.1
-.BB0.4 
-	RETURN 
+.BB1.0 
+	ARG 1, $2
+	ARG 0, $1
+	%T0 = 	CALL f, 2
+	z{lvar} = 	MOV %T0
+	%T2 = 	ADD a{global}, b{global}
+	ARG 1, %T2
+	ARG 0, "a+b=%d\n"
+	%T1 = 	CALL printf, 2
+	RETURN z{lvar}
 
 ---------------------------------------------
-ASM generation for function: main, BB: .BB.0.0
+ASM generation for function: main, BB: .BB.1.0
 ---------------------------------------------
 
 

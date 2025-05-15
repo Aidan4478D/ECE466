@@ -1,4 +1,5 @@
 #include "codegen.h"
+
 #include "helpers/printing.h"
 #include "helpers/linklist.h"
 
@@ -14,8 +15,46 @@ char* temp_registers[] = {"%ebx", "%edi", "%esi"};
 // since I already do args in reverse, insert the new args into a list
 list_t* arg_list;
 int headers_pushed = 0;
+int first_funct = 1;
 
 
+void generate_global_vars(SYMTABLE* global) {
+    // switch stdout to out_file temporarily
+    int saved_stdout = dup(STDOUT_FILENO);
+    if (dup2(fileno(out_file), STDOUT_FILENO) < 0) {
+        fprintf(stderr, "failed to redirect stdout to out_file");
+        exit(1);
+    }
+
+    // Output uninitialized global variables in .bss section
+    printf("\t.section .bss\n");
+    ht_t *ht = global->ht;
+    for (int i = 0; i < ht->capacity; i++) {
+        hash_item *item = &ht->data[i];
+        if (item->isOccupied && !item->isDeleted) {
+            SYMBOL *sym = (SYMBOL *)item->pv;
+            if (sym->type == VAR_SYM && sym->scope->scope == FILE_SCOPE) {
+
+                int size = get_type_size(sym->node);
+                fprintf(stderr, "sym node type is %s\n", get_node_type(sym->node->type));
+
+                printf("\t.global %s\n", sym->key);
+                printf("\t.type %s, @object\n", sym->key);
+                printf("\t.size %s, %d\n", sym->key, size);
+                printf("%s:\n", sym->key);
+                printf("\t.zero %d\n", size);
+            }
+        }
+    }
+    
+    
+    // Switch to .text section for functions (this ensures functions follow)
+    printf("\t.text\n");
+
+    // Restore stdout
+    dup2(saved_stdout, STDOUT_FILENO);
+    close(saved_stdout);
+}
 
 // where BB is the starting bb in the flow
 void generate_asm(BASICBLOCK* bb, char* fn_name) {
@@ -30,21 +69,21 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     arg_list = (list_t*) malloc(sizeof(list_t));
     list_init(arg_list);
 
-    printf("\t.section .rodata\n");
-    while (!list_is_empty(string_literals)) {
-        QNODE* current = list_remove_head(string_literals);
-        printf(".LC%d:\n", current->str_label_no);
-        printf("\t.string \"");
-        print_escaped_string(current->descriptor);
-        printf("\"\n");
-    }
-    printf("\t.text\n");
+    //printf("\t.text\n");
 
-    // traverse through all basic blocks
+    // outer sym table should be outer if initially entering function?
+    /*SYMTABLE* st = stack_peek(scope_stack);*/
+    /*if(first_funct) {*/
+        /*first_funct = 0;*/
+        /*generate_global_vars(st->outer);*/
+    /*}*/
+
     printf("\t.globl %s\n", fn_name);
     printf("\t.type %s, @function\n", fn_name);
     printf("%s:\n", fn_name);
+    
 
+    // traverse through all basic blocks
     while(bb) {
         printf("%s:\n", bb->name);
         if(!headers_pushed) {
@@ -72,6 +111,7 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     fflush(stdout);
     dup2(saved_stdout, STDOUT_FILENO);
     close(saved_stdout);
+    headers_pushed = 0;
 }
 
 char* get_qnode_output(QNODE* qnode) {

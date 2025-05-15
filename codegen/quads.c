@@ -18,7 +18,6 @@ BASICBLOCK* cur_bb;
 BASICBLOCK* last_bb = NULL;
 
 stack_t* loop_stack;
-list_t* string_literals;
 
 BASICBLOCK* create_quads(ast_node_t* listnode) {
     
@@ -27,8 +26,6 @@ BASICBLOCK* create_quads(ast_node_t* listnode) {
     loop_stack = (stack_t*) malloc(sizeof(stack_t));
     stack_init(loop_stack);
 
-    string_literals = (list_t*) malloc(sizeof(list_t));
-    list_init(string_literals);
 
     // create linked list for quads
     BASICBLOCK* bb = new_bb();
@@ -354,7 +351,7 @@ QNODE* create_rvalue(ast_node_t* node, QNODE* target) {
                     exit(1);
                 }
 
-                int element_size = get_type_size(pointed_to_type);
+                int element_size = get_element_size(pointed_to_type);
 
                 QNODE* size_qnode = new_immediate(element_size);
                 QNODE* offset_qnode = new_temporary();
@@ -487,6 +484,7 @@ int get_element_size(ast_node_t* node) {
         return get_type_size(type_node);
     }
     if(node->type == POINTER_N) return 4; //that was easy
+    if(node->type == DECL_N) return get_type_size(node);
     else {
         return 0;
         fprintf(stderr, "Element size node is not an ident node! It is: %s\n", get_node_type(node->type));
