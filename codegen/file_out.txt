@@ -18,16 +18,6 @@ FUNCTION 'main'
 ---------------------------------------------
 
 ---------------------------------------------
-[in FILE_SCOPE scope starting at <stdin>:1]
-<stdin>:3
-symbol: main, scope: FILE_SCOPE, namespace = GENERAL, type = FUNCTION, storage = UNKNOWN
-AST Tree for your symbol:
----------------------------------------------
-FUNCTION 'main'
-	RETURN TYPE: INT
----------------------------------------------
-
----------------------------------------------
 [in FUNCT_SCOPE scope starting at <stdin>:3]
 <stdin>:4
 symbol: x, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
@@ -47,7 +37,7 @@ TYPE: POINTER to INT
 
 ---------------------------------------------
 [in FUNCT_SCOPE scope starting at <stdin>:3]
-<stdin>:14
+<stdin>:16
 symbol: b, scope: FUNCT_SCOPE, namespace = GENERAL, type = VARIABLE, storage = AUTO
 AST Tree for your symbol:
 ---------------------------------------------
@@ -80,46 +70,21 @@ LIST ELEMENT #2:
 
 LIST ELEMENT #3:
 	ASSIGNMENT OP (=)
+		UNARY OP (*)
+			BINARY OP (+)
+				IDENT: a
+				NUM (numtype=int)	8	SIGNED
+		NUM (numtype=int)	8	SIGNED
+
+LIST ELEMENT #4:
+	ASSIGNMENT OP (=)
 		IDENT: x
 		UNARY OP (*)
 			BINARY OP (+)
 				IDENT: a
 				NUM (numtype=int)	3	SIGNED
 
-LIST ELEMENT #4:
-	ASSIGNMENT OP (=)
-		IDENT: p
-		UNARY OP (&)
-			UNARY OP (*)
-				BINARY OP (+)
-					IDENT: a
-					NUM (numtype=int)	5	SIGNED
-
 LIST ELEMENT #5:
-	DECLARATION
-		SPECIFIERS: INT 
-		DECLARATOR #1
-			IDENT: b
-			TYPE: INT
-
-
-LIST ELEMENT #6:
-	ASSIGNMENT OP (=)
-		IDENT: b
-		BINARY OP (+)
-			IDENT: x
-			NUM (numtype=int)	5	SIGNED
-
-LIST ELEMENT #7:
-	FUNCTION CALL
-		IDENT: printf
-		PARAMETER #1
-			STRING b is %d
-
-		PARAMETER #2
-			IDENT: b
-
-LIST ELEMENT #8:
 	FUNCTION CALL
 		IDENT: printf
 		PARAMETER #1
@@ -128,7 +93,85 @@ LIST ELEMENT #8:
 		PARAMETER #2
 			IDENT: x
 
+LIST ELEMENT #6:
+	ASSIGNMENT OP (=)
+		IDENT: p
+		UNARY OP (&)
+			UNARY OP (*)
+				BINARY OP (+)
+					IDENT: a
+					NUM (numtype=int)	5	SIGNED
+
+LIST ELEMENT #7:
+	DECLARATION
+		SPECIFIERS: INT 
+		DECLARATOR #1
+			IDENT: b
+			TYPE: INT
+
+
+LIST ELEMENT #8:
+	ASSIGNMENT OP (=)
+		IDENT: b
+		BINARY OP (+)
+			IDENT: x
+			NUM (numtype=int)	5	SIGNED
+
 LIST ELEMENT #9:
+	IF
+		COND:
+			COMPARISON OP (<)
+				IDENT: x
+				NUM (numtype=int)	5	SIGNED
+		THEN:
+			LIST:
+			LIST ELEMENT #1:
+				ASSIGNMENT OP (=)
+					IDENT: x
+					BINARY OP (+)
+						IDENT: b
+						NUM (numtype=int)	5	SIGNED
+
+		ELSE:
+			LIST:
+			LIST ELEMENT #1:
+				ASSIGNMENT OP (=)
+					IDENT: x
+					NUM (numtype=int)	100	SIGNED
+
+
+LIST ELEMENT #10:
+	FUNCTION CALL
+		IDENT: printf
+		PARAMETER #1
+			STRING b is %d
+
+		PARAMETER #2
+			IDENT: b
+
+LIST ELEMENT #11:
+	FUNCTION CALL
+		IDENT: printf
+		PARAMETER #1
+			STRING p[3] is %d
+
+		PARAMETER #2
+			UNARY OP (*)
+				UNARY OP (*)
+					BINARY OP (+)
+						IDENT: p
+						NUM (numtype=int)	2	SIGNED
+
+LIST ELEMENT #12:
+	FUNCTION CALL
+		IDENT: printf
+		PARAMETER #1
+			STRING x is now %d
+
+		PARAMETER #2
+			IDENT: x
+
+LIST ELEMENT #13:
 	ASSIGNMENT OP (=)
 		IDENT: p
 		BINARY OP (+)
@@ -145,31 +188,57 @@ QUAD generation for function main
 	%T1 = 	LEA a{global}
 	%T2 = 	ADD %T1, %T0
 	STORE $2, %T2
-	%T3 = 	MUL $3, $0
+	%T3 = 	MUL $8, $0
 	%T4 = 	LEA a{global}
 	%T5 = 	ADD %T4, %T3
-	%T6 = 	LOAD  [%T5]
-	x{lvar} = 	MOV %T6
-	%T7 = 	MUL $5, $0
-	%T8 = 	LEA a{global}
-	%T9 = 	ADD %T8, %T7
-	p{lvar} = 	MOV %T9
-	%T10 = 	ADD x{lvar}, $5
-	b{lvar} = 	MOV %T10
-	ARG 1, b{lvar}
-	ARG 0, "b is %d\n"
-	%T11 = 	CALL printf, 2
+	STORE $8, %T5
+	%T6 = 	MUL $3, $0
+	%T7 = 	LEA a{global}
+	%T8 = 	ADD %T7, %T6
+	%T9 = 	LOAD  [%T8]
+	x{lvar} = 	MOV %T9
 	ARG 1, x{lvar}
 	ARG 0, "x is %d\n"
-	%T12 = 	CALL printf, 2
-	%T13 = 	LEA x{lvar}
-	%T14 = 	ADD $3, %T13
-	p{lvar} = 	MOV %T14
+	%T10 = 	CALL printf, 2
+	%T11 = 	MUL $5, $0
+	%T12 = 	LEA a{global}
+	%T13 = 	ADD %T12, %T11
+	p{lvar} = 	MOV %T13
+	%T14 = 	ADD x{lvar}, $5
+	b{lvar} = 	MOV %T14
+	CMP x{lvar}, $5
+	BRLT .BB.0.3, .BB.0.1
+.BB0.1 
+	x{lvar} = 	MOV $100
+	BR .BB.0.2
+.BB0.2 
+	ARG 1, b{lvar}
+	ARG 0, "b is %d\n"
+	%T1 = 	CALL printf, 2
+	%T3 = 	MUL $2, $0
+	%T4 = 	LEA p{lvar}
+	%T5 = 	ADD %T4, %T3
+	%T6 = 	LOAD  [%T5]
+	%T7 = 	LOAD  [%T6]
+	ARG 1, %T7
+	ARG 0, "p[3] is %d\n"
+	%T2 = 	CALL printf, 2
+	ARG 1, x{lvar}
+	ARG 0, "x is now %d\n"
+	%T8 = 	CALL printf, 2
+	%T9 = 	LEA x{lvar}
+	%T10 = 	ADD $3, %T9
+	p{lvar} = 	MOV %T10
 	RETURN 
+.BB0.3 
+	%T0 = 	ADD b{lvar}, $5
+	x{lvar} = 	MOV %T0
+	BR .BB.0.2
 
 ---------------------------------------------
 ASM generation for function: main, BB: .BB.0.0
 ---------------------------------------------
+in file: "file_out.S"
 
 
 

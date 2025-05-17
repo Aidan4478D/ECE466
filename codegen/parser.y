@@ -45,11 +45,6 @@ FILE* debug_file;
     - can enter things like "int double signed char x;" and it would work
     - void (*g(double d))(int, char); mixes up the parameter lists
 */
-
-/* fix:
-    - out of order parameters for function pointers
-    - functions returning functions are weird af
-*/
 %}
 
 
@@ -283,7 +278,7 @@ function_definition : decl_specifiers declarator    {
                                                             }
                                                             fprintf(stderr, "\nEntering function scope for '%s'\n", sym->key);
                                                             //print_sym_table(funct_scope);
-                                                            print_symbol(global, sym);
+                                                            // print_symbol(global, sym);
                                                             in_function = 1;
                                                         }
                                                         else {
@@ -319,6 +314,7 @@ function_definition : decl_specifiers declarator    {
                                                         printf("\n---------------------------------------------\n"); 
                                                         printf("ASM generation for function: %s, BB: %s\n", sym->key, bb->name); 
                                                         printf("---------------------------------------------\n"); 
+                                                        printf("in file: \"file_out.S\"\n");
                                                         fprintf(stderr, "=========== ASM GENERATION ============\n");
                                                         //printf("%s:\n", sym->key);
                                                         generate_asm(bb, sym->key); // generate assembly here
@@ -416,7 +412,7 @@ struct_union_specifier : struct_or_union IDENT '{' {
                                                         //fprintf(stderr, "current scope is %s\n", get_scope_name(st->scope));
 
                                                         //print_sym_table(st, file_name, line_num);
-                                                        print_symbol(st, sym);
+                                                        // print_symbol(st, sym);
                                                     }
                        struct_declaration_list '}'  { 
                                                         SYMTABLE* st = (SYMTABLE*) stack_pop(scope_stack);
@@ -508,7 +504,7 @@ struct_declaration  : specifier_list struct_declarator_list ';' {
                                                                             fprintf(stderr, "Error: duplicate member %s\n", sym->key);
                                                                             exit(1);
                                                                         }
-                                                                        print_symbol(member_st, sym);
+                                                                        // print_symbol(member_st, sym);
 
                                                                         sym_list = sym_list->next;
                                                                     }
@@ -736,7 +732,7 @@ named_label : IDENT ':'     {
                                 }
                                 
 
-                                print_symbol(st, sym); 
+                                // print_symbol(st, sym); 
 
                                 $$ = sym; //new_label(sym, $3); 
                             }

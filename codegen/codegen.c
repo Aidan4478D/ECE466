@@ -119,10 +119,11 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
         bb = bb->next;
     }
 
+    // flush and reset fds
     fflush(stdout);
     dup2(saved_stdout, STDOUT_FILENO);
     close(saved_stdout);
-    headers_pushed = 0;
+    headers_pushed = 0; // gonna go into new function after this so clear headers
 }
 
 char* get_qnode_output(QNODE* qnode) {
