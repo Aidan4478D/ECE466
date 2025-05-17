@@ -81,7 +81,6 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
     printf("\t.globl %s\n", fn_name);
     printf("\t.type %s, @function\n", fn_name);
     printf("%s:\n", fn_name);
-    
 
     // traverse through all basic blocks
     while(bb) {
@@ -89,15 +88,28 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
         if(!headers_pushed) {
             printf("\tpushl %%ebp\t\t# associate ebp with symbol %s\n", bb->name); 
             printf("\tmovl %%esp, %%ebp\t\t# set up stack frame pointer\n\n");
-            if(bb->stack_size) printf("\tsubl $%d, %%esp\n", bb->stack_size);
+            if(bb->stack_size) printf("\tsubl $%d, %%esp\n\n", bb->stack_size);
+            
+            // push registers I use for tmp regs onto the stack
+            printf("\tpushl %%ebx\n");
+            printf("\tpushl %%edi\n");
+            printf("\tpushl %%esi\n\n");
+
             headers_pushed = 1;
         }
 
-        fprintf(stderr, "printing BB %s\n", bb->name);
-
+        // fprintf(stderr, "printing BB %s\n", bb->name);
         // traverse through all quads within basicblock
         while(!list_is_empty(bb->quad_list)) {
             QUAD* quad = (QUAD*) list_remove_head(bb->quad_list);
+
+            if(quad->oc == RETURN_OC) {
+                // pop tmp regs off the stack
+                printf("\tpopl %%ebx\n");
+                printf("\tpopl %%edi\n");
+                printf("\tpopl %%esi\n\n");
+            }
+
             printf("\t# QUAD ANALYZED: ");
             print_quad(quad);
             quad_to_asm(quad);
@@ -105,9 +117,8 @@ void generate_asm(BASICBLOCK* bb, char* fn_name) {
         }
         list_destroy(bb->quad_list);
         bb = bb->next;
-
-        /*printf("\tpopl %%ebp\n");*/
     }
+
     fflush(stdout);
     dup2(saved_stdout, STDOUT_FILENO);
     close(saved_stdout);
@@ -118,7 +129,7 @@ char* get_qnode_output(QNODE* qnode) {
 
     char buf[1024];
 
-    fprintf(stderr, "type is %s\n", get_qnode_type(qnode->type)); 
+    //fprintf(stderr, "type is %s\n", get_qnode_type(qnode->type)); 
 
     switch(qnode->type) {
         case TEMP_Q:
@@ -134,7 +145,7 @@ char* get_qnode_output(QNODE* qnode) {
                     sprintf(buf, "$%s", qnode->ast_node->ident.name);
                 } 
                 else {
-                    fprintf(stderr, "var: %s, scope: %s, offset: %d\n", qnode->ast_node->ident.name, qnode->sym->is_param ? "param" : qnode->scope == FILE_SCOPE ? "global" : "lvar", qnode->sym->stack_offset);
+                    //fprintf(stderr, "var: %s, scope: %s, offset: %d\n", qnode->ast_node->ident.name, qnode->sym->is_param ? "param" : qnode->scope == FILE_SCOPE ? "global" : "lvar", qnode->sym->stack_offset);
                     if(qnode->sym && qnode->scope != FILE_SCOPE) sprintf(buf, "%d(%%ebp)", qnode->sym->stack_offset);
                     else sprintf(buf,"%s", qnode->ast_node->ident.name);
                 }
@@ -173,12 +184,23 @@ void quad_to_asm(QUAD* quad) {
     switch(quad->oc) {
         case LOAD_OC:
             fprintf(stderr, "LOAD_OC detected!\n");
+            printf("\tmovl %s, %%edx\n", get_qnode_output(src1));
+            printf("\tmovl (%%edx), %%eax\n");
+            printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+
             break;
         case STORE_OC:
             fprintf(stderr, "STORE_OC detected!\n");
+            printf("\tmovl %s, %%edx\n", get_qnode_output(src1));
+            printf("\tmovl %s, %%eax\n", get_qnode_output(src2));
+            printf("\tmovl %%edx, (%%eax)\n");
+
             break;
         case LEA_OC:
             fprintf(stderr, "LEA_OC detected!\n");
+            printf("\tleal %s, %%eax\n", get_qnode_output(src1));
+            printf("\tmovl %%eax, %s\n", get_qnode_output(dest));
+            
             break;
         case MOV_OC:
             // just do this in case two symbols

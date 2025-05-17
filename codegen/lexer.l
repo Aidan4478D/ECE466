@@ -68,7 +68,15 @@ HEX         0[Xx]{HEX_DIGIT}+
 DEC_FLOAT   (({DIGITS}"."{DIGITS}?|\.{DIGITS}|{DIGITS}([eE][+-]?{DIGITS}))+)
 HEX_FLOAT   0[xX]{HEX_DIGIT}+(\.{HEX_DIGIT}*)?[pP][+-]?{DIGITS}
 
+start \/\*
+end  \*\/
+
 %%
+
+
+\/\/(.*) ;          // ignore single line comments
+{start}.*{end} ;    // ignore multi-line comments
+
 [ \t\v\f\r]+    /* do nothing for whitespace */
 [\n]        { line_num++; }
 

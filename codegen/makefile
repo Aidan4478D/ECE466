@@ -45,7 +45,8 @@ stack.o: helpers/stack.c helpers/stack.h symtable.h
 printing.o: helpers/printing.c helpers/printing.h
 	$(CC) $(CFLAGS) -c helpers/printing.c
 
-
+assemble:
+	gcc -m32 file_out.S -o compiled.exe
 
 clean_turn:
 	rm -f *.o *.gch
