@@ -4,7 +4,7 @@ CFLAGS = -Wall
 all: parser clean_turn
 
 parser: y.tab.o lex.yy.o ast.o printing.o symtable.o hash.o stack.o quads.o linklist.o codegen.o
-	$(CC) $(CFLAGS) -o p y.tab.o lex.yy.o ast.o printing.o symtable.o hash.o stack.o quads.o linklist.o codegen.o -lfl
+	$(CC) $(CFLAGS) -o acc y.tab.o lex.yy.o ast.o printing.o symtable.o hash.o stack.o quads.o linklist.o codegen.o
 
 y.tab.c y.tab.h: parser.y
 	yacc -d parser.y
@@ -46,13 +46,13 @@ printing.o: helpers/printing.c helpers/printing.h
 	$(CC) $(CFLAGS) -c helpers/printing.c
 
 assemble:
-	gcc -m32 file_out.S -o compiled.exe
+	gcc -m32 file_out.S -o compiled.out
 
 clean_turn:
 	rm -f *.o *.gch
 
 clean:
-	rm -f p y.tab.c y.tab.h lex.yy.c *.o y.output *.gch *.out
+	rm -f acc y.tab.c y.tab.h lex.yy.c *.o y.output *.gch *.out *.exe file_out.*
 
 .PHONY: all clean
 
